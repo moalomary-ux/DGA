@@ -506,13 +506,311 @@
         font-size: 16px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       }
+
+      /* ===== صفحة تسجيل الدخول للهيئة ===== */
+      .auth-overlay {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      .auth-overlay::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><circle cx="30" cy="30" r="2" fill="rgba(255,255,255,0.08)"/><circle cx="120" cy="60" r="3" fill="rgba(255,255,255,0.08)"/><circle cx="60" cy="140" r="2" fill="rgba(255,255,255,0.08)"/><circle cx="170" cy="170" r="2.5" fill="rgba(255,255,255,0.08)"/></svg>');
+        pointer-events: none;
+      }
+
+      .auth-card {
+        position: relative;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+        width: 100%;
+        max-width: 440px;
+        overflow: hidden;
+        animation: auth-fade-in 0.5s ease;
+      }
+
+      @keyframes auth-fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .auth-header {
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        color: white;
+        padding: 35px 30px 30px;
+        text-align: center;
+      }
+
+      .auth-logo {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        margin: 0 auto 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .auth-header h2 {
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 6px;
+        color: white;
+      }
+
+      .auth-header .auth-subtitle {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+
+      .auth-body {
+        padding: 35px 30px 30px;
+      }
+
+      .auth-welcome {
+        text-align: center;
+        font-size: 17px;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 25px;
+      }
+
+      .auth-field {
+        margin-bottom: 18px;
+      }
+
+      .auth-field label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 8px;
+      }
+
+      .auth-field input {
+        width: 100%;
+        padding: 13px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 15px;
+        font-family: 'Cairo', 'Tahoma', sans-serif;
+        direction: rtl;
+        text-align: right;
+        background: #f8fafc;
+        transition: all 0.25s ease;
+        box-sizing: border-box;
+      }
+
+      .auth-field input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      }
+
+      .auth-field input.auth-error {
+        border-color: #dc2626;
+        background: #fef2f2;
+      }
+
+      .auth-remember {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 22px;
+        font-size: 14px;
+        color: #475569;
+        cursor: pointer;
+      }
+
+      .auth-remember input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: #1e3a8a;
+      }
+
+      .auth-submit {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 700;
+        font-family: 'Cairo', 'Tahoma', sans-serif;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 15px rgba(30, 58, 138, 0.35);
+      }
+
+      .auth-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(30, 58, 138, 0.45);
+      }
+
+      .auth-submit:active {
+        transform: translateY(0);
+      }
+
+      .auth-message {
+        display: none;
+        margin-top: 15px;
+        padding: 12px 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-align: center;
+      }
+
+      .auth-message.error {
+        display: block;
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+      }
+
+      .auth-hint {
+        margin-top: 20px;
+        padding: 12px 15px;
+        background: #f1f5f9;
+        border-right: 4px solid #3b82f6;
+        border-radius: 6px;
+        font-size: 13px;
+        color: #475569;
+        line-height: 1.7;
+      }
+
+      .auth-hint strong {
+        color: #1e3a8a;
+      }
+
+      .auth-footer {
+        text-align: center;
+        padding: 18px 30px;
+        background: #f8fafc;
+        font-size: 12px;
+        color: #64748b;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .user-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 13px;
+        color: white;
+        margin-top: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+
+      .user-chip button {
+        background: transparent;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 0 4px;
+        text-decoration: underline;
+        font-family: inherit;
+      }
+
+      @media (max-width: 480px) {
+        .auth-header { padding: 28px 22px 24px; }
+        .auth-body { padding: 28px 22px 24px; }
+        .auth-header h2 { font-size: 19px; }
+      }
     </style>
   </head>
   <body>
-    <div class="container">
+    <!-- ===== صفحة تسجيل الدخول للهيئة ===== -->
+    <div id="authOverlay" class="auth-overlay">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">🏛️</div>
+          <h2>هيئة الحكومة الرقمية</h2>
+          <div class="auth-subtitle">نظام تحليل الخدمات الاستشارية</div>
+        </div>
+        <form class="auth-body" id="authForm" autocomplete="off">
+          <div class="auth-welcome">🔐 تسجيل الدخول للهيئة</div>
+
+          <div class="auth-field">
+            <label for="authUser">اسم المستخدم</label>
+            <input
+              type="text"
+              id="authUser"
+              name="authUser"
+              placeholder="أدخل اسم المستخدم"
+              required
+              autocomplete="username"
+            />
+          </div>
+
+          <div class="auth-field">
+            <label for="authPass">كلمة المرور</label>
+            <input
+              type="password"
+              id="authPass"
+              name="authPass"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+
+          <label class="auth-remember">
+            <input type="checkbox" id="authRemember" />
+            <span>تذكرني على هذا الجهاز</span>
+          </label>
+
+          <button type="submit" class="auth-submit">
+            🚀 دخول
+          </button>
+
+          <div id="authMessage" class="auth-message"></div>
+
+          <div class="auth-hint">
+            <strong>بيانات الدخول التجريبية:</strong><br>
+            👤 المستخدم: <strong>admin</strong> &nbsp;|&nbsp; 🔑 كلمة المرور: <strong>dga2025</strong>
+          </div>
+        </form>
+        <div class="auth-footer">
+          © هيئة الحكومة الرقمية - المملكة العربية السعودية
+        </div>
+      </div>
+    </div>
+
+    <div class="container" id="mainContainer" style="display: none;">
       <!-- شريط وقت الدخول -->
       <div id="loginTimeBanner" class="login-banner" style="display: none;">
         <span id="loginTimeText"></span>
+        <span id="loginUserInfo" style="margin-inline-start: 15px;"></span>
+        <button
+          type="button"
+          onclick="window.dgaLogout && window.dgaLogout()"
+          style="margin-inline-start: 15px; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 4px 12px; border-radius: 20px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;"
+          title="تسجيل الخروج"
+        >
+          🚪 خروج
+        </button>
       </div>
       <!-- رأس الصفحة -->
       <div class="header">
@@ -589,8 +887,121 @@
     <script>
       console.log('🚀 تم تحميل نظام تحليل الخدمات الاستشارية التفاعلي');
 
-      // تتبع وقت دخول الصفحة محلياً عبر localStorage
-      (function trackLoginTime() {
+      // ===== منظومة تسجيل الدخول للهيئة =====
+      (function authGate() {
+        const AUTH_KEY = 'dga_auth_session';
+        // بيانات الدخول المعتمدة (تجريبية)
+        const VALID_CREDENTIALS = [
+          { user: 'admin', pass: 'dga2025' },
+          { user: 'dga', pass: 'dga2025' }
+        ];
+
+        const overlay = document.getElementById('authOverlay');
+        const mainContainer = document.getElementById('mainContainer');
+        const form = document.getElementById('authForm');
+        const userInput = document.getElementById('authUser');
+        const passInput = document.getElementById('authPass');
+        const rememberInput = document.getElementById('authRemember');
+        const messageEl = document.getElementById('authMessage');
+
+        function readSession() {
+          try {
+            const local = localStorage.getItem(AUTH_KEY);
+            if (local) return JSON.parse(local);
+            const session = sessionStorage.getItem(AUTH_KEY);
+            if (session) return JSON.parse(session);
+          } catch (e) { /* تجاهل */ }
+          return null;
+        }
+
+        function writeSession(data, remember) {
+          try {
+            if (remember) {
+              localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+              sessionStorage.removeItem(AUTH_KEY);
+            } else {
+              sessionStorage.setItem(AUTH_KEY, JSON.stringify(data));
+              localStorage.removeItem(AUTH_KEY);
+            }
+          } catch (e) { /* تجاهل */ }
+        }
+
+        function clearSession() {
+          try {
+            localStorage.removeItem(AUTH_KEY);
+            sessionStorage.removeItem(AUTH_KEY);
+          } catch (e) { /* تجاهل */ }
+        }
+
+        function showMessage(text, type) {
+          messageEl.textContent = text;
+          messageEl.className = 'auth-message ' + (type || 'error');
+        }
+
+        function showMainApp(session) {
+          overlay.style.display = 'none';
+          mainContainer.style.display = 'block';
+          window.__dgaCurrentUser = session && session.user ? session.user : null;
+          // إشعار الوحدات الأخرى (مثل شريط وقت الدخول) بأن التطبيق جاهز
+          document.dispatchEvent(new CustomEvent('dga:authenticated', { detail: session }));
+        }
+
+        function handleLogin(e) {
+          e.preventDefault();
+          const user = (userInput.value || '').trim();
+          const pass = (passInput.value || '').trim();
+
+          if (!user || !pass) {
+            showMessage('⚠️ الرجاء إدخال اسم المستخدم وكلمة المرور', 'error');
+            return;
+          }
+
+          const match = VALID_CREDENTIALS.find(
+            c => c.user.toLowerCase() === user.toLowerCase() && c.pass === pass
+          );
+
+          if (!match) {
+            showMessage('❌ اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
+            userInput.classList.add('auth-error');
+            passInput.classList.add('auth-error');
+            passInput.value = '';
+            passInput.focus();
+            return;
+          }
+
+          userInput.classList.remove('auth-error');
+          passInput.classList.remove('auth-error');
+
+          const session = {
+            user: match.user,
+            loginAt: new Date().toISOString()
+          };
+          writeSession(session, rememberInput.checked);
+          showMainApp(session);
+        }
+
+        // إتاحة تسجيل الخروج عالمياً
+        window.dgaLogout = function () {
+          clearSession();
+          window.location.reload();
+        };
+
+        form.addEventListener('submit', handleLogin);
+        userInput.addEventListener('input', () => userInput.classList.remove('auth-error'));
+        passInput.addEventListener('input', () => passInput.classList.remove('auth-error'));
+
+        // استعادة الجلسة إذا كانت موجودة
+        const existing = readSession();
+        if (existing && existing.user) {
+          showMainApp(existing);
+        } else {
+          // تركيز الحقل الأول عند التحميل
+          setTimeout(() => userInput.focus(), 150);
+        }
+      })();
+
+      // تتبع وقت دخول الصفحة محلياً عبر localStorage (يعمل بعد تسجيل الدخول)
+      function trackLoginTime() {
         const STORAGE_KEY = 'dga_login_times';
         const now = new Date();
         const todayKey = now.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -609,7 +1020,12 @@
 
         const banner = document.getElementById('loginTimeBanner');
         const textEl = document.getElementById('loginTimeText');
+        const userInfoEl = document.getElementById('loginUserInfo');
         if (!banner || !textEl) return;
+
+        if (userInfoEl && window.__dgaCurrentUser) {
+          userInfoEl.textContent = '— المستخدم: ' + window.__dgaCurrentUser;
+        }
 
         if (data[todayKey]) {
           textEl.textContent =
@@ -629,7 +1045,10 @@
         }
 
         banner.style.display = 'block';
-      })();
+      }
+
+      // تشغيل تتبع وقت الدخول بعد المصادقة
+      document.addEventListener('dga:authenticated', trackLoginTime);
 
       // المسارات العامة ومجالاتها (12 مساراً)
       const GENERAL_TRACKS = {
