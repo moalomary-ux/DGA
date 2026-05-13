@@ -1,0 +1,245 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import {
+  BookOpen, Users, Inbox, Target, ChevronRight, Sparkles, ArrowLeft,
+  Loader2, Calendar as CalIcon, Lightbulb, Code, Hammer, Eye, FilePlus, Activity, CheckCircle2,
+} from 'lucide-react';
+
+interface Dashboard {
+  kpis: { active: number; total_attendees: number; pending: number; avg_completion: number };
+  programs: { id: number; code: string | null; title_ar: string; status: string | null; capacity: number | null; enrolled_count: number | null; start_date: string | null; attendees: number; category: string | null }[];
+  live: { id: number; code: string | null; title_ar: string; provider: string | null; start_date: string | null; end_date: string | null; capacity: number | null; enrolled_count: number | null } | null;
+  tasks: { id: string; title: string; due: string; priority: string; program: string | null; done: boolean }[];
+  lifecycle: { id: string; label: string; count: number }[];
+}
+
+const STATUS_LABELS: Record<string, { ar: string; color: string }> = {
+  execution: { ar: 'قيد التنفيذ', color: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' },
+  registration: { ar: 'فتح التسجيل', color: 'bg-blue-500/15 text-blue-400 border border-blue-500/30' },
+  development: { ar: 'تجهيز', color: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
+  review: { ar: 'مراجعة', color: 'bg-purple-500/15 text-purple-400 border border-purple-500/30' },
+  closed: { ar: 'مغلق', color: 'bg-slate-500/15 text-slate-400 border border-slate-500/30' },
+  idea: { ar: 'فكرة', color: 'bg-pink-500/15 text-pink-400 border border-pink-500/30' },
+};
+
+const LIFECYCLE_ICONS: Record<string, { icon: typeof Lightbulb; color: string }> = {
+  idea: { icon: Lightbulb, color: '#EC4899' },
+  development: { icon: Code, color: '#A78BFA' },
+  review: { icon: Eye, color: '#FBBF24' },
+  registration: { icon: FilePlus, color: '#22D3EE' },
+  execution: { icon: Activity, color: '#34D399' },
+  closed: { icon: CheckCircle2, color: '#94A3B8' },
+};
+
+export default function DashboardPage() {
+  const [data, setData] = useState<Dashboard | null>(null);
+
+  useEffect(() => {
+    fetch('/api/dashboard/data').then(r => r.json()).then(d => { if (d.ok) setData(d); });
+  }, []);
+
+  if (!data) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-cyan-500" /></div>;
+
+  const card = "bg-white dark:bg-slate-900/60 dark:backdrop-blur border border-gray-200 dark:border-slate-700/60 rounded-2xl";
+  const txtH = "text-gray-900 dark:text-slate-100";
+  const txtM = "text-gray-600 dark:text-slate-400";
+  const txtL = "text-gray-500 dark:text-slate-500";
+
+  return (
+    <div className="p-4 lg:p-6 max-w-[1500px] mx-auto space-y-4 lg:space-y-5" dir="rtl">
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <Kpi label="البرامج النشطة" value={data.kpis.active} delta="+12% vs Q4 2025"
+             icon={BookOpen} tone="primary" href="/programs" />
+        <Kpi label="إجمالي المتدربين النشطين" value={data.kpis.total_attendees} delta={`+${Math.floor(data.kpis.total_attendees * 0.02)} خلال هذا الشهر`}
+             icon={Users} tone="accent" href="/contacts" />
+        <Kpi label="طلبات معلّقة" value={data.kpis.pending} delta="تحتاج مراجعة AI"
+             icon={Inbox} tone="warning" href="/nominations" />
+        <Kpi label="نسبة الإنجاز العامة" value={data.kpis.avg_completion} suffix="%" delta="في المسار"
+             icon={Target} tone="success" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5">
+        {/* Active Programs Health */}
+        <div className={`lg:col-span-8 ${card} overflow-hidden`}>
+          <div className="flex items-center justify-between p-4 lg:p-5 border-b border-gray-100 dark:border-slate-700/60">
+            <h3 className={`font-semibold ${txtH}`}>صحة البرامج النشطة</h3>
+            <Link href="/programs" className="text-xs text-cyan-400 hover:underline flex items-center gap-1">
+              عرض الكل <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-500 dark:text-slate-400 border-b border-gray-100 dark:border-slate-700/40">
+                  <th className="px-4 py-3 text-right font-medium">الرمز</th>
+                  <th className="px-4 py-3 text-right font-medium">البرنامج</th>
+                  <th className="px-4 py-3 text-right font-medium">الحالة</th>
+                  <th className="px-4 py-3 text-right font-medium">السعة</th>
+                  <th className="px-4 py-3 text-right font-medium">التقدّم</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100 dark:divide-slate-700/40">
+                {data.programs.map(p => {
+                  const cap = p.capacity || 0;
+                  const enr = p.enrolled_count || p.attendees || 0;
+                  const pct = cap > 0 ? Math.round((enr / cap) * 100) : 0;
+                  const status = STATUS_LABELS[p.status || 'execution'] || STATUS_LABELS.closed;
+                  return (
+                    <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/40 cursor-pointer transition">
+                      <td className="px-4 py-3">
+                        <Link href={`/programs/${p.id}`} className={`text-xs font-mono ${txtM}`}>{p.code || `#${p.id}`}</Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link href={`/programs/${p.id}`} className={`font-medium ${txtH} hover:text-cyan-400 line-clamp-1`}>{p.title_ar}</Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 text-[10px] rounded-full ${status.color}`}>{status.ar}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 min-w-[120px]">
+                          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{width:`${pct}%`, background:'linear-gradient(90deg,#00ABAF,#1CC182)'}} />
+                          </div>
+                          <span className={`text-xs font-mono ${txtM} shrink-0`}>{enr}/{cap || '∞'}</span>
+                        </div>
+                      </td>
+                      <td className={`px-4 py-3 text-xs font-mono ${pct > 50 ? 'text-emerald-400' : txtL}`}>{pct}%</td>
+                    </tr>
+                  );
+                })}
+                {data.programs.length === 0 && (
+                  <tr><td colSpan={5} className={`text-center ${txtL} py-8`}>لا توجد برامج نشطة</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="lg:col-span-4 space-y-4 lg:space-y-5">
+          {/* Tasks */}
+          <div className={`${card} p-5`}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className={`font-semibold ${txtH}`}>مهام اليوم</h3>
+              <span className={`text-xs ${txtL}`}>{data.tasks.length} مهمة</span>
+            </div>
+            <div className="space-y-2">
+              {data.tasks.length === 0 && <div className={`text-center text-sm ${txtL} py-4`}>لا توجد مهام جديدة</div>}
+              {data.tasks.slice(0, 4).map(t => (
+                <div key={t.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/40">
+                  <div className={`w-4 h-4 rounded border-2 mt-0.5 shrink-0 ${
+                    t.priority === 'high' ? 'border-red-500' : t.priority === 'medium' ? 'border-amber-500' : 'border-gray-300 dark:border-slate-600'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-medium ${txtH} line-clamp-1`}>{t.title}</div>
+                    <div className={`text-xs ${txtL} mt-0.5`}>{t.program || ''}</div>
+                  </div>
+                  <span className={`text-xs shrink-0 ${
+                    t.priority === 'high' ? 'text-red-400' : t.priority === 'medium' ? 'text-amber-400' : txtL
+                  }`}>{t.due}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Live Program */}
+          {data.live && (
+            <div className="rounded-2xl p-5 text-white relative overflow-hidden" style={{background:'linear-gradient(135deg,#7C32C9 0%,#00ABAF 100%)'}}>
+              <div className="absolute inset-0 opacity-30 pointer-events-none">
+                <div className="absolute top-[-30%] right-[-20%] w-48 h-48 rounded-full blur-3xl" style={{background:'#1CC182'}} />
+              </div>
+              <div className="relative">
+                <span className="inline-block px-2 py-0.5 bg-white/20 rounded-full text-[10px] mb-3 backdrop-blur">جارٍ الآن</span>
+                <h4 className="text-base font-bold leading-snug mb-1 line-clamp-2">{data.live.title_ar}</h4>
+                <div className="text-xs opacity-80 mb-3">{data.live.provider || '—'}</div>
+                <div className="flex items-center justify-between text-xs">
+                  <span>{data.live.enrolled_count || 0}/{data.live.capacity || '∞'} متدرب</span>
+                  <span>{data.live.start_date?.slice(0,10)}</span>
+                </div>
+                <Link href={`/programs/${data.live.id}`} className="mt-3 inline-flex items-center gap-1 text-xs font-medium border border-white/30 px-3 py-1.5 rounded-lg hover:bg-white/10 backdrop-blur">
+                  افتح <ArrowLeft className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* AI Helper Banner */}
+        <Link href="/agents" className="lg:col-span-12 group">
+          <div className="rounded-2xl p-6 text-white relative overflow-hidden hover:scale-[1.005] transition" style={{background:'linear-gradient(135deg,#00ABAF 0%,#7C32C9 50%,#2A206A 100%)'}}>
+            <div className="absolute inset-0 opacity-30 pointer-events-none">
+              <div className="absolute top-[-30%] left-[-10%] w-72 h-72 rounded-full blur-3xl animate-pulse" style={{background:'#1CC182', animationDuration:'4s'}} />
+            </div>
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center shrink-0 border border-white/20">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="text-xs opacity-80 mb-1">مساعد قدراتك (AI)</div>
+                  <h3 className="text-lg font-bold">اطلب اقتراحات لمعايير القبول، إنشاء برنامج، أو تحليل بيانات المتدربين</h3>
+                </div>
+              </div>
+              <button className="shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur rounded-lg border border-white/30 group-hover:bg-white/25 transition text-sm font-medium">
+                تشغيل المساعد <ArrowLeft className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </Link>
+
+        {/* Lifecycle stages */}
+        <div className={`lg:col-span-12 ${card} p-5`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`font-semibold ${txtH}`}>دورة حياة البرامج</h3>
+            <span className={`text-xs ${txtL}`}>{data.lifecycle.reduce((a,s) => a + s.count, 0)} برنامج</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {data.lifecycle.map(stage => {
+              const meta = LIFECYCLE_ICONS[stage.id];
+              const Icon = meta?.icon || Lightbulb;
+              return (
+                <div key={stage.id} className="p-3 rounded-xl border border-gray-100 dark:border-slate-700/50 hover:border-cyan-400/50 transition cursor-default">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className="h-4 w-4" style={{color: meta?.color || '#94A3B8'}} />
+                    <span className={`text-xs ${txtM}`}>{stage.label}</span>
+                  </div>
+                  <div className={`text-2xl font-bold font-mono ${txtH}`}>{stage.count}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Kpi({ label, value, suffix='', delta, icon: Icon, tone, href }: {
+  label: string; value: number; suffix?: string; delta: string;
+  icon: typeof BookOpen; tone: 'primary'|'accent'|'warning'|'success'; href?: string;
+}) {
+  const colors: Record<string, { bg: string; ico: string; delta: string }> = {
+    primary: { bg: 'rgba(0,171,175,0.12)', ico: '#22D3EE', delta: 'text-cyan-400' },
+    accent:  { bg: 'rgba(124,50,201,0.12)', ico: '#A78BFA', delta: 'text-purple-400' },
+    warning: { bg: 'rgba(251,176,32,0.12)', ico: '#FBBF24', delta: 'text-amber-400' },
+    success: { bg: 'rgba(28,193,130,0.12)', ico: '#34D399', delta: 'text-emerald-400' },
+  };
+  const c = colors[tone];
+  const inner = (
+    <div className="bg-white dark:bg-slate-900/60 dark:backdrop-blur border border-gray-200 dark:border-slate-700/60 rounded-2xl p-4 lg:p-5 hover:border-cyan-400/50 transition group">
+      <div className="flex items-start justify-between mb-3">
+        <span className="text-xs text-gray-500 dark:text-slate-400">{label}</span>
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{background: c.bg}}>
+          <Icon className="h-4 w-4" style={{color: c.ico}} />
+        </div>
+      </div>
+      <div className="text-3xl lg:text-4xl font-bold font-mono text-gray-900 dark:text-slate-100">{value}{suffix}</div>
+      <div className={`text-xs mt-1 ${c.delta}`}>{delta}</div>
+    </div>
+  );
+  return href ? <Link href={href}>{inner}</Link> : inner;
+}

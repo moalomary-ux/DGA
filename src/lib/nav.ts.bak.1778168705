@@ -1,0 +1,147 @@
+import type { TenantId } from '@/lib/db';
+
+export type IconName =
+  | 'LayoutDashboard' | 'Briefcase' | 'User' | 'Sparkles' | 'Bot' | 'Users'
+  | 'CheckSquare' | 'Settings' | 'Shield' | 'GraduationCap' | 'Award'
+  | 'Handshake' | 'FileText' | 'Building2' | 'BookOpen' | 'NotebookPen'
+  | 'Lightbulb' | 'Target' | 'Library' | 'Calendar' | 'Layers' | 'Inbox' | 'Cog' | 'Database' | 'Mail' | 'MessageCircle' | 'Plug';
+
+export interface NavItem {
+  href: string;
+  label: string;
+  icon: IconName;
+}
+
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+export interface NavConfig {
+  base: NavGroup[];
+  master?: NavGroup[];
+  superAdmin?: NavGroup[];
+}
+
+const ADMIN_GROUP: NavGroup = {
+  label: 'الإدارة',
+  items: [
+    { href: '/admin/registrations', label: 'طلبات التسجيل', icon: 'Shield' },
+    { href: '/admin/users', label: 'المستخدمون', icon: 'Settings' },
+  ],
+};
+
+export const NAV_BY_TENANT: Record<TenantId, NavConfig> = {
+  omary: {
+    base: [
+      { label: 'الرئيسية', items: [{ href: '/dashboard', label: 'لوحة التحكّم', icon: 'LayoutDashboard' }] },
+      {
+        label: 'العمليات',
+        items: [
+          { href: '/calendar', label: 'التقويم', icon: 'Calendar' },
+          { href: '/work',     label: 'الإدارة العامة', icon: 'Briefcase' },
+          { href: '/skills',   label: 'المهارات (AI)', icon: 'Sparkles' },
+          { href: '/agents',   label: 'الوكلاء',         icon: 'Bot' },
+          { href: '/tasks',    label: 'المهام',          icon: 'CheckSquare' },
+        ],
+      },
+      { label: 'المعرفة', items: [{ href: '/contacts', label: 'جهات الاتصال', icon: 'Users' }] },
+    ],
+    master: [
+      {
+        label: 'الشخصي',
+        items: [
+          { href: '/personal',         label: 'لوحة الشخصي', icon: 'User' },
+          { href: '/personal/notes',   label: 'الملاحظات',     icon: 'NotebookPen' },
+          { href: '/personal/goals',   label: 'الأهداف',        icon: 'Target' },
+          { href: '/personal/ideas',   label: 'الأفكار',        icon: 'Lightbulb' },
+          { href: '/personal/reading', label: 'القراءة',        icon: 'Library' },
+        ],
+      },
+    ],
+    superAdmin: [ADMIN_GROUP],
+  },
+
+  qtech: {
+    base: [
+      { label: 'الرئيسية', items: [
+        { href: '/dashboard', label: 'لوحة قدراتك', icon: 'LayoutDashboard' },
+        { href: '/calendar',  label: 'التقويم',      icon: 'Calendar' },
+      ] },
+      {
+        label: 'البرامج',
+        items: [
+          { href: '/programs',     label: 'البرامج التدريبية', icon: 'GraduationCap' },
+          { href: '/nominations',  label: 'الترشيحات',           icon: 'Inbox' },
+          { href: '/trainees',     label: 'المتدربون',           icon: 'Users' },
+          { href: '/partners',     label: 'الشركاء',             icon: 'Handshake' },
+        ],
+      },
+      {
+        label: 'البيانات والتواصل',
+        items: [
+          { href: '/data-center',   label: 'مركز البيانات',  icon: 'Database' },
+          { href: '/communication', label: 'مركز التواصل',   icon: 'Mail' },
+          { href: '/forum',         label: 'منتدى الأفكار',   icon: 'MessageCircle' },
+        ],
+      },
+      {
+        label: 'التكاملات',
+        items: [
+          { href: '/monday', label: 'monday.com', icon: 'Plug' },
+        ],
+      },
+      {
+        label: 'الذكاء',
+        items: [
+          { href: '/agents',   label: 'الوكلاء',     icon: 'Bot' },
+          { href: '/skills',   label: 'مهارات AI',  icon: 'Sparkles' },
+        ],
+      },
+      {
+        label: 'الإعدادات',
+        items: [
+          { href: '/contacts', label: 'جهات الاتصال', icon: 'Users' },
+          { href: '/settings', label: 'الإعدادات',     icon: 'Cog' },
+        ],
+      },
+    ],
+    superAdmin: [ADMIN_GROUP],
+  },
+
+  advice: {
+    base: [
+      { label: 'الرئيسية', items: [
+        { href: '/dashboard', label: 'لوحة الاستشارات', icon: 'LayoutDashboard' },
+        { href: '/calendar',  label: 'التقويم',           icon: 'Calendar' },
+      ] },
+      {
+        label: 'الإنتاج',
+        items: [
+          { href: '/studies',       label: 'الدراسات',     icon: 'FileText' },
+          { href: '/clients',       label: 'العملاء',      icon: 'Building2' },
+          { href: '/consultations', label: 'الاستشارات',   icon: 'BookOpen' },
+          { href: '/services',      label: 'خدماتنا',       icon: 'Layers' },
+        ],
+      },
+      {
+        label: 'الأدوات',
+        items: [
+          { href: '/skills',   label: 'مهارات AI',  icon: 'Sparkles' },
+          { href: '/agents',   label: 'الوكلاء',     icon: 'Bot' },
+          { href: '/contacts', label: 'جهات الاتصال', icon: 'Users' },
+        ],
+      },
+    ],
+    superAdmin: [ADMIN_GROUP],
+  },
+};
+
+export function buildNav(tenantId: TenantId, isMaster: boolean, isSuperAdmin: boolean): NavGroup[] {
+  const config = NAV_BY_TENANT[tenantId];
+  return [
+    ...config.base,
+    ...(isMaster && config.master ? config.master : []),
+    ...(isSuperAdmin && config.superAdmin ? config.superAdmin : []),
+  ];
+}

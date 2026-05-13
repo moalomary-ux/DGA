@@ -1,0 +1,53 @@
+import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 600;
+
+type FeedItem = { title: string; link: string; pubDate: string; source: string };
+
+const FEEDS = [
+  { url: 'https://techcrunch.com/feed/',                   source: 'TechCrunch' },
+  { url: 'https://www.theverge.com/rss/index.xml',         source: 'The Verge' },
+  { url: 'https://feeds.arstechnica.com/arstechnica/index', source: 'Ars Technica' },
+  { url: 'https://www.wired.com/feed/rss',                  source: 'Wired' },
+  { url: 'https://www.technologyreview.com/feed/',          source: 'MIT Tech Review' },
+];
+
+async function fetchRSS(url: string, source: string): Promise<FeedItem[]> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(8000),
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; QudratokBot/1.0)' },
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const items: FeedItem[] = [];
+    const itemRe = /<item[\s>][\s\S]*?<\/item>|<entry[\s>][\s\S]*?<\/entry>/g;
+    let m;
+    while ((m = itemRe.exec(xml)) !== null && items.length < 5) {
+      const block = m[0];
+      const titleM = block.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+      const linkM = block.match(/<link[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/) || block.match(/<link[^>]+href="([^"]+)"/);
+      const pubM = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || block.match(/<published>([\s\S]*?)<\/published>/);
+      const t = titleM ? titleM[1].trim().replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>') : '';
+      const l = linkM ? linkM[1].trim() : '';
+      if (t && l) items.push({ title: t, link: l, pubDate: pubM ? pubM[1].trim() : '', source });
+    }
+    return items;
+  } catch (e) { return []; }
+}
+
+export async function GET() {
+  const all = (await Promise.all(FEEDS.map(f => fetchRSS(f.url, f.source)))).flat();
+  const seen = new Set<string>();
+  const unique = all.filter(it => {
+    if (seen.has(it.link) || seen.has(it.title)) return false;
+    seen.add(it.link); seen.add(it.title); return true;
+  });
+  unique.sort((a, b) => (new Date(b.pubDate).getTime() || 0) - (new Date(a.pubDate).getTime() || 0));
+  const items = unique.slice(0, 6).map(it => ({
+    title: it.title, link: it.link, source: it.source, pubDate: it.pubDate,
+    label: 'تقنية', color: '#8B5CF6',
+  }));
+  return NextResponse.json({ ok: true, items, fetched_at: new Date().toISOString() });
+}

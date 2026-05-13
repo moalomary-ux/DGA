@@ -1,0 +1,255 @@
+'use client';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import Link from 'next/link';
+
+interface FileItem {
+  source: 'forum' | 'import';
+  id: number;
+  file_name: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number | null;
+  uploaded_at: string;
+  program_id: number;
+  program_title: string;
+  program_code: string | null;
+  total_rows?: number;
+  inserted_rows?: number;
+  status?: string;
+  uploaded_by_email?: string | null;
+  uploaded_by_name?: string | null;
+}
+
+const SOURCE_META: Record<string, { ar: string; icon: string; color: string }> = {
+  forum:  { ar: 'منتدى البرنامج',  icon: '💬', color: '#00ABAF' },
+  import: { ar: 'استيراد ترشيحات', icon: '📊', color: '#F59E0B' },
+};
+
+function fmtSize(bytes: number | null): string {
+  if (bytes == null) return '—';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function fmtDate(s: string): string {
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60)     return 'الآن';
+  if (diff < 3600)   return `قبل ${Math.floor(diff / 60)} د`;
+  if (diff < 86400)  return `قبل ${Math.floor(diff / 3600)} س`;
+  if (diff < 604800) return `قبل ${Math.floor(diff / 86400)} يوم`;
+  return d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function fileIcon(name: string): string {
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  if (['xlsx','xls','csv'].includes(ext))                  return '📊';
+  if (['docx','doc'].includes(ext))                         return '📄';
+  if (['pdf'].includes(ext))                                return '📕';
+  if (['pptx','ppt'].includes(ext))                         return '📊';
+  if (['png','jpg','jpeg','gif','webp'].includes(ext))      return '🖼️';
+  if (['zip','rar','7z'].includes(ext))                     return '🗜️';
+  if (['txt','md'].includes(ext))                           return '📝';
+  return '📎';
+}
+
+export default function FilesPage() {
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'forum' | 'import'>('all');
+  const [search, setSearch] = useState('');
+  const [scope, setScope] = useState<'mine' | 'all'>('mine');
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/files/my${scope === 'all' ? '?scope=all' : ''}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) { setFiles(d.files); setIsAdmin(!!d.is_admin); }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [scope]);
+
+  const filtered = useMemo(() => {
+    let f = files;
+    if (filter !== 'all') f = f.filter(x => x.source === filter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      f = f.filter(x => x.file_name.toLowerCase().includes(q) || x.program_title.toLowerCase().includes(q));
+    }
+    return f;
+  }, [files, filter, search]);
+
+  const counts = useMemo(() => ({
+    all: files.length,
+    forum: files.filter(f => f.source === 'forum').length,
+    import: files.filter(f => f.source === 'import').length,
+  }), [files]);
+
+  const totalSize = useMemo(() => filtered.reduce((s, f) => s + (f.size_bytes || 0), 0), [filtered]);
+
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const r = await fetch('/api/files/upload', { method: 'POST', body: fd });
+      const d = await r.json();
+      if (d.ok || d.success) {
+        if (typeof window !== 'undefined') window.location.reload();
+      } else {
+        alert(d.error || d.message || 'فشل الرفع');
+      }
+    } catch (err: any) {
+      alert('خطأ: ' + (err?.message || ''));
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  return (
+    <div className="page fade-in" style={{ padding: 24 }} dir="rtl">
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: 24, color: '#e2e8f0' }}>{scope === 'all' ? 'كل الملفات' : 'ملفاتي'}</h1>
+          <div style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
+            {scope === 'all' ? 'ملفات جميع المستخدمين — منتديات + استيراد' : 'الملفات التي رفعتَها أنت — منتديات + استيراد'}
+          </div>
+        </div>
+        {isAdmin && (
+          <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.25)', padding: 4, borderRadius: 10 }}>
+            <button onClick={() => setScope('mine')}
+              style={{ padding: '8px 16px', fontSize: 12, fontWeight: 600,
+                background: scope === 'mine' ? '#00ABAF' : 'transparent',
+                color: scope === 'mine' ? '#fff' : '#94a3b8',
+                border: 0, borderRadius: 6, cursor: 'pointer' }}>ملفاتي</button>
+            <button onClick={() => setScope('all')}
+              style={{ padding: '8px 16px', fontSize: 12, fontWeight: 600,
+                background: scope === 'all' ? '#00ABAF' : 'transparent',
+                color: scope === 'all' ? '#fff' : '#94a3b8',
+                border: 0, borderRadius: 6, cursor: 'pointer' }}>كل الملفات</button>
+          </div>
+        )}
+        <input type="file" ref={fileInputRef} onChange={handleUpload} style={{ display: 'none' }} />
+        <button onClick={() => fileInputRef.current?.click()} disabled={uploading} style={{
+          padding: '10px 20px',
+          background: uploading ? 'rgba(0,171,175,0.5)' : 'linear-gradient(135deg, #00ABAF, #06B6D4)',
+          color: '#fff', border: 0, borderRadius: 10,
+          fontSize: 13, fontWeight: 700,
+          cursor: uploading ? 'wait' : 'pointer',
+          boxShadow: uploading ? 'none' : '0 4px 14px rgba(0,171,175,0.32)',
+          transition: 'all 0.18s',
+        }}>{uploading ? 'جاري الرفع...' : '+ ارفع ملف'}</button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+        <Kpi label="إجمالي الملفات"   v={files.length}    color="#00ABAF" />
+        <Kpi label="من المنتديات"     v={counts.forum}    color="#7C32C9" />
+        <Kpi label="ملفات استيراد"    v={counts.import}   color="#F59E0B" />
+        <Kpi label="الحجم المعروض"    v={fmtSize(totalSize)} color="#10B981" />
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.25)', padding: 4, borderRadius: 10 }}>
+          {(['all','forum','import'] as const).map(k => (
+            <button key={k} onClick={() => setFilter(k)}
+              style={{
+                padding: '7px 16px', fontSize: 12, fontWeight: 600,
+                background: filter === k ? '#00ABAF' : 'transparent',
+                color: filter === k ? '#fff' : '#94a3b8',
+                border: 0, borderRadius: 6, cursor: 'pointer',
+              }}>
+              {k === 'all' ? `الكل (${counts.all})` : k === 'forum' ? `منتديات (${counts.forum})` : `استيراد (${counts.import})`}
+            </button>
+          ))}
+        </div>
+
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="🔍 بحث باسم الملف أو البرنامج..."
+          style={{
+            flex: 1, minWidth: 220,
+            padding: '10px 14px', background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10,
+            color: '#e2e8f0', fontSize: 13, fontFamily: 'inherit', boxSizing: 'border-box',
+          }}
+        />
+      </div>
+
+      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 16 }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 60, color: '#64748b' }}>جاري التحميل...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 60, color: '#64748b', fontSize: 13 }}>
+            {files.length === 0 ? '📂 لا توجد ملفات بعد — ارفع أول ملف من منتدى أي برنامج' : 'لا نتائج لهذا البحث'}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {filtered.map(f => {
+              const meta = SOURCE_META[f.source];
+              return (
+                <a key={`${f.source}-${f.id}`} href={f.storage_path} target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: 'grid', gridTemplateColumns: '44px 1fr auto auto auto',
+                    gap: 14, alignItems: 'center',
+                    padding: '12px 14px', background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: 10, color: '#e2e8f0', textDecoration: 'none', transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,171,175,0.05)'; e.currentTarget.style.borderColor = 'rgba(0,171,175,0.25)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                >
+                  <div style={{ fontSize: 24, textAlign: 'center' }}>{fileIcon(f.file_name)}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file_name}</div>
+                    <div style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ color: meta.color, fontWeight: 600 }}>{meta.icon} {meta.ar}</span>
+                      <span>·</span>
+                      <Link href={`/programs/${f.program_id}`} onClick={e => e.stopPropagation()} style={{ color: '#94a3b8', textDecoration: 'none' }}>
+                        {f.program_code && `#${f.program_code} · `}{f.program_title}
+                      </Link>
+                      {scope === 'all' && f.uploaded_by_name && (
+                        <>
+                          <span>·</span>
+                          <span style={{ color: '#00ABAF' }}>👤 {f.uploaded_by_name}</span>
+                        </>
+                      )}
+                      {f.source === 'import' && f.total_rows != null && (
+                        <>
+                          <span>·</span>
+                          <span style={{ color: '#10B981' }}>{f.inserted_rows}/{f.total_rows} صف</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#64748b', minWidth: 60, textAlign: 'left' }}>{fmtSize(f.size_bytes)}</div>
+                  <div style={{ fontSize: 11, color: '#64748b', minWidth: 90, textAlign: 'left' }}>{fmtDate(f.uploaded_at)}</div>
+                  <div style={{ color: '#00ABAF', fontSize: 16, padding: '4px 8px' }}>↓</div>
+                </a>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Kpi({ label, v, color }: { label: string; v: number | string; color: string }) {
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 14 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color, lineHeight: 1 }}>{v}</div>
+      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>{label}</div>
+    </div>
+  );
+}

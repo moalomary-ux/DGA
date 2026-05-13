@@ -1,0 +1,1092 @@
+'use client';
+import { useState, useEffect, useRef } from 'react';
+
+const STORAGE_KEY = 'qudratok-personal-widgets-v2';
+
+type Widget = { id: string; colSpan: number; rowSpan: number; order: number };
+
+const DEFAULT_WIDGETS: Widget[] = [
+  { id: 'greeting', colSpan: 12, rowSpan: 5, order: 1 },
+  { id: 'stats',    colSpan: 12, rowSpan: 2, order: 2 },
+  { id: 'news',     colSpan: 12, rowSpan: 3, order: 4 },
+  { id: 'aichat',   colSpan: 8,  rowSpan: 7, order: 5 },
+  { id: 'tasks',    colSpan: 4,  rowSpan: 7, order: 6 },
+  { id: 'programs', colSpan: 8,  rowSpan: 5, order: 7 },
+  { id: 'upcoming', colSpan: 4,  rowSpan: 5, order: 8 },
+];
+
+const TITLES: Record<string, string> = {
+  greeting: 'ترحيب', stats: 'إحصائيات', info: 'معلومات اليوم', news: 'آخر الأخبار التقنية',
+  aichat: 'المساعد الذكي', tasks: 'مهامي', programs: 'برامجي', upcoming: 'القادم',
+};
+const ACCENTS: Record<string, string> = {
+  greeting: '#00ABAF', stats: '#00CBEC', info: '#FF9300', news: '#6F4B98',
+  aichat: 'var(--primary)', tasks: '#D7002C', programs: '#00A777', upcoming: '#6F4B98',
+};
+
+type Prayer = { name: string; time: string; en?: string };
+type DataShape = {
+  user: { name: string; email?: string; initials?: string };
+  stats: { messages?: number; programs?: number; tasks?: number; nominations?: number };
+  myTasks: Array<{ id: number | string; title: string; program?: string }>;
+  upcoming: Array<{ id: number | string; title_ar?: string; title?: string; start_date?: string }>;
+  myPrograms: Array<{ id: number | string; title_ar?: string; title?: string; progress?: number; status?: string; code?: string }>;
+  weather?: { ok?: boolean; city?: string; current?: { temp?: number; desc?: string; is_day?: boolean; code?: number }; forecast?: any[] };
+  prayer?: { ok?: boolean; city?: string; hijri?: { day?: string; month?: { ar?: string; en?: string }; year?: string }; gregorian?: { day?: string; month?: { en?: string; ar?: string }; year?: string; weekday?: { en?: string } }; prayers?: Prayer[] };
+  news?: Array<{ title: string; link?: string; source?: string; pubDate?: string; category?: string; label?: string; color?: string }>;
+};
+
+const DEFAULT_DATA: DataShape = {
+  user: { name: 'محمد' },
+  stats: { messages: 0, programs: 0, tasks: 0, nominations: 0 },
+  myTasks: [], upcoming: [], myPrograms: [],
+};
+
+export default function PersonalPage() {
+  const [widgets, setWidgets] = useState<Widget[]>(DEFAULT_WIDGETS);
+  const [editMode, setEditMode] = useState(false);
+  const [data, setData] = useState<DataShape>(DEFAULT_DATA);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const savedIds = new Set(parsed.map((w: Widget) => w.id));
+          const missing = DEFAULT_WIDGETS.filter((w) => !savedIds.has(w.id));
+          if (missing.length > 0) {
+            const maxOrder = Math.max(...parsed.map((w: Widget) => w.order), 0);
+            const extras = missing.map((w: Widget, i: number) => ({ ...w, order: maxOrder + 1 + i }));
+            setWidgets([...parsed, ...extras]);
+          } else {
+            setWidgets(parsed);
+          }
+        }
+      }
+    } catch {}
+    fetch('/api/home/data').then((r) => r.json()).then((d) => { if (d && d.ok) setData((p) => ({ ...p, ...d })); }).catch(() => {});
+    fetch('/api/home/weather').then((r) => r.json()).then((d) => { if (d && d.ok) setData((p) => ({ ...p, weather: d })); }).catch(() => {});
+    fetch('/api/home/prayer').then((r) => r.json()).then((d) => { if (d && d.ok) setData((p) => ({ ...p, prayer: d })); }).catch(() => {});
+    fetch('/api/home/news').then((r) => r.json()).then((d) => { if (d && d.ok) setData((p) => ({ ...p, news: d.items || [] })); }).catch(() => {});
+    fetch('/api/home/wisdom').then((r) => r.json()).then((d) => { if (d && d.ok) setData((p) => ({ ...p, wisdom: d.wisdom })); }).catch(() => {});
+    fetch('/api/tasks').then((r) => r.json()).then((d) => {
+      if (d && d.ok) {
+        const allTasks = (d.tasks || []).map((t: any) => ({
+          id: t.assignment_id, title: t.title_ar, program: t.role_label, program_id: t.program_id,
+        }));
+        const now = new Date();
+        const week = new Date(now.getTime() + 7 * 86400000);
+        const upcomingTasks = (d.tasks || []).filter((t: any) => {
+          if (!t.end_date || t.status === 'closed') return false;
+          const due = new Date(t.end_date);
+          return due >= now && due <= week;
+        }).map((t: any) => ({
+          id: t.program_id, title_ar: t.title_ar, start_date: t.end_date,
+        }));
+        setData((p) => ({
+          ...p,
+          myTasks: allTasks,
+          upcoming: upcomingTasks,
+          stats: { ...(p.stats || {}), tasks: d.stats?.active || 0 },
+        }));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const save = (next: Widget[]) => {
+    setWidgets(next);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+  };
+
+  const updateW = (id: string, change: Partial<Widget>) => {
+    save(widgets.map((w) => (w.id === id ? { ...w, ...change } : w)));
+  };
+
+  const moveOrder = (id: string, dir: 'up' | 'down') => {
+    const sorted = [...widgets].sort((a, b) => a.order - b.order);
+    const idx = sorted.findIndex((w) => w.id === id);
+    if (idx === -1) return;
+    const target = dir === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= sorted.length) return;
+    const a = sorted[idx], b = sorted[target];
+    const tmpOrder = a.order; a.order = b.order; b.order = tmpOrder;
+    save(sorted);
+  };
+
+  const reset = () => {
+    if (typeof window !== 'undefined' && window.confirm('استعادة التخطيط الافتراضي؟')) save(DEFAULT_WIDGETS);
+  };
+
+  const pageStyle: React.CSSProperties = { padding: '16px 24px 80px', background: 'var(--bg)', minHeight: '100vh' };
+  const topBarStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, gap: 12 };
+
+  const editBtnStyle: React.CSSProperties = {
+    padding: '8px 16px',
+    background: editMode ? 'linear-gradient(135deg, #10B981, #059669)' : 'var(--surface)',
+    color: editMode ? '#fff' : 'var(--text)',
+    border: `1px solid ${editMode ? '#059669' : 'color-mix(in srgb, var(--text) 15%, transparent)'}`,
+    borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  };
+
+  const resetBtnStyle: React.CSSProperties = {
+    padding: '8px 16px', background: 'var(--surface)', color: 'var(--text)',
+    border: '1px solid color-mix(in srgb, var(--text) 15%, transparent)',
+    borderRadius: 10, fontSize: 13, cursor: 'pointer',
+  };
+
+  const hintStyle: React.CSSProperties = {
+    padding: '10px 14px',
+    background: 'color-mix(in srgb, #00D1FF 8%, transparent)',
+    border: '1px dashed color-mix(in srgb, #00D1FF 40%, transparent)',
+    borderRadius: 10, color: 'var(--text)', fontSize: 12, marginBottom: 12,
+  };
+
+  const gridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(12, 1fr)',
+    gridAutoRows: '60px',
+    gap: 12,
+  };
+
+  if (!mounted) return <div style={pageStyle}>جاري التحميل...</div>;
+
+  const sortedWidgets = [...widgets].sort((a, b) => a.order - b.order);
+
+  return (
+    <div style={pageStyle}>
+      <div style={topBarStyle}>
+        <div style={{ color: 'var(--text)', fontSize: 14, opacity: 0.7 }}>أهلاً {data.user?.name || ''}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {editMode ? <button onClick={reset} style={resetBtnStyle}>استعادة الافتراضي</button> : null}
+          <button onClick={() => setEditMode(!editMode)} style={editBtnStyle}>{editMode ? 'حفظ ✓' : 'تعديل ✎'}</button>
+        </div>
+      </div>
+
+      {editMode ? <div style={hintStyle}>استخدم أزرار التحكم في كل widget: ⇔ عرض، ⇕ طول، ↑↓ ترتيب. كل تعديل يحفظ تلقائياً.</div> : null}
+
+      <div style={gridStyle}>
+        {sortedWidgets.map((w) => (
+          <div key={w.id} style={{ gridColumn: `span ${w.colSpan}`, gridRow: `span ${w.rowSpan}` }}>
+            <WidgetWrap widget={w} editMode={editMode} onUpdate={updateW} onMove={moveOrder} data={data} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WidgetWrap({ widget, editMode, onUpdate, onMove, data }: { widget: Widget; editMode: boolean; onUpdate: any; onMove: any; data: DataShape }) {
+  const W = widget;
+  const accent = ACCENTS[W.id] || '#00ABAF';
+
+  const wrapStyle: React.CSSProperties = {
+    background: 'var(--surface)',
+    border: editMode ? `2px dashed ${accent}` : '1px solid color-mix(in srgb, var(--text) 8%, transparent)',
+    borderRadius: 14,
+    height: '100%',
+    display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    boxShadow: 'var(--shadow-sm)',
+  };
+
+  const headerStyle: React.CSSProperties = {
+    padding: '8px 14px',
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    background: editMode ? `color-mix(in srgb, ${accent} 8%, var(--surface))` : 'transparent',
+    borderBottom: editMode ? `1px solid color-mix(in srgb, ${accent} 25%, transparent)` : 'none',
+    flexShrink: 0, gap: 8, flexWrap: 'wrap',
+  };
+
+  const ctrlStyle: React.CSSProperties = {
+    width: 26, height: 22, padding: 0,
+    background: 'color-mix(in srgb, var(--text) 8%, transparent)',
+    border: '1px solid color-mix(in srgb, var(--text) 15%, transparent)',
+    borderRadius: 6, color: 'var(--text)', fontSize: 11, cursor: 'pointer', fontWeight: 600,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  };
+
+  const contentStyle: React.CSSProperties = {
+    flex: 1, overflow: 'auto', padding: W.id === 'aichat' ? 0 : 12,
+  };
+
+  return (
+    <div style={wrapStyle}>
+      <div style={headerStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text)', fontSize: 12, fontWeight: 600 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: accent }} />
+          {TITLES[W.id]}
+          {editMode ? <span style={{ marginInlineStart: 8, color: 'var(--text)', opacity: 0.5, fontSize: 10 }}>{W.colSpan}×{W.rowSpan}</span> : null}
+        </div>
+        {editMode ? (
+          <div style={{ display: 'flex', gap: 3 }}>
+            <button onClick={() => onUpdate(W.id, { colSpan: Math.max(2, W.colSpan - 2) })} title="تقليل العرض" style={ctrlStyle}>−⇔</button>
+            <button onClick={() => onUpdate(W.id, { colSpan: Math.min(12, W.colSpan + 2) })} title="زيادة العرض" style={ctrlStyle}>+⇔</button>
+            <button onClick={() => onUpdate(W.id, { rowSpan: Math.max(2, W.rowSpan - 1) })} title="تقليل الطول" style={ctrlStyle}>−⇕</button>
+            <button onClick={() => onUpdate(W.id, { rowSpan: Math.min(15, W.rowSpan + 1) })} title="زيادة الطول" style={ctrlStyle}>+⇕</button>
+            <button onClick={() => onMove(W.id, 'up')} title="فوق" style={ctrlStyle}>↑</button>
+            <button onClick={() => onMove(W.id, 'down')} title="تحت" style={ctrlStyle}>↓</button>
+          </div>
+        ) : null}
+      </div>
+      <div style={contentStyle}>{renderWidget(W.id, data)}</div>
+    </div>
+  );
+}
+
+function renderWidget(id: string, data: DataShape) {
+  if (id === 'greeting') return <GreetingW data={data} />;
+  if (id === 'stats') return <StatsW data={data} />;
+  if (id === 'info') return <InfoW data={data} />;
+  if (id === 'news') return <NewsW data={data} />;
+  if (id === 'aichat') return <MiniChat userName={(data.user?.name || '').split(' ')[0]} />;
+  if (id === 'tasks') return <TasksW data={data} />;
+  if (id === 'programs') return <ProgramsW data={data} />;
+  if (id === 'upcoming') return <UpcomingW data={data} />;
+  return null;
+}
+
+function GreetingW({ data, time }: any) {
+  const safeTime: Date = (time instanceof Date && !isNaN(time.getTime())) ? time : new Date();
+  const hour = safeTime.getHours();
+  const greeting = hour < 12 ? 'صباح الخير' : hour < 17 ? 'طاب يومك' : 'مساء الخير';
+  const fullDisplay = data?.user?.full_name || 'محمد العُمري';
+
+  const safe = (locale: string, opts: any) => {
+    try { return new Intl.DateTimeFormat(locale, opts).format(safeTime); } catch (e) { return ''; }
+  };
+  const timeStr = safe('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  const dayAr   = safe('ar-SA', { weekday: 'long' });
+  const dayEn   = safe('en-US', { weekday: 'long' });
+  const dateAr  = safe('ar-SA', { day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' });
+  const dateEn  = safe('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  let hijri = '';
+  try { hijri = new Intl.DateTimeFormat('ar-SA', { calendar: 'islamic' as any, day: 'numeric', month: 'long', year: 'numeric', numberingSystem: 'latn' }).format(safeTime); } catch (e) {}
+
+  const wisdom = data?.wisdom as { ar: string; en: string } | undefined;
+
+  // === Inline info card data (matches actual API shapes) ===
+  const w: any = data?.weather || {};
+  const pr: any = data?.prayer || {};
+
+  // Weather: { ok, city, current: { temp, desc, code, is_day }, forecast }
+  const tempRaw = w.current?.temp ?? w.temperature ?? w.temp;
+  const weatherTempStr = (tempRaw !== undefined && tempRaw !== null && !isNaN(Number(tempRaw)))
+    ? `${Math.round(Number(tempRaw))}°` : '--°';
+  const weatherCond = w.current?.desc || w.condition_ar || w.condition || '';
+  const weatherCity = w.city || w.location_ar || w.location || 'الرياض';
+
+  // Prayer: { ok, prayers: [{ name, time, en }] } — compute next from current time
+  const prayerArr: any[] = Array.isArray(pr.prayers) ? pr.prayers : [];
+  const nowMins = safeTime.getHours() * 60 + safeTime.getMinutes();
+  const eligible = prayerArr.filter((p: any) => p && p.en !== 'Sunrise');
+  const nextPrayer = eligible.find((p: any) => {
+    if (!p.time) return false;
+    const parts = String(p.time).split(':');
+    const mins = (Number(parts[0]) || 0) * 60 + (Number(parts[1]) || 0);
+    return mins > nowMins;
+  }) || eligible[0] || null;
+  const prayerName = nextPrayer?.name || '—';
+  const prayerTime = nextPrayer?.time || '';
+  
+  // Hijri split: "25 ذو القعدة 1447 هـ" → day="25", rest="ذو القعدة"
+  const hijriMatch = hijri.match(/^(\S+)\s+(.+?)(?:\s+\d+\s*هـ?)?$/);
+  const hijriDay = hijriMatch ? hijriMatch[1] : (hijri.split(' ')[0] || '');
+  const hijriMonth = hijriMatch ? hijriMatch[2].replace(/\s+\d+\s*هـ?$/, '') : '';
+
+  return (
+    <div style={{
+      background: 'var(--grad-hero)',
+      color: '#fff', borderRadius: 14, padding: '20px 24px',
+      height: '100%', position: 'relative', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column', gap: 14,
+    }}>
+      <div style={{ position: 'absolute', top: -60, insetInlineEnd: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: -100, insetInlineStart: -40, width: 220, height: 220, borderRadius: '50%', background: 'rgba(255,255,255,0.05)', pointerEvents: 'none' }} />
+
+      {/* TOP — greeting + name + wisdom | clock + dates */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, position: 'relative', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 260 }}>
+          <div style={{ fontSize: 12, opacity: 0.88, marginBottom: 3, fontWeight: 500 }}>{greeting}</div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap', marginBottom: 4 }}>
+            <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: -0.9, lineHeight: 1.05, flexShrink: 0 }}>{fullDisplay}</div>
+            {wisdom ? (
+              <>
+                <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.30)', minHeight: 72 }} />
+                <div style={{ flex: 1, minWidth: 220, paddingTop: 4 }}>
+                  <div style={{ fontSize: 11, opacity: 0.90, fontWeight: 700, letterSpacing: 1.4, marginBottom: 6, color: '#fff' }}>{'\u2728'} حكمة اليوم</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.4, color: '#fff' }}>{wisdom.ar}</div>
+                  <div style={{ fontSize: 12, opacity: 0.72, fontStyle: 'italic', textAlign: 'right', lineHeight: 1.3, marginTop: 4, unicodeBidi: 'plaintext' }}>{wisdom.en}</div>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+        <div style={{ textAlign: 'left', direction: 'ltr', minWidth: 200 }}>
+          <div style={{
+            fontSize: 40, fontWeight: 800, letterSpacing: -1.5,
+            lineHeight: 1, marginBottom: 10,
+            fontVariantNumeric: 'tabular-nums',
+            textShadow: '0 2px 12px rgba(0,0,0,0.2)',
+          }}>{timeStr || '--:--'}</div>
+          {dayAr ? (
+            <div style={{ fontSize: 13, opacity: 0.95, marginBottom: 3, direction: 'rtl', fontWeight: 700, letterSpacing: -0.2 }}>
+              {dayAr}{dateAr ? <span style={{ opacity: 0.85, fontWeight: 500 }}>، {dateAr}</span> : null}
+            </div>
+          ) : null}
+          {hijri ? (
+            <div style={{ fontSize: 12, opacity: 0.78, direction: 'rtl', fontWeight: 500 }}>
+              {hijri}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* BOTTOM — 3 inline info cards inside same gradient */}
+      <div style={{
+        marginTop: 'auto',
+        paddingTop: 14,
+        borderTop: '1px solid rgba(255,255,255,0.16)',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 12,
+        position: 'relative',
+      }}>
+        <InlineInfo icon={'\u2600\uFE0F'} label={weatherCity} value={weatherTempStr} sub={weatherCond} />
+        <InlineInfo icon={'\u2728'} label="الصلاة القادمة" value={prayerName} sub={prayerTime} />
+        <InlineInfo icon={'\u25C6'} label="التاريخ الهجري" value={hijriDay} sub={hijriMonth} />
+      </div>
+    </div>
+  );
+}
+
+function InlineInfo({ icon, label, value, sub }: any) {
+  const [hover, setHover] = useState(false);
+  return (
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      background: hover ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.10)',
+      border: `1px solid rgba(255,255,255,${hover ? 0.40 : 0.20})`,
+      backdropFilter: 'blur(12px)',
+      borderRadius: 12, padding: '14px 16px',
+      transition: 'all 0.22s',
+      transform: hover ? 'translateY(-3px)' : 'none',
+      boxShadow: hover ? '0 10px 26px rgba(0,0,0,0.22)' : 'none',
+      position: 'relative', overflow: 'hidden', cursor: 'default',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, position: 'relative' }}>
+        <span style={{ fontSize: 16, opacity: hover ? 1 : 0.85, transition: 'opacity 0.22s' }}>{icon}</span>
+        <span style={{ fontSize: 11, color: '#fff', opacity: 0.85, fontWeight: 700, letterSpacing: 0.4 }}>{label}</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap', position: 'relative' }}>
+        <span style={{
+          fontSize: 26, fontWeight: 800, color: '#fff',
+          lineHeight: 1, letterSpacing: -0.6,
+          fontVariantNumeric: 'tabular-nums',
+          textShadow: hover ? '0 0 16px rgba(255,255,255,0.45)' : 'none',
+          transition: 'text-shadow 0.22s',
+        }}>{value || '--'}</span>
+        {sub ? <span style={{
+          fontSize: 22, fontWeight: 600, color: '#fff', opacity: 0.88,
+          lineHeight: 1, letterSpacing: -0.3,
+        }}>{sub}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function StatsW({ data }: { data: DataShape }) {
+  const cards = [
+    { label: 'رسائل', value: data.stats?.messages || 0, color: '#00CBEC' },
+    { label: 'ترشيحات', value: data.stats?.nominations || 0, color: '#FF9300' },
+    { label: 'مهام', value: data.stats?.tasks || 0, color: '#D7002C' },
+    { label: 'برامج', value: data.stats?.programs || 0, color: '#00A777' },
+  ];
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, height: '100%' }}>
+      {cards.map((c) => (
+        <div key={c.label} style={{ background: 'color-mix(in srgb, var(--bg) 50%, transparent)', border: `1px solid color-mix(in srgb, ${c.color} 25%, transparent)`, borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: c.color }}>{c.value}</div>
+          <div style={{ fontSize: 11, color: 'var(--text)', opacity: 0.7, marginTop: 4 }}>{c.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getNextPrayer(prayers?: Prayer[]): Prayer | null {
+  if (!prayers || prayers.length === 0) return null;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  for (const p of prayers) {
+    if (!p.time || !p.time.includes(':')) continue;
+    if (p.en === 'Sunrise') continue;
+    const [hh, mm] = p.time.split(':').map(Number);
+    if ((hh * 60 + mm) > nowMin) return p;
+  }
+  return prayers.find((p) => p.en !== 'Sunrise') || prayers[0];
+}
+
+function hostFromUrl(u?: string): string {
+  if (!u) return '';
+  try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; }
+}
+
+function InfoCard({ icon, label, value, sub, color, onClick }: any) {
+  const [hover, setHover] = useState(false);
+  const [pressed, setPressed] = useState(false);
+  const clickable = !!onClick;
+
+  const valueStr = String(value || '');
+  const valueLen = valueStr.length;
+  const valueFontSize = valueLen <= 4 ? 36 : valueLen <= 7 ? 28 : valueLen <= 11 ? 22 : 18;
+
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => { setHover(false); setPressed(false); }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
+      style={{
+        background: pressed
+          ? `linear-gradient(135deg, color-mix(in srgb, ${color} 36%, transparent), color-mix(in srgb, ${color} 14%, transparent))`
+          : hover
+          ? `linear-gradient(135deg, color-mix(in srgb, ${color} 26%, transparent), color-mix(in srgb, ${color} 9%, transparent))`
+          : `linear-gradient(135deg, color-mix(in srgb, ${color} 12%, transparent), color-mix(in srgb, ${color} 3%, transparent))`,
+        border: `1px solid color-mix(in srgb, ${color} ${hover ? 55 : 22}%, transparent)`,
+        borderRadius: 12,
+        padding: '16px 20px',
+        position: 'relative',
+        overflow: 'hidden',
+        cursor: clickable ? 'pointer' : 'default',
+        transition: 'all 0.22s',
+        transform: pressed ? 'scale(0.97)' : hover ? 'translateY(-2px)' : 'none',
+        boxShadow: hover ? `0 8px 22px color-mix(in srgb, ${color} 26%, transparent)` : 'none',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: 120,
+      }}>
+      <div style={{
+        position: 'absolute', top: -12, insetInlineEnd: -12,
+        width: hover ? 80 : 56, height: hover ? 80 : 56,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, color-mix(in srgb, ${color} ${hover ? 36 : 18}%, transparent), transparent 70%)`,
+        pointerEvents: 'none', transition: 'all 0.3s',
+      }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', marginBottom: 8 }}>
+        <div style={{
+          fontSize: 18,
+          filter: hover ? `drop-shadow(0 0 10px ${color})` : 'none',
+          transition: 'filter 0.22s',
+        }}>{icon}</div>
+        <div style={{ fontSize: 11, color: 'var(--text)', opacity: 0.72, fontWeight: 600, letterSpacing: 0.3 }}>{label}</div>
+      </div>
+
+      <div style={{ position: 'relative', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{
+          fontSize: valueFontSize,
+          fontWeight: 800,
+          color: color,
+          lineHeight: 1.05,
+          letterSpacing: -0.6,
+          marginBottom: 4,
+          fontVariantNumeric: 'tabular-nums',
+          textShadow: hover ? `0 0 20px color-mix(in srgb, ${color} 45%, transparent)` : 'none',
+          transition: 'text-shadow 0.22s, font-size 0.2s',
+        }}>{value}</div>
+        {sub ? <div style={{ fontSize: 12, color: 'var(--text)', opacity: 0.72, fontWeight: 500 }}>{sub}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+function InfoW({ data }: { data: DataShape }) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 60000); return () => clearInterval(t); }, []);
+  const w = data.weather;
+  const pr = data.prayer;
+  const news = data.news || [];
+  const next = getNextPrayer(pr?.prayers);
+  const hijriStr = pr?.hijri?.day ? `${pr.hijri.day} ${pr.hijri.month?.ar || ''}` : '';
+  const gregStr = pr?.gregorian?.day ? `${pr.gregorian.day} ${pr.gregorian.month?.en || ''}` : '';
+  const openLink = (u?: string) => { if (u && typeof window !== 'undefined') window.open(u, '_blank', 'noopener'); };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, height: '100%' }}>
+      <InfoCard
+        label={w?.city || 'الرياض'}
+        value={w?.current?.temp != null ? `${w.current.temp}°` : '—'}
+        sub={w?.current?.desc || 'الطقس'}
+        color="#F59E0B"
+        icon={'\u2600'}
+      />
+      <InfoCard
+        label="الصلاة القادمة"
+        value={next?.name || '—'}
+        sub={next?.time || ''}
+        color="#10B981"
+        icon={'\u2726'}
+      />
+      <InfoCard
+        label="التاريخ"
+        value={hijriStr || gregStr || '—'}
+        sub={gregStr && hijriStr ? gregStr : (pr?.hijri?.year ? `${pr.hijri.year}هـ` : '')}
+        color="#6F4B98"
+        icon={'\u25C8'}
+      />
+    </div>
+  );
+}
+
+function TaskRow({ t }: { t: any }) {
+  const [hover, setHover] = useState(false);
+  const open = () => { if (typeof window !== 'undefined' && t.program_id) window.location.href = `/programs/${t.program_id}`; };
+  return (
+    <div onClick={open} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      background: hover ? 'color-mix(in srgb, #EF4444 14%, transparent)' : 'color-mix(in srgb, var(--bg) 40%, transparent)',
+      border: `1px solid color-mix(in srgb, #EF4444 ${hover ? 45 : 12}%, transparent)`,
+      borderRadius: 8, padding: '8px 12px', cursor: 'pointer',
+      transition: 'all 0.18s', transform: hover ? 'translateX(3px)' : 'none',
+    }}>
+      <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{t.title}</div>
+      {t.program ? <div style={{ fontSize: 11, opacity: 0.7, color: '#D7002C', fontWeight: 600 }}>{t.program}</div> : null}
+    </div>
+  );
+}
+
+function TasksW({ data }: { data: DataShape }) {
+  const tasks = data.myTasks || [];
+  if (tasks.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text)', opacity: 0.5, fontSize: 13, padding: 20, flex: 1 }}>لا توجد مهام</div>
+        <a href="/tasks" style={{ fontSize: 11, color: '#D7002C', textAlign: 'center', textDecoration: 'none', fontWeight: 600, padding: 6 }}>افتح صفحة المهام {'←'}</a>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflow: 'auto' }}>
+        {tasks.slice(0, 8).map((t: any) => <TaskRow key={t.id} t={t} />)}
+      </div>
+      <a href="/tasks" style={{ fontSize: 11, color: '#D7002C', textAlign: 'center', textDecoration: 'none', fontWeight: 700, padding: 8, borderTop: '1px solid color-mix(in srgb, var(--text) 8%, transparent)' }}>عرض كل المهام ({tasks.length}) {'←'}</a>
+    </div>
+  );
+}
+
+function ProgramRow({ p }: { p: any }) {
+  const [hover, setHover] = useState(false);
+  const pct = p.progress ?? 0;
+  const open = () => { if (typeof window !== 'undefined' && p.id) window.location.href = `/programs/${p.id}`; };
+  return (
+    <div onClick={open} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      background: hover
+        ? 'linear-gradient(135deg, color-mix(in srgb, #10B981 32%, transparent), color-mix(in srgb, #10B981 14%, transparent))'
+        : 'linear-gradient(135deg, color-mix(in srgb, #10B981 16%, transparent), color-mix(in srgb, #10B981 5%, transparent))',
+      border: `1px solid color-mix(in srgb, #10B981 ${hover ? 60 : 25}%, transparent)`,
+      borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
+      transition: 'all 0.2s', transform: hover ? 'translateY(-2px)' : 'none',
+      boxShadow: hover ? '0 8px 22px color-mix(in srgb, #10B981 32%, transparent)' : 'none',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{ position: 'absolute', top: -8, insetInlineStart: -8, width: 38, height: 38, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, #10B981 35%, transparent), transparent)', pointerEvents: 'none' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center', position: 'relative' }}>
+        <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>
+          {p.title_ar || p.title}
+          {hover ? <span style={{ marginInlineStart: 6, color: '#34D399', fontSize: 11 }}>{'\u2192'}</span> : null}
+        </div>
+        <div style={{ fontSize: 11, color: '#34D399', fontWeight: 700 }}>{pct}%</div>
+      </div>
+      <div style={{ background: 'color-mix(in srgb, var(--text) 10%, transparent)', height: 4, borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+        <div style={{ background: 'linear-gradient(90deg, #10B981, #34D399)', height: '100%', width: `${pct}%`, transition: 'width 0.3s' }} />
+      </div>
+    </div>
+  );
+}
+
+function ProgramsW({ data }: { data: DataShape }) {
+  const progs = data.myPrograms || [];
+  if (progs.length === 0) return <div style={{ textAlign: 'center', color: 'var(--text)', opacity: 0.5, fontSize: 13, padding: 20 }}>لا برامج مسندة</div>;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {progs.slice(0, 8).map((p) => <ProgramRow key={p.id} p={p} />)}
+    </div>
+  );
+}
+
+function UpcomingRow({ it }: { it: any }) {
+  const [hover, setHover] = useState(false);
+  const open = () => { if (typeof window !== 'undefined' && it.id) window.location.href = `/programs/${it.id}`; };
+  let dateLabel = '';
+  if (it.start_date) {
+    try {
+      const d = new Date(it.start_date);
+      const monthAr = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][d.getMonth()];
+      const now = new Date();
+      const diffDays = Math.ceil((d.getTime() - now.getTime()) / 86400000);
+      if (diffDays === 0) dateLabel = 'اليوم';
+      else if (diffDays === 1) dateLabel = 'غداً';
+      else if (diffDays > 1 && diffDays <= 7) dateLabel = `بعد ${diffDays} أيام`;
+      else dateLabel = `${String(d.getDate()).padStart(2,'0')} ${monthAr}`;
+    } catch { dateLabel = it.start_date; }
+  }
+  return (
+    <div onClick={open} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      background: hover
+        ? 'linear-gradient(135deg, color-mix(in srgb, #7C3AED 32%, transparent), color-mix(in srgb, #7C3AED 14%, transparent))'
+        : 'linear-gradient(135deg, color-mix(in srgb, #7C3AED 16%, transparent), color-mix(in srgb, #7C3AED 5%, transparent))',
+      border: `1px solid color-mix(in srgb, #7C3AED ${hover ? 60 : 25}%, transparent)`,
+      borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
+      transition: 'all 0.2s', transform: hover ? 'translateY(-2px)' : 'none',
+      boxShadow: hover ? '0 8px 22px color-mix(in srgb, #7C3AED 32%, transparent)' : 'none',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{ position: 'absolute', top: -8, insetInlineStart: -8, width: 38, height: 38, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, #7C3AED 35%, transparent), transparent)', pointerEvents: 'none' }} />
+      <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, position: 'relative', marginBottom: 4 }}>
+        {it.title_ar || it.title}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+        <div style={{ fontSize: 11, color: '#A78BFA', fontWeight: 700 }}>{dateLabel}</div>
+        {hover ? <span style={{ color: '#A78BFA', fontSize: 12 }}>{'\u2192'}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function UpcomingW({ data }: { data: DataShape }) {
+  const items = data.upcoming || [];
+  if (items.length === 0) return <div style={{ textAlign: 'center', color: 'var(--text)', opacity: 0.5, fontSize: 13, padding: 20 }}>لا مهام قادمة</div>;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {items.slice(0, 8).map((it) => <UpcomingRow key={it.id} it={it} />)}
+    </div>
+  );
+}
+
+function NewsCard({ n }: { n: any }) {
+  const [hover, setHover] = useState(false);
+  const color = n.color || '#00ABAF';
+  const label = n.label || 'خبر';
+  const open = () => { if (n.link && typeof window !== 'undefined') window.open(n.link, '_blank', 'noopener'); };
+  return (
+    <div onClick={open} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} style={{
+      background: hover
+        ? `linear-gradient(135deg, color-mix(in srgb, ${color} 24%, transparent), color-mix(in srgb, ${color} 8%, transparent))`
+        : `linear-gradient(135deg, color-mix(in srgb, ${color} 10%, transparent), color-mix(in srgb, ${color} 3%, transparent))`,
+      border: `1px solid color-mix(in srgb, ${color} ${hover ? 55 : 22}%, transparent)`,
+      borderRadius: 12, padding: 14,
+      cursor: n.link ? 'pointer' : 'default',
+      transition: 'all 0.22s',
+      transform: hover ? 'translateY(-3px)' : 'none',
+      boxShadow: hover ? `0 10px 26px color-mix(in srgb, ${color} 30%, transparent)` : 'none',
+      display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0,
+      position: 'relative', overflow: 'hidden', userSelect: 'none',
+    }}>
+      <div style={{
+        position: 'absolute', top: -14, insetInlineEnd: -14,
+        width: 70, height: 70, borderRadius: '50%',
+        background: `radial-gradient(circle, color-mix(in srgb, ${color} ${hover ? 38 : 18}%, transparent), transparent 70%)`,
+        pointerEvents: 'none', transition: 'all 0.3s',
+      }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, position: 'relative' }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, boxShadow: hover ? `0 0 10px ${color}` : 'none', transition: 'box-shadow 0.2s' }} />
+        <span style={{ fontSize: 10, color, fontWeight: 700, letterSpacing: 0.3 }}>{label}</span>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.5, position: 'relative', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {n.title || '—'}
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--text)', opacity: 0.55, marginTop: 'auto', paddingTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+        <span>{n.source || ''}</span>
+        {n.link ? <span style={{ color }}>{'\u2197'}</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function NewsW({ data }: any) {
+  const items = data.news || [];
+  if (items.length === 0) {
+    return <div style={{ padding: 20, textAlign: 'center', color: 'var(--text)', opacity: 0.5, fontSize: 12 }}>جارٍ تحميل الأخبار...</div>;
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      {items.slice(0, 6).map((n: any, i: number) => <NewsRow key={i} n={n} />)}
+    </div>
+  );
+}
+
+function NewsRow({ n }: any) {
+  const [hover, setHover] = useState(false);
+  return (
+    <a href={n.link} target="_blank" rel="noopener noreferrer"
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'flex', alignItems: 'flex-start', gap: 10,
+        padding: '8px 10px', textDecoration: 'none',
+        background: hover ? 'color-mix(in srgb, #6F4B98 10%, transparent)' : 'transparent',
+        borderRadius: 6, transition: 'all 0.15s', direction: 'ltr',
+      }}>
+      <span style={{
+        width: 7, height: 7, borderRadius: '50%',
+        background: '#6F4B98', marginTop: 7, flexShrink: 0,
+        boxShadow: hover ? '0 0 12px #6F4B98' : 'none',
+        transition: 'box-shadow 0.2s',
+      }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13, color: 'var(--text)', fontWeight: 600, lineHeight: 1.4,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        }}>{n.title}</div>
+        <div style={{ fontSize: 10, color: '#A78BFA', opacity: 0.85, marginTop: 3, fontWeight: 500 }}>{n.source}</div>
+      </div>
+    </a>
+  );
+}
+
+function MiniChat({ userName }: { userName: string }) {
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [input, setInput] = useState('');
+  const [streaming, setStreaming] = useState(false);
+  const [convId, setConvId] = useState<number | null>(null);
+  const [model, setModel] = useState('auto');
+  const [modelOpen, setModelOpen] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const C = {
+    bg: 'var(--surface)',
+    bgAccent: 'var(--surface-2)',
+    bgElevated: 'var(--surface-hover)',
+    border: 'var(--line)',
+    borderStrong: 'var(--line-2)',
+    primary: 'var(--primary)',
+    primaryDark: 'var(--primary-3)',
+    accent: 'var(--accent)',
+    text: 'var(--text)',
+    textMuted: 'var(--text-3)',
+    textDim: 'var(--text-4)',
+  };
+
+  const MODELS = [
+    { id: 'auto', label: 'Auto' },
+    { id: 'gpt-5', label: 'GPT-5' },
+    { id: 'claude', label: 'Claude' },
+    { id: 'gemini', label: 'Gemini' },
+    { id: 'local', label: 'Local' },
+  ];
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, streaming]);
+
+  const send = async (text?: string) => {
+    const msg = (text || input).trim();
+    if (!msg || streaming) return;
+    setInput('');
+    setMessages((m) => [...m, { role: 'user', content: msg }, { role: 'assistant', content: '' }]);
+    setStreaming(true);
+    try {
+      const body: any = { message: msg, model: model === 'auto' ? '__auto__' : model };
+      if (convId) body.conversationId = convId;
+      const res = await fetch('/api/assistant/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error('HTTP ' + res.status + (errText ? ': ' + errText.slice(0, 80) : ''));
+      }
+      if (!res.body) throw new Error('no response');
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let asst = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const events = buf.split('\n\n');
+        buf = events.pop() || '';
+        for (const ev of events) {
+          if (!ev.startsWith('data: ')) continue;
+          try {
+            const d = JSON.parse(ev.slice(6));
+            if (d.type === 'text') {
+              asst += d.text;
+              setMessages((m) => {
+                const copy = [...m];
+                copy[copy.length - 1] = { role: 'assistant', content: asst };
+                return copy;
+              });
+            } else if (d.type === 'meta' && d.conversationId) {
+              setConvId(d.conversationId);
+            }
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      setMessages((m) => {
+        const copy = [...m];
+        copy[copy.length - 1] = { role: 'assistant', content: 'خطأ: ' + (e?.message || '') };
+        return copy;
+      });
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  const newChat = () => { setMessages([]); setConvId(null); setInput(''); };
+
+  const chips = ['لخص التقرير', 'أنشئ دراسة', 'اقترح أفكار', 'تحليل البيانات'];
+  const isDisabled = streaming || !input.trim();
+  const modelLabel = MODELS.find((m) => m.id === model)?.label || 'Auto';
+
+  const containerStyle: React.CSSProperties = {
+    margin: '0 0 16px 0',
+    width: '100%',
+    height: 420,
+    background: C.bg,
+    border: `1px solid ${C.border}`,
+    borderRadius: 20,
+    boxShadow: '0 0 40px var(--bg-2), 0 12px 32px rgba(0, 0, 0, 0.45)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+  };
+
+  const headerStyle: React.CSSProperties = {
+    padding: '12px 16px',
+    background: `linear-gradient(180deg, ${C.bgAccent}, ${C.bg})`,
+    borderBottom: `1px solid ${C.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  };
+
+  const avatarStyle: React.CSSProperties = {
+    width: 36, height: 36, borderRadius: '50%',
+    background: `radial-gradient(circle at 30% 30%, ${C.primary}, ${C.primaryDark})`,
+    boxShadow: '0 0 12px rgba(0, 209, 255, 0.45)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#001122', fontWeight: 800, fontSize: 16, flexShrink: 0,
+  };
+
+  const ghostBtn: React.CSSProperties = {
+    width: 32, height: 32, borderRadius: 8,
+    background: 'transparent',
+    border: `1px solid ${C.border}`,
+    color: C.textMuted,
+    fontSize: 13,
+    cursor: 'pointer',
+    flexShrink: 0,
+  };
+
+  const topGlowStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0, left: '20%', right: '20%',
+    height: 1,
+    background: `linear-gradient(90deg, transparent, ${C.primary}, transparent)`,
+    opacity: 0.5,
+    pointerEvents: 'none',
+  };
+
+  const titleStyle: React.CSSProperties = {
+    color: C.text, fontWeight: 700, fontSize: 14,
+    display: 'flex', alignItems: 'center', gap: 6,
+  };
+
+  const onlineStyle: React.CSSProperties = {
+    width: 7, height: 7, borderRadius: '50%',
+    background: C.online,
+    boxShadow: `0 0 8px ${C.online}`,
+    display: 'inline-block',
+  };
+
+  const modelBtnStyle: React.CSSProperties = {
+    padding: '5px 10px',
+    background: 'var(--primary-bg)',
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    color: C.text,
+    fontSize: 11,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+  };
+
+  const dropdownStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 'calc(100% + 4px)',
+    insetInlineEnd: 0,
+    background: C.bgElevated,
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    padding: 4,
+    minWidth: 110,
+    zIndex: 20,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+  };
+
+  const openFullStyle: React.CSSProperties = {
+    width: 28, height: 28,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'transparent',
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    color: C.textMuted,
+    textDecoration: 'none',
+    fontSize: 12,
+    flexShrink: 0,
+  };
+
+  const messagesAreaStyle: React.CSSProperties = {
+    flex: 1, padding: '14px 16px', overflow: 'auto', background: C.bg,
+    display: 'flex', flexDirection: 'column', gap: 10,
+  };
+
+  const emptyStateStyle: React.CSSProperties = {
+    flex: 1, display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    textAlign: 'center', color: C.textMuted, fontSize: 13, padding: 16,
+  };
+
+  const emptyIconStyle: React.CSSProperties = {
+    width: 56, height: 56, borderRadius: '50%',
+    background: 'radial-gradient(circle, var(--primary-bg-2), transparent)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 28, color: C.primary, marginBottom: 10,
+  };
+
+  const chipsStyle: React.CSSProperties = {
+    padding: '8px 16px',
+    borderTop: `1px solid ${C.border}`,
+    background: C.bgAccent,
+    display: 'flex', gap: 6, flexWrap: 'wrap',
+  };
+
+  const chipStyle: React.CSSProperties = {
+    padding: '5px 10px',
+    background: 'var(--primary-bg-2)',
+    border: `1px solid ${C.border}`,
+    borderRadius: 100,
+    color: C.textMuted,
+    fontSize: 11,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  };
+
+  const inputFormStyle: React.CSSProperties = {
+    padding: '10px 12px',
+    background: C.bgAccent,
+    borderTop: `1px solid ${C.border}`,
+    display: 'flex', gap: 6, alignItems: 'center',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    flex: 1, padding: '8px 12px',
+    background: 'var(--primary-bg-2)',
+    border: `1px solid ${C.border}`,
+    borderRadius: 10,
+    color: C.text, fontSize: 13, outline: 'none',
+  };
+
+  const sendBtnStyle: React.CSSProperties = {
+    width: 36, height: 36, borderRadius: 10,
+    background: isDisabled ? 'var(--primary-bg-2)' : `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`,
+    border: 'none',
+    color: isDisabled ? C.textMuted : '#001122',
+    fontWeight: 800, fontSize: 14,
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+    boxShadow: isDisabled ? 'none' : '0 0 12px var(--primary-bg-2)',
+    flexShrink: 0,
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={topGlowStyle} />
+      <div style={headerStyle}>
+        <div style={avatarStyle}>{'\u2726'}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={titleStyle}>
+            المساعد الذكي
+            <span style={onlineStyle} />
+          </div>
+          <div style={{ color: C.textMuted, fontSize: 11 }}>
+            {streaming ? 'يكتب الآن...' : 'متصل · جاهز'}
+          </div>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <button type="button" onClick={() => setModelOpen((o) => !o)} style={modelBtnStyle}>
+            {modelLabel}
+            <span style={{ fontSize: 8 }}>{'\u25BE'}</span>
+          </button>
+          {modelOpen ? (
+            <div style={dropdownStyle}>
+              {MODELS.map((mm) => (
+                <button key={mm.id} type="button" onClick={() => { setModel(mm.id); setModelOpen(false); }} style={{
+                  display: 'block', width: '100%', padding: '6px 10px',
+                  background: mm.id === model ? 'var(--primary-bg-2)' : 'transparent',
+                  border: 'none', borderRadius: 6,
+                  color: mm.id === model ? C.primary : C.textMuted,
+                  fontSize: 12, cursor: 'pointer', textAlign: 'right',
+                }}>{mm.label}</button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <a href={convId ? `/assistant?cid=${convId}` : '/assistant'} title="افتح كامل" style={openFullStyle}>{'\u2197'}</a>
+      </div>
+
+      <div ref={bodyRef} style={messagesAreaStyle}>
+        {messages.length === 0 ? (
+          <div style={emptyStateStyle}>
+            <div style={emptyIconStyle}>{'\u2726'}</div>
+            <div style={{ color: C.text, fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+              أهلاً {userName}
+            </div>
+            <div style={{ fontSize: 12 }}>اسألني عن البرامج، الفريق، أو الترشيحات</div>
+          </div>
+        ) : (
+          messages.map((m, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-start' : 'flex-end' }}>
+              <div style={{
+                background: m.role === 'user' ? `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})` : 'var(--bg-2)',
+                border: m.role === 'user' ? 'none' : `1px solid ${C.border}`,
+                padding: '8px 12px',
+                borderRadius: m.role === 'user' ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+                color: m.role === 'user' ? '#001122' : C.text,
+                fontSize: 13, maxWidth: '78%',
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                boxShadow: m.role === 'user' ? '0 2px 10px var(--primary-bg-2)' : 'none',
+                fontWeight: m.role === 'user' ? 600 : 400, lineHeight: 1.55,
+              }}>
+                {m.content || (streaming && i === messages.length - 1 ? '...' : '')}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {messages.length === 0 ? (
+        <div style={chipsStyle}>
+          {chips.map((c) => (
+            <button key={c} type="button" onClick={() => send(c)} style={chipStyle}>{c}</button>
+          ))}
+        </div>
+      ) : null}
+
+      <form onSubmit={(e) => { e.preventDefault(); send(); }} style={inputFormStyle}>
+        <button type="button" onClick={newChat} title="محادثة جديدة" style={ghostBtn}>{'\u21BB'}</button>
+        <button type="button" title="رفع ملف" style={ghostBtn}>{'\uD83D\uDCCE'}</button>
+        <button type="button" title="صوت" style={ghostBtn}>{'\uD83C\uDFA4'}</button>
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="اكتب سؤالك..." disabled={streaming} autoComplete="off" style={inputStyle} />
+        <button type="submit" disabled={isDisabled} title="إرسال" style={sendBtnStyle}>{streaming ? '...' : '\u2192'}</button>
+      </form>
+    </div>
+  );
+}

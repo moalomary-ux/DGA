@@ -1,0 +1,289 @@
+"use client";
+import { useEffect, useState, useMemo } from "react";
+import { useRouter, useParams } from "next/navigation";
+import QIcon, { fmt, STATUS_META } from "@/components/QIcon";
+
+const KIND_META: Record<string, { ar: string; color: string; icon: string }> = {
+  local: { ar:"محلي", color:"#3F7DD9", icon:"badge" },
+  international: { ar:"دولي", color:"#7C32C9", icon:"globe" },
+  workshop: { ar:"ورشة عمل", color:"#FF8533", icon:"lightbulb" },
+  virtual: { ar:"ندوة افتراضية", color:"#00ABAF", icon:"rocket" },
+};
+
+const PHASES = [
+  { id:"build", t:"بناء البرنامج والشراكات", en:"BUILD",   color:"#7C32C9" },
+  { id:"run",   t:"التشغيل والتنفيذ",         en:"OPERATE", color:"#00ABAF" },
+  { id:"close", t:"الإغلاق وبناء الأثر",       en:"CLOSE",   color:"#FF8533" },
+];
+
+const STEPS = [
+  { id:1,  ph:"build", t:"البحث والاستكشاف", icon:"search", tasks:["رصد الاحتياجات","متابعة التقارير","تسجيل الفكرة","تحديد الأهداف","توثيق الفكرة"] },
+  { id:2,  ph:"build", t:"اختيار الشريك المناسب", icon:"handshake", tasks:["تحديد نوع الشريك","مراجعة العرض","مقارنة العروض","اختيار التعاون","الاتفاق"] },
+  { id:3,  ph:"build", t:"التفاوض والاعتماد", icon:"check2", tasks:["متابعة التفاوض","رفع العرض","أخذ الموافقة","توثيق الاتفاق","تثبيت المواعيد"] },
+  { id:4,  ph:"run",   t:"تجهيز البرنامج", icon:"book", tasks:["كتابة الوصف","تصميم البروشور","إنشاء صفحة التسجيل","تجهيز الدعوات","إعداد الإطلاق"] },
+  { id:5,  ph:"run",   t:"إرسال الدعوات والاستقبال", icon:"mail", tasks:["إرسال الدعوات","نشر البروشور","الرد على الاستفسارات","متابعة الإقبال"] },
+  { id:6,  ph:"run",   t:"الفرز والقبول", icon:"inbox", tasks:["مراجعة الطلبات","تطبيق المعايير","اعتماد المقبولين","إعداد الانتظار"] },
+  { id:7,  ph:"run",   t:"التأكيد والترتيبات", icon:"check2", tasks:["إرسال إشعارات القبول","طلب تأكيد الحضور","متابعة غير المؤكدين","استبدال المقاعد"] },
+  { id:8,  ph:"run",   t:"التجهيز النهائي", icon:"briefcase", tasks:["تأكيد الموقع","إرسال الدليل","تجهيز المواد","عقد لقاء تعريفي"] },
+  { id:9,  ph:"close", t:"التنفيذ والمتابعة", icon:"rocket", tasks:["تسجيل الحضور","متابعة السير","معالجة الملاحظات","استبيان يومي"] },
+  { id:10, ph:"close", t:"التقييم الختامي", icon:"star", tasks:["إرسال استبيان شامل","تحليل النتائج","تقرير الجودة"] },
+  { id:11, ph:"close", t:"إصدار الشهادات", icon:"award", tasks:["إصدار الشهادات","توثيق الحضور","أرشفة المواد"] },
+  { id:12, ph:"close", t:"تقرير البرنامج", icon:"chart", tasks:["التقرير الختامي","أبرز النتائج","مشاركة التقرير"] },
+  { id:13, ph:"close", t:"مجتمع الخبراء", icon:"users", tasks:["حصر المتميزين","بناء قاعدة خبراء","استقطاب الفرص","بناء علاقات"] },
+];
+
+const STATUS_TO_STEP: Record<string, number> = { ideation:1, development:4, review:4, registration:5, execution:9, closed:13 };
+
+interface Pgm { id: number; code: string | null; title_ar: string; title_en?: string | null; provider: string | null; status: string | null; program_type: string | null; category: string | null; start_date: string | null; end_date: string | null; capacity: number | null; enrolled_count: number | null; total_attendees: number; completed_attendees: number; owner_id: number | null; supporter_id: number | null; }
+
+export default function ProgramDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = Number(params?.id);
+  const [data, setData] = useState<{ program: Pgm; attendees: Record<string, unknown>[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState<number>(1);
+  const [taskState, setTaskState] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!id) { setError("معرّف غير صالح"); return; }
+    fetch(`/api/programs/${id}`)
+      .then(async r => {
+        const txt = await r.text();
+        let j; try { j = JSON.parse(txt); } catch { setError(`HTTP ${r.status}: ${txt.slice(0,300)}`); return; }
+        if (j.ok) {
+          setData(j);
+          setActiveStep(STATUS_TO_STEP[j.program?.status || "execution"] || 1);
+        } else setError(`فشل API: ${j.error || "غير معروف"}`);
+      })
+      .catch(e => setError("خطأ شبكة: " + e.message));
+    try { setTaskState(JSON.parse(localStorage.getItem(`q_journey_${id}`) || "{}")); } catch {}
+  }, [id]);
+
+  const isClosed = data?.program?.status === "closed";
+
+  // For closed programs, all tasks count as done
+  const phaseProgress = useMemo(() => PHASES.map(ph => {
+    const steps = STEPS.filter(s => s.ph === ph.id);
+    const totalT = steps.reduce((a, s) => a + s.tasks.length, 0);
+    const doneT = isClosed ? totalT : steps.reduce((a, s) => a + s.tasks.filter((_, ti) => taskState[`${s.id}-${ti}`]).length, 0);
+    return { ...ph, pct: totalT > 0 ? Math.round((doneT/totalT)*100) : 0, doneT, totalT };
+  }), [taskState, isClosed]);
+  const overallProgress = isClosed ? 100 : Math.round(phaseProgress.reduce((a, p) => a + p.pct, 0) / 3);
+
+  if (error) return (
+    <div className="page" style={{padding:30}}>
+      <button className="btn btn-ghost btn-sm" style={{width:"auto",marginBottom:16}} onClick={()=>router.push("/programs")}>
+        <QIcon n="arrowR" size={14}/> العودة للبرامج
+      </button>
+      <div className="card" style={{borderInlineStart:"4px solid #E03A4D"}}>
+        <div className="card-body">
+          <h2 style={{fontSize:18,fontWeight:600,marginBottom:8}}>تعذّر تحميل البرنامج #{id}</h2>
+          <pre style={{background:"var(--bg-2)",padding:12,borderRadius:8,fontSize:12,whiteSpace:"pre-wrap",color:"var(--text-2)"}}>{error}</pre>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!data) return <div className="page" style={{padding:60,textAlign:"center"}}><div className="spin" style={{margin:"0 auto"}}/><div style={{marginTop:16,color:"var(--text-3)"}}>جارٍ التحميل...</div></div>;
+
+  const p = data.program;
+  const km = KIND_META[p.program_type || "local"] || KIND_META.local;
+  const st = STATUS_META[p.status || "execution"] || STATUS_META.execution;
+  const cap = p.capacity || 0;
+  const enr = p.enrolled_count || p.total_attendees || 0;
+  const isPast = p.start_date ? new Date(p.start_date) < new Date() : false;
+
+  const currentStep = STEPS.find(s => s.id === activeStep) || STEPS[0];
+  const currentPhase = PHASES.find(ph => ph.id === currentStep.ph)!;
+
+  return (
+    <div className="page fade-in" dir="rtl">
+      {/* Breadcrumb */}
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,fontSize:12,color:"var(--text-3)"}}>
+        <button onClick={()=>router.push("/dashboard")} style={{background:"none",border:0,color:"var(--text-3)",cursor:"pointer",fontFamily:"inherit"}}>الرئيسية</button>
+        <QIcon n="chevL" size={11}/>
+        <button onClick={()=>router.push("/programs")} style={{background:"none",border:0,color:"var(--text-3)",cursor:"pointer",fontFamily:"inherit"}}>البرامج التدريبية</button>
+        <QIcon n="chevL" size={11}/>
+        <span style={{color:"var(--text)",fontWeight:500}}>{p.code || `#${p.id}`}</span>
+      </div>
+
+      {/* Hero */}
+      <div className="card" style={{
+        background: isClosed ? "linear-gradient(135deg,rgba(148,163,184,0.18),var(--bg-3))" : `linear-gradient(135deg,${km.color}22,var(--bg-3))`,
+        border: `1px solid ${isClosed ? "rgba(148,163,184,0.4)" : km.color+"55"}`,
+        marginBottom:16,
+      }}>
+        <div className="card-body">
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+            <span className="code mono" style={{fontSize:12,color:isClosed?"var(--text-3)":km.color,fontWeight:700}}>{p.code || `#${p.id}`}</span>
+            <span className={`pill ${st.class}`}>{st.ar}</span>
+            <span className="kind-tag" style={{["--kc" as string]:isClosed?"#94A3B8":km.color} as React.CSSProperties}>
+              <QIcon n={km.icon} size={11}/> {km.ar}
+            </span>
+            {isClosed && <span className="pill muted" style={{fontSize:10}}>🔒 مقفل</span>}
+            <span style={{fontSize:11,color:"var(--text-3)",marginInlineStart:"auto"}}>{p.start_date?.slice(0,10) || "—"} → {p.end_date?.slice(0,10) || "—"}</span>
+            <span style={{fontSize:11,color:"var(--text-3)"}}><QIcon n="users" size={11}/> {fmt(enr)}/{cap || "∞"}</span>
+          </div>
+
+          <div style={{display:"flex",alignItems:"center",gap:24,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:280}}>
+              <h1 style={{fontSize:24,fontWeight:700,marginBottom:4}}>{p.title_ar || p.title_en}</h1>
+              <div style={{fontSize:13,color:"var(--text-3)"}}>{p.provider || "بدون مزوّد"}</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{position:"relative",width:90,height:90}}>
+                <svg viewBox="0 0 36 36" style={{transform:"rotate(-90deg)",width:"100%",height:"100%"}}>
+                  <circle cx="18" cy="18" r="15" fill="none" stroke="var(--bg-2)" strokeWidth="3"/>
+                  <circle cx="18" cy="18" r="15" fill="none" stroke={isClosed?"#94A3B8":km.color} strokeWidth="3"
+                          strokeDasharray="94.2" strokeDashoffset={94.2 - (94.2 * overallProgress) / 100}
+                          strokeLinecap="round" style={{transition:"stroke-dashoffset 800ms cubic-bezier(0.4,0,0.2,1)"}}/>
+                </svg>
+                <div style={{position:"absolute",inset:0,display:"grid",placeItems:"center"}}>
+                  <div className="mono" style={{fontSize:18,fontWeight:700}}>{overallProgress}%</div>
+                </div>
+              </div>
+              <div style={{fontSize:10,color:"var(--text-3)",marginTop:4}}>{isClosed?"مكتمل":"الإنجاز"}</div>
+            </div>
+          </div>
+
+          {/* Owner / Supporter */}
+          <div style={{marginTop:18,padding:14,background:"var(--bg-2)",borderRadius:10,border:"1px solid var(--line)"}}>
+            {isPast ? (
+              <div style={{display:"flex",alignItems:"center",gap:10,fontSize:13,color:"var(--text-3)"}}>
+                <QIcon n="lock" size={14}/>
+                <span>📜 برنامج تاريخي — لا يوجد مالك مُعيَّن (الميزة فُعِّلت بعد إنجاز هذا البرنامج)</span>
+              </div>
+            ) : (p.owner_id || p.supporter_id) ? (
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                <div><div style={{fontSize:10,color:"var(--text-3)",marginBottom:4}}>👑 المالك</div><b>{p.owner_id ? `جهة #${p.owner_id}` : "لم يُعيَّن"}</b></div>
+                <div><div style={{fontSize:10,color:"var(--text-3)",marginBottom:4}}>🤝 الداعم</div><b>{p.supporter_id ? `جهة #${p.supporter_id}` : "لم يُعيَّن"}</b></div>
+              </div>
+            ) : (
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,fontSize:13,color:"#FFB020"}}>
+                  <QIcon n="warning" size={14}/>
+                  <span>⚠ لم يُعيَّن مالك أو داعم لهذا البرنامج</span>
+                </div>
+                <button className="btn btn-primary btn-sm" style={{width:"auto"}} onClick={()=>alert("Modal اختيار من جهات الاتصال — قريباً")}>
+                  <QIcon n="user" size={12}/> تعيين الفريق
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Phase progress */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginTop:14}}>
+            {phaseProgress.map(ph => (
+              <div key={ph.id} style={{padding:"10px 12px",background:"var(--bg-2)",borderRadius:10,border:`1px solid ${ph.color}33`,transition:"all 240ms"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:11}}>
+                  <b style={{color:ph.color}}>{ph.t}</b>
+                  <span className="mono">{ph.pct}%</span>
+                </div>
+                <div style={{height:5,background:"var(--bg-3)",borderRadius:99,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${ph.pct}%`,background:ph.color,borderRadius:99,transition:"width 800ms cubic-bezier(0.4,0,0.2,1)"}}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Stages + tasks */}
+      <div className="row r-2-1" style={{margin:0}}>
+        <div className="card">
+          <div className="card-head" style={{borderBottom:`2px solid ${currentPhase.color}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{width:32,height:32,borderRadius:8,background:currentPhase.color,color:"#fff",display:"grid",placeItems:"center",transition:"all 240ms"}}>
+                <QIcon n={currentStep.icon} size={16}/>
+              </div>
+              <div>
+                <div style={{fontSize:11,color:"var(--text-3)",letterSpacing:".05em",fontFamily:"var(--font-en)",fontWeight:700}}>{currentPhase.en} · المرحلة {currentStep.id}</div>
+                <h3 style={{fontSize:16,fontWeight:600}}>{currentStep.t}</h3>
+              </div>
+            </div>
+          </div>
+          <div className="card-body">
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {currentStep.tasks.map((task, ti) => {
+                const k = `${currentStep.id}-${ti}`;
+                const done = isClosed || !!taskState[k];
+                return (
+                  <button key={ti} onClick={()=>{ if(isClosed) return; const next = {...taskState, [k]:!done}; setTaskState(next); try{localStorage.setItem(`q_journey_${id}`, JSON.stringify(next));}catch{} }}
+                          disabled={isClosed}
+                          style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"var(--bg-2)",border:"1px solid var(--line)",borderRadius:8,textAlign:"right",cursor:isClosed?"default":"pointer",width:"100%",color:"var(--text)",transition:"all 200ms"}}>
+                    <span style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${done?"#1CC182":"var(--line-strong)"}`,background:done?"#1CC182":"transparent",display:"grid",placeItems:"center",color:"#fff",flexShrink:0,transition:"all 240ms"}}>
+                      {done && <QIcon n="check" size={11}/>}
+                    </span>
+                    <span style={{flex:1,fontSize:13,textDecoration:done?"line-through":"none",opacity:done?0.65:1,transition:"all 240ms"}}>{task}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-head"><h3>كل المراحل (13)</h3></div>
+          <div className="card-body" style={{padding:8,maxHeight:600,overflowY:"auto"}}>
+            {STEPS.map(s => {
+              const phase = PHASES.find(ph => ph.id === s.ph)!;
+              const isActive = s.id === activeStep;
+              const totalT = s.tasks.length;
+              const doneT = isClosed ? totalT : s.tasks.filter((_, ti) => taskState[`${s.id}-${ti}`]).length;
+              const stepDone = doneT === totalT && totalT > 0;
+              return (
+                <button key={s.id} onClick={()=>setActiveStep(s.id)}
+                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",width:"100%",background:isActive?`${phase.color}22`:"transparent",border:isActive?`1px solid ${phase.color}66`:"1px solid transparent",borderRadius:8,marginBottom:4,textAlign:"right",cursor:"pointer",color:"var(--text)",transition:"all 200ms"}}>
+                  <div style={{width:24,height:24,borderRadius:"50%",background:stepDone?"#1CC182":isActive?phase.color:"var(--bg-2)",color:"#fff",display:"grid",placeItems:"center",fontSize:11,fontWeight:600,flexShrink:0,transition:"all 240ms"}}>
+                    {stepDone ? <QIcon n="check" size={11}/> : s.id}
+                  </div>
+                  <div style={{flex:1,minWidth:0,textAlign:"right"}}>
+                    <div style={{fontSize:12,fontWeight:isActive?600:400,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.t}</div>
+                    <div style={{fontSize:10,color:"var(--text-3)"}} className="mono">{doneT}/{totalT}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick actions row */}
+      <div style={{display:"flex",gap:10,marginTop:16,marginBottom:16,flexWrap:"wrap"}}>
+        <button className="btn btn-ghost btn-sm" style={{width:"auto"}} onClick={()=>router.push("/nominations")}>
+          <QIcon n="inbox" size={12}/> الترشيحات
+        </button>
+        <button className="btn btn-ghost btn-sm" style={{width:"auto"}} onClick={()=>router.push("/calendar")}>
+          <QIcon n="calendar" size={12}/> التقويم
+        </button>
+        <button className="btn btn-ghost btn-sm" style={{width:"auto"}} onClick={()=>router.push("/reports")}>
+          <QIcon n="chart" size={12}/> التقارير
+        </button>
+      </div>
+
+      {/* Attendees */}
+      <div className="card">
+        <div className="card-head">
+          <h3>المتدربون <span className="mono" style={{opacity:.5,marginInlineStart:6}}>({data.attendees.length})</span></h3>
+        </div>
+        <div className="card-body tight">
+          <table className="tbl">
+            <thead><tr><th>الرقم</th><th>الحالة</th><th>التقييم</th><th>تاريخ الحضور</th></tr></thead>
+            <tbody>
+              {data.attendees.slice(0, 30).map((a: Record<string, unknown>) => (
+                <tr key={a.id as number}>
+                  <td className="mono" style={{fontSize:11,color:"var(--text-3)"}}>#{a.person_id as number}</td>
+                  <td>{a.completed ? <span className="pill success">مكتمل</span> : <span className="pill warning">قيد التنفيذ</span>}</td>
+                  <td className="mono" style={{fontSize:11}}>{a.user_rating ? `★ ${a.user_rating}` : "—"}</td>
+                  <td className="mono" style={{fontSize:11,color:"var(--text-3)"}}>{(a.attendance_date as string)?.slice(0,10) || "—"}</td>
+                </tr>
+              ))}
+              {data.attendees.length === 0 && <tr><td colSpan={4} style={{textAlign:"center",padding:30,color:"var(--text-3)"}}>لا يوجد متدربون</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

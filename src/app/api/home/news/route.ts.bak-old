@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 1800;
+
+type Item = { title: string; link: string; pubDate?: string };
+
+function decodeEntities(s: string): string {
+  return s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'");
+}
+
+async function fetchRss(url: string): Promise<Item[]> {
+  try {
+    const r = await fetch(url, { next: { revalidate: 1800 }, signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return [];
+    const body = await r.text();
+    const items: Item[] = [];
+    const re = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(body)) !== null && items.length < 5) {
+      const part = m[1];
+      const t = part.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
+      const l = part.match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i);
+      const d = part.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
+      if (t) {
+        const title = decodeEntities(t[1].trim()).replace(/<[^>]+>/g, '').trim();
+        const link = l ? l[1].trim() : '';
+        if (title && link) items.push({ title, link, pubDate: d?.[1].trim() });
+      }
+    }
+    return items;
+  } catch { return []; }
+}
+
+const SOURCES = [
+  { category: 'politics', label: 'سياسة', color: '#EF4444', url: 'https://feeds.bbci.co.uk/arabic/middleeast/rss.xml' },
+  { category: 'economy',  label: 'اقتصاد', color: '#10B981', url: 'https://feeds.bbci.co.uk/arabic/business/rss.xml' },
+  { category: 'tech',     label: 'تقنية وذكاء اصطناعي', color: '#8B5CF6', url: 'https://feeds.bbci.co.uk/arabic/scitech/rss.xml' },
+];
+
+export async function GET(_req: NextRequest) {
+  try {
+    const results = await Promise.all(SOURCES.map(async (s) => {
+      const items = await fetchRss(s.url);
+      const top = items[0];
+      return {
+        category: s.category,
+        label: s.label,
+        color: s.color,
+        source: 'BBC العربية',
+        title: top?.title || '—',
+        link: top?.link || '',
+        pubDate: top?.pubDate || '',
+      };
+    }));
+    return NextResponse.json({ ok: true, items: results });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: (e as Error).message, items: [] }, { status: 500 });
+  }
+}

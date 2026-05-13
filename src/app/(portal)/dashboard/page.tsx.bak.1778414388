@@ -1,0 +1,17 @@
+import { db } from '@/lib/db';
+import { getSession } from '@/lib/auth';
+import { getTenantFromHeaders } from '@/lib/utils';
+import { OmaryDashboard } from './omary-dashboard';
+import { QtechDashboard } from './qtech-dashboard';
+import { AdviceDashboard } from './advice-dashboard';
+
+export const dynamic = 'force-dynamic';
+
+export default async function DashboardPage() {
+  const session = await getSession();
+  const tenant = await getTenantFromHeaders();
+
+  if (tenant.id === 'qtech')  return <QtechDashboard session={session} tenant={tenant} />;
+  if (tenant.id === 'advice') return <AdviceDashboard session={session} tenant={tenant} />;
+  return <OmaryDashboard session={session} tenant={tenant} />;
+}

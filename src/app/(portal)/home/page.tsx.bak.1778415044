@@ -1,0 +1,450 @@
+'use client';
+
+import { useEffect, useState, useRef, useCallback } from 'react';
+import Link from 'next/link';
+import {
+  Sparkles, Send, Plus, Sun, Moon, Cloud, CloudRain, Calendar as CalIcon,
+  Users, BookOpen, Inbox, ChevronRight, Bot, BarChart3, Lightbulb, ListChecks,
+  Rocket, Globe, Loader2, ChevronDown, ExternalLink, TrendingUp, Trophy, Flag, Cpu,
+} from 'lucide-react';
+
+// ═══════════════════ Types ═══════════════════
+interface HomeData {
+  user: { name: string; initials: string; email: string };
+  myPrograms: { id: number; title_ar: string; code: string | null; provider: string | null; start_date: string | null; capacity: number | null; enrolled_count: number | null; status: string | null; attendees: number; }[];
+  upcoming: { id: number; title_ar: string; code: string | null; start_date: string; provider: string | null }[];
+  myTasks: { id: string; title: string; due: string; priority: string; program: string | null; done: boolean }[];
+  stats: { programs_count: number; tasks_count: number; pending_nominations: number; inbox_count: number; total_programs: number; total_orgs: number; total_people: number; };
+}
+interface WeatherData { ok: boolean; city: string; current: { temp: number; desc: string; is_day: boolean }; forecast: { date: string; max: number; min: number; label: string }[]; }
+interface PrayerData { ok: boolean; city: string; method: string; hijri: { date: string; month: { ar: string }; day: string }; prayers: { name: string; time: string; en: string }[]; }
+interface ChatMsg { role: 'user' | 'assistant'; content: string; model?: string; }
+
+// ═══════════════════ Constants ═══════════════════
+const MODELS = [
+  { id: 'claude-sonnet', name: 'Claude Sonnet 4.5', tag: 'الافتراضي', desc: 'متوازن — للأعمال اليومية' },
+  { id: 'claude-opus', name: 'Claude Opus 4.5', tag: 'الأذكى', desc: 'تحليل عميق' },
+  { id: 'claude-haiku', name: 'Claude Haiku 4.5', tag: 'السريع', desc: 'إجابات فورية' },
+];
+const SUGGESTIONS = ['كم برنامجاً نشطاً عندي؟','لخّص ترشيحات اليوم','اكتب إيميل ترحيب للمتدربين','اقترح موعد ورشة قادمة'];
+
+const STATUS_LABELS: Record<string, { ar: string; color: string }> = {
+  execution: { ar: 'قيد التنفيذ', color: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' },
+  registration: { ar: 'فتح التسجيل', color: 'bg-blue-500/15 text-blue-400 border border-blue-500/30' },
+  development: { ar: 'تجهيز', color: 'bg-amber-500/15 text-amber-400 border border-amber-500/30' },
+  review: { ar: 'مراجعة', color: 'bg-purple-500/15 text-purple-400 border border-purple-500/30' },
+  closed: { ar: 'مغلق', color: 'bg-slate-500/15 text-slate-400 border border-slate-500/30' },
+};
+
+// ═══════════════════ Component ═══════════════════
+export default function HomePage() {
+  const [data, setData] = useState<HomeData | null>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [prayer, setPrayer] = useState<PrayerData | null>(null);
+  const [news, setNews] = useState<{ category: string; title: string; source: string; url: string; time: string; icon: string; color: string }[]>([]);
+  const [time, setTime] = useState(new Date());
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatBusy, setChatBusy] = useState(false);
+  const [model, setModel] = useState('claude-sonnet');
+  const [modelOpen, setModelOpen] = useState(false);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/api/home/data').then(r => r.json()).then(d => { if (d.ok) setData(d); });
+    fetch('/api/home/weather').then(r => r.json()).then(d => { if (d.ok) setWeather(d); });
+    fetch('/api/home/prayer').then(r => r.json()).then(d => { if (d.ok) setPrayer(d); });
+    fetch('/api/home/news').then(r => r.json()).then(d => { if (d.ok) setNews(d.items); });
+  }, []);
+  useEffect(() => { const t = setInterval(() => setTime(new Date()), 60000); return () => clearInterval(t); }, []);
+  useEffect(() => { chatBodyRef.current?.scrollTo({ top: chatBodyRef.current.scrollHeight, behavior: 'smooth' }); }, [chat, chatBusy]);
+
+  const h = time.getHours();
+  const greet = h < 5 ? 'مساء الخير' : h < 12 ? 'صباح الخير' : h < 18 ? 'طاب يومك' : 'مساء الخير';
+  const dayName = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'][time.getDay()];
+  const monthName = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'][time.getMonth()];
+  const hh = String(time.getHours()).padStart(2, '0');
+  const mm = String(time.getMinutes()).padStart(2, '0');
+
+  const nowMin = time.getHours() * 60 + time.getMinutes();
+  const prayerData = prayer?.prayers || [];
+  const prayerMins = prayerData.map(p => { const [hh, mm] = p.time.split(':').map(Number); return hh * 60 + mm; });
+  let nextIdx = prayerMins.findIndex(m => m > nowMin);
+  if (nextIdx === -1) nextIdx = 0;
+  const nextPrayer = prayerData[nextIdx];
+  const minsTo = nextPrayer ? (nextIdx === 0 ? 1440 - nowMin + prayerMins[0] : prayerMins[nextIdx] - nowMin) : 0;
+  const hToNext = Math.floor(minsTo / 60), mToNext = minsTo % 60;
+
+  const sendChat = useCallback(async (text?: string) => {
+    const msg = (text || chatInput).trim();
+    if (!msg || chatBusy) return;
+    setChat(c => [...c, { role: 'user', content: msg }]);
+    setChatInput('');
+    setChatBusy(true);
+    try {
+      const r = await fetch('/api/home/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, model }) });
+      const d = await r.json();
+      setChat(c => [...c, { role: 'assistant', content: d.ok ? d.reply : `خطأ: ${d.error || 'تعذّر الاتصال'}`, model: d.ok ? (d.model || MODELS.find(m => m.id === model)?.name) : undefined }]);
+    } catch { setChat(c => [...c, { role: 'assistant', content: 'تعذّر الاتصال بالنموذج. حاول مرة أخرى.' }]); }
+    setChatBusy(false);
+  }, [chatInput, chatBusy, model]);
+
+  if (!data) return <div className="flex justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-purple-500" /></div>;
+
+  const currentModel = MODELS.find(m => m.id === model)!;
+  const stats = data.stats;
+
+  // Card classes adapt to dark mode automatically
+  const card = "bg-white dark:bg-slate-900/60 dark:backdrop-blur border border-gray-200 dark:border-slate-700/60 rounded-2xl";
+  const cardSoft = "bg-white/70 dark:bg-slate-900/40 backdrop-blur border border-gray-200 dark:border-slate-700/50 rounded-2xl";
+  const txtH = "text-gray-900 dark:text-slate-100";
+  const txtM = "text-gray-600 dark:text-slate-400";
+  const txtL = "text-gray-500 dark:text-slate-500";
+
+  return (
+    <div className="p-4 lg:p-6 max-w-[1500px] mx-auto space-y-4 lg:space-y-5" dir="rtl">
+
+      {/* HERO with animated orbs */}
+      <div className="relative overflow-hidden rounded-2xl p-6 lg:p-8 text-white" style={{ background: 'linear-gradient(135deg, #2A206A 0%, #4A2D9A 50%, #7C32C9 100%)' }}>
+        {/* Animated orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-20%] right-[-10%] w-72 h-72 rounded-full blur-3xl opacity-40 animate-pulse" style={{background:'#00ABAF', animationDuration:'4s'}} />
+          <div className="absolute bottom-[-30%] left-[5%] w-96 h-96 rounded-full blur-3xl opacity-30 animate-pulse" style={{background:'#1CC182', animationDuration:'6s', animationDelay:'1s'}} />
+          <div className="absolute top-[20%] left-[40%] w-64 h-64 rounded-full blur-3xl opacity-20 animate-pulse" style={{background:'#FF8533', animationDuration:'5s', animationDelay:'0.5s'}} />
+        </div>
+        <div className="relative">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center font-bold text-xl border border-white/20">{data.user.initials}</div>
+            <div className="flex-1">
+              <div className="text-xs opacity-75 tracking-wide">{dayName} · {time.getDate()} {monthName} · <span dir="ltr" className="font-mono">{hh}:{mm}</span></div>
+              <h1 className="text-2xl lg:text-3xl font-bold mt-1">{greet}، <span className="text-cyan-200">{data.user.name.split(' ')[0]}</span></h1>
+              <p className="text-sm opacity-90 mt-1">لديك <b>{stats.tasks_count}</b> مهام مفتوحة، و<b>{stats.programs_count}</b> برامج جارية. هذا ملخص يومك.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard label="برامجي" num={stats.programs_count} hint="نشطة الآن" />
+            <StatCard label="مهام اليوم" num={stats.tasks_count} hint="عاجل" tone="warning" />
+            <StatCard label="ترشيحات معلّقة" num={stats.pending_nominations} hint="تحتاج مراجعة" />
+            <StatCard label="رسائل واردة" num={stats.inbox_count} hint="جديدة" tone="info" />
+          </div>
+        </div>
+      </div>
+
+      {/* INFO STRIP */}
+      <div className={card + " overflow-hidden"}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-gray-200 dark:divide-slate-700/60" style={{direction:'rtl'}}>
+          {/* Weather */}
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{background: weather?.current.is_day ? 'rgba(255,200,87,0.15)' : 'rgba(99,102,241,0.15)'}}>
+              {weather?.current.is_day ? <Sun className="h-6 w-6 text-amber-400" /> : <Moon className="h-6 w-6 text-indigo-400" />}
+            </div>
+            <div className="min-w-0">
+              <div className={`text-xs ${txtL}`}>{weather?.city || 'الرياض'}</div>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-2xl font-bold font-mono ${txtH}`}>{weather?.current.temp ?? '--'}°</span>
+                <span className={`text-xs ${txtM}`}>{weather?.current.desc || '—'}</span>
+              </div>
+              <div className={`text-xs ${txtL} font-mono mt-0.5`}>
+                {weather?.forecast.slice(0,3).map((f,i) => <span key={i} className="ms-2">{f.label} {f.max}°</span>)}
+              </div>
+            </div>
+          </div>
+          {/* Prayer */}
+          <div className="p-4 flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{background:'rgba(0,171,175,0.15)'}}>
+              <span className="text-xl">🕌</span>
+            </div>
+            <div className="min-w-0">
+              <div className={`text-xs ${txtL}`}>الصلاة القادمة · أم القرى</div>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-lg font-bold ${txtH}`}>{nextPrayer?.name || '—'}</span>
+                <span className={`text-sm font-mono ${txtM}`}>{nextPrayer?.time || '--:--'}</span>
+              </div>
+              <div className={`text-xs ${txtL} mt-0.5`}>بعد <b className="font-mono">{hToNext > 0 ? `${hToNext}س ` : ''}{mToNext}د</b></div>
+            </div>
+          </div>
+          {/* Calendar */}
+          <Link href="/calendar" className="p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{background:'rgba(124,50,201,0.15)'}}>
+              <CalIcon className="h-6 w-6" style={{color:'#A78BFA'}} />
+            </div>
+            <div className="min-w-0">
+              <div className={`text-xs ${txtL}`}>{monthName} {time.getFullYear()}</div>
+              <div className="flex items-baseline gap-2">
+                <span className={`text-2xl font-bold font-mono ${txtH}`}>{time.getDate()}</span>
+                <span className={`text-sm ${txtM}`}>{dayName}</span>
+              </div>
+              <div className={`text-xs ${txtL} mt-0.5`}>{prayer?.hijri ? `${prayer.hijri.day} ${prayer.hijri.month.ar}` : '—'}</div>
+            </div>
+          </Link>
+          {/* News quick — first item */}
+          <div className="p-4 flex items-start gap-3">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{background:'rgba(255,133,51,0.15)'}}>
+              <Globe className="h-6 w-6" style={{color:'#FB923C'}} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className={`text-xs ${txtL} mb-1`}>آخر الأخبار · <span className="text-orange-400">{news.length} خبر</span></div>
+              {news[0] && (
+                <a href={news[0].url} target="_blank" rel="noopener" className="block">
+                  <div className={`text-xs ${txtM} line-clamp-2 hover:underline`}>{news[0].title}</div>
+                  <div className={`text-[10px] ${txtL} mt-1`}>{news[0].source} · {news[0].time}</div>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* NEWS — 4 categories full row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {news.slice(0,4).map((n, i) => {
+          const Icon = n.icon === 'flag' ? Flag : n.icon === 'trophy' ? Trophy : n.icon === 'cpu' ? Cpu : TrendingUp;
+          return (
+            <a key={i} href={n.url} target="_blank" rel="noopener" className={`${cardSoft} p-4 hover:scale-[1.02] hover:border-purple-400/50 transition group block`}>
+              <div className="flex items-start justify-between mb-2">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{background: `${n.color}25`}}>
+                  <Icon className="h-4 w-4" style={{color: n.color}} />
+                </div>
+                <span className="px-2 py-0.5 text-[10px] rounded-full font-medium" style={{background: `${n.color}20`, color: n.color}}>{n.category}</span>
+              </div>
+              <div className={`text-sm font-semibold ${txtH} line-clamp-3 leading-snug group-hover:text-purple-400`}>{n.title}</div>
+              <div className={`flex items-center justify-between mt-3 text-[11px] ${txtL}`}>
+                <span>{n.source}</span>
+                <span className="flex items-center gap-1">{n.time} <ExternalLink className="h-3 w-3 opacity-50" /></span>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+
+      {/* MAIN GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5">
+
+        {/* AI Chat */}
+        <div className={`lg:col-span-7 lg:row-span-2 ${card} flex flex-col overflow-hidden`} style={{minHeight:540}}>
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700/60">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'linear-gradient(135deg,#7C32C9,#2A206A)'}}>
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <div className={`font-semibold ${txtH} leading-tight`}>قدراتك الذكي</div>
+                <div className={`text-xs ${txtL}`}>مساعد متصل بنماذج متعددة</div>
+              </div>
+            </div>
+            <div className="relative">
+              <button onClick={() => setModelOpen(o => !o)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 dark:text-slate-300">
+                <span className="font-medium">{currentModel.name}</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {modelOpen && (
+                <div className="absolute left-0 top-full mt-1 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-xl z-10 overflow-hidden">
+                  {MODELS.map(m => (
+                    <button key={m.id} onClick={() => { setModel(m.id); setModelOpen(false); }}
+                            className={`w-full text-right px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700/60 flex items-start justify-between gap-2 ${m.id===model?'bg-purple-50 dark:bg-purple-900/20':''}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-medium text-sm ${txtH}`}>{m.name}</div>
+                        <div className={`text-xs ${txtL}`}>{m.desc}</div>
+                      </div>
+                      <span className="px-1.5 py-0.5 text-[10px] bg-gray-100 dark:bg-slate-700 dark:text-slate-300 rounded shrink-0">{m.tag}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div ref={chatBodyRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+            {chat.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center px-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3 shadow-lg shadow-purple-500/20" style={{background:'linear-gradient(135deg,#7C32C9,#00ABAF)'}}>
+                  <Sparkles className="h-8 w-8 text-white" />
+                </div>
+                <h3 className={`text-lg font-semibold ${txtH}`}>كيف أساعدك اليوم، {data.user.name.split(' ')[0]}؟</h3>
+                <p className={`text-sm ${txtM} mt-1`}>اسألني عن البرامج، الترشيحات، أو دعني أكتب لك إيميلاً.</p>
+              </div>
+            ) : chat.map((m, i) => (
+              <div key={i} className={`flex gap-2 ${m.role==='user'?'justify-start flex-row-reverse':''}`}>
+                {m.role==='assistant' && (
+                  <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center" style={{background:'rgba(124,50,201,0.15)'}}>
+                    <Bot className="h-3.5 w-3.5" style={{color:'#A78BFA'}} />
+                  </div>
+                )}
+                <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm whitespace-pre-wrap ${
+                  m.role==='user' ? 'bg-purple-600 text-white rounded-br-md' : 'bg-gray-100 dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-bl-md'
+                }`}>
+                  {m.content}
+                  {m.model && <div className="text-[10px] opacity-60 mt-1">عبر {m.model}</div>}
+                </div>
+              </div>
+            ))}
+            {chatBusy && (
+              <div className="flex gap-2">
+                <div className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center" style={{background:'rgba(124,50,201,0.15)'}}>
+                  <Bot className="h-3.5 w-3.5" style={{color:'#A78BFA'}} />
+                </div>
+                <div className="bg-gray-100 dark:bg-slate-800 px-3.5 py-2.5 rounded-2xl rounded-bl-md flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{animationDelay:'0.15s'}} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{animationDelay:'0.3s'}} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {chat.length === 0 && (
+            <div className="px-4 pb-2 flex flex-wrap gap-2">
+              {SUGGESTIONS.map(s => (
+                <button key={s} onClick={() => sendChat(s)} className={`px-3 py-1.5 text-xs border border-gray-200 dark:border-slate-700 rounded-full hover:bg-gray-50 dark:hover:bg-slate-800/60 ${txtM}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="p-3 border-t border-gray-200 dark:border-slate-700/60 flex items-center gap-2">
+            <button className="w-9 h-9 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800/60 flex items-center justify-center">
+              <Plus className={`h-4 w-4 ${txtM}`} />
+            </button>
+            <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendChat()}
+                   placeholder={`اسأل ${currentModel.name}...`}
+                   className="flex-1 px-3 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:border-purple-400 placeholder:text-gray-400 dark:placeholder:text-slate-500" />
+            <button onClick={() => sendChat()} disabled={chatBusy || !chatInput.trim()}
+                    className="w-9 h-9 rounded-lg flex items-center justify-center text-white disabled:opacity-50"
+                    style={{background:'linear-gradient(135deg,#7C32C9,#00ABAF)'}}>
+              {chatBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* My Programs */}
+        <div className={`lg:col-span-5 ${card} p-5`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`font-semibold ${txtH} flex items-center gap-2`}>
+              <BookOpen className="h-4 w-4" style={{color:'#22D3EE'}} />برامجي المسندة
+            </h3>
+            <Link href="/programs" className="text-xs text-cyan-400 hover:underline flex items-center gap-1">
+              عرض الكل ({stats.total_programs}) <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="space-y-3">
+            {data.myPrograms.length === 0 && <div className={`text-center text-sm ${txtL} py-6`}>لا توجد برامج نشطة حالياً</div>}
+            {data.myPrograms.map(p => {
+              const cap = p.capacity || 0;
+              const enr = p.enrolled_count || p.attendees || 0;
+              const pct = cap > 0 ? Math.round((enr / cap) * 100) : 0;
+              const status = STATUS_LABELS[p.status || 'execution'];
+              return (
+                <Link key={p.id} href={`/programs/${p.id}`}
+                      className="block p-3 rounded-xl border border-gray-100 dark:border-slate-700/50 hover:border-purple-400 dark:hover:border-purple-500/50 hover:shadow-sm transition">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <div className={`text-xs ${txtL} font-mono`}>{p.code || `#${p.id}`}</div>
+                      <div className={`font-medium ${txtH} line-clamp-1`}>{p.title_ar}</div>
+                      <div className={`text-xs ${txtL} mt-0.5`}>{p.provider || '—'}</div>
+                    </div>
+                    {status && <span className={`shrink-0 px-2 py-0.5 text-[10px] rounded-full ${status.color}`}>{status.ar}</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full" style={{width:`${pct}%`, background:'linear-gradient(90deg,#00ABAF,#1CC182)'}} />
+                    </div>
+                    <span className={`text-xs font-mono ${txtM}`}>{pct}%</span>
+                  </div>
+                  <div className={`flex items-center gap-3 mt-2 text-[11px] ${txtL}`}>
+                    <span className="flex items-center gap-1"><Users className="h-3 w-3" />{enr}/{cap || '∞'}</span>
+                    <span className="flex items-center gap-1"><CalIcon className="h-3 w-3" />{p.start_date?.slice(0,10) || '—'}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* My Tasks */}
+        <div className={`lg:col-span-5 ${card} p-5`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`font-semibold ${txtH} flex items-center gap-2`}><ListChecks className="h-4 w-4" style={{color:'#A78BFA'}} />مهامي اليوم</h3>
+            <span className={`text-xs ${txtL}`}>{data.myTasks.length} مهام</span>
+          </div>
+          <div className="space-y-2">
+            {data.myTasks.length === 0 && <div className={`text-center text-sm ${txtL} py-6`}>لا توجد مهام جديدة 🎉</div>}
+            {data.myTasks.map(t => (
+              <div key={t.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/40">
+                <div className={`w-1.5 h-9 rounded-full shrink-0 ${t.priority==='high' ? 'bg-red-500' : t.priority==='medium' ? 'bg-amber-500' : 'bg-gray-300 dark:bg-slate-600'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-medium ${txtH} line-clamp-1`}>{t.title}</div>
+                  <div className={`text-xs ${txtL}`}>{t.due} {t.program ? `· ${t.program}` : ''}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Upcoming */}
+        <div className={`lg:col-span-7 ${card} p-5`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`font-semibold ${txtH} flex items-center gap-2`}><Rocket className="h-4 w-4" style={{color:'#FB923C'}} />القادم</h3>
+            <Link href="/programs" className="text-xs text-cyan-400 hover:underline">كل البرامج</Link>
+          </div>
+          <div className="space-y-2">
+            {data.upcoming.length === 0 && <div className={`text-center text-sm ${txtL} py-6`}>لا توجد برامج قادمة</div>}
+            {data.upcoming.slice(0,5).map(p => {
+              const d = new Date(p.start_date);
+              return (
+                <Link key={p.id} href={`/programs/${p.id}`}
+                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/40 transition">
+                  <div className="w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0" style={{background:'rgba(124,50,201,0.18)'}}>
+                    <span className="text-lg font-bold leading-none" style={{color:'#A78BFA'}}>{d.getDate()}</span>
+                    <span className={`text-[10px] ${txtL} leading-none mt-0.5`}>{['ينا','فبر','مار','أبر','ماي','يون','يول','أغس','سبت','أكت','نوف','ديس'][d.getMonth()]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-medium ${txtH} line-clamp-1`}>{p.title_ar}</div>
+                    <div className={`text-xs ${txtL} font-mono`}>{p.code || `#${p.id}`} · {p.provider || '—'}</div>
+                  </div>
+                  <ChevronRight className={`h-4 w-4 ${txtL}`} />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className={`lg:col-span-5 ${card} p-5`}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className={`font-semibold ${txtH} flex items-center gap-2`}><Lightbulb className="h-4 w-4" style={{color:'#FBBF24'}} />إجراءات سريعة</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <QuickAction icon={Plus} label="برنامج جديد" href="/programs" />
+            <QuickAction icon={Inbox} label="الترشيحات" href="/contacts" badge={stats.pending_nominations} />
+            <QuickAction icon={Bot} label="مركز الوكلاء" href="/agents" />
+            <QuickAction icon={BarChart3} label="تقاريري" href="/dashboard" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, num, hint, tone = 'default' }: { label: string; num: number; hint: string; tone?: string }) {
+  const toneClass = tone === 'warning' ? 'text-amber-200' : tone === 'info' ? 'text-cyan-200' : 'text-emerald-200';
+  return (
+    <div className="bg-white/10 backdrop-blur rounded-xl p-3 border border-white/20 hover:bg-white/15 transition">
+      <div className="text-xs opacity-75">{label}</div>
+      <div className="text-3xl font-bold font-mono mt-1">{num}</div>
+      <div className={`text-[10px] mt-1 ${toneClass}`}>{hint}</div>
+    </div>
+  );
+}
+
+function QuickAction({ icon: Icon, label, href, badge }: { icon: React.ComponentType<{ className?: string }>; label: string; href: string; badge?: number }) {
+  return (
+    <Link href={href} className="relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border border-gray-100 dark:border-slate-700/50 hover:border-purple-300 dark:hover:border-purple-500/50 hover:bg-purple-50/30 dark:hover:bg-purple-900/20 transition group">
+      <Icon className="h-5 w-5 text-gray-600 dark:text-slate-400 group-hover:text-purple-500 dark:group-hover:text-purple-400" />
+      <span className="text-xs font-medium text-gray-700 dark:text-slate-300 text-center">{label}</span>
+      {badge && badge > 0 && (
+        <span className="absolute top-2 left-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">{badge}</span>
+      )}
+    </Link>
+  );
+}

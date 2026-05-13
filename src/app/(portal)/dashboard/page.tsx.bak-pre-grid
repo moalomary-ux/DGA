@@ -1,0 +1,240 @@
+'use client';
+
+// /dashboard/page.tsx — Direct port of screens-1.jsx Dashboard
+// Uses qudratok.css classes (kpis, kpi, card, tbl, pill, cap-bar, task-list, etc.)
+
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import QIcon, { fmt, useCounter, STATUS_META } from '@/components/QIcon';
+
+interface Program {
+  id: number;
+  code: string | null;
+  title_ar: string;
+  status: string | null;
+  capacity: number | null;
+  enrolled_count: number | null;
+  attendees: number;
+  start_date: string | null;
+  category: string | null;
+}
+interface Task {
+  id: string;
+  title: string;
+  due: string;
+  priority: string;
+  program: string | null;
+  done: boolean;
+}
+interface LivePgm {
+  id: number;
+  code: string | null;
+  title_ar: string;
+  provider: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  capacity: number | null;
+  enrolled_count: number | null;
+}
+interface DashData {
+  kpis: { active: number; total_attendees: number; pending: number; avg_completion: number };
+  programs: Program[];
+  live: LivePgm | null;
+  tasks: Task[];
+}
+
+export default function Dashboard() {
+  const router = useRouter();
+  const [data, setData] = useState<DashData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/dashboard/data').then(r => r.json()).then(d => { if (d.ok) setData(d); });
+  }, []);
+
+  const goTo = useCallback((page: string, arg?: string | number) => {
+    router.push(arg !== undefined ? `/${page}/${arg}` : `/${page}`);
+  }, [router]);
+
+  // Hooks must be called unconditionally — call useCounter even when data is null
+  const kActive   = useCounter(data?.kpis.active ?? 0);
+  const kTrainees = useCounter(data?.kpis.total_attendees ?? 0);
+  const kPending  = useCounter(data?.kpis.pending ?? 0);
+  const kComp     = useCounter(data?.kpis.avg_completion ?? 0);
+
+  if (!data) {
+    return <div className="page" style={{padding:60,textAlign:'center'}}>
+      <div className="spin" style={{margin:'0 auto'}}/>
+      <div style={{marginTop:16,color:'var(--text-3)'}}>جارٍ تحميل لوحة قدراتك...</div>
+    </div>;
+  }
+
+  const live = data.live;
+
+  // Calculate session progress for live program
+  let liveSessionDay = 0, liveSessionsTotal = 0, liveCompleted = 0;
+  if (live?.start_date && live?.end_date) {
+    const start = new Date(live.start_date).getTime();
+    const end = new Date(live.end_date).getTime();
+    const now = Date.now();
+    const totalDays = Math.max(1, Math.ceil((end - start) / 86400000));
+    const elapsed = Math.max(0, Math.ceil((now - start) / 86400000));
+    liveSessionDay = Math.min(totalDays, elapsed);
+    liveSessionsTotal = totalDays;
+    liveCompleted = Math.min(100, Math.round((elapsed / totalDays) * 100));
+  }
+
+  return (
+    <div className="page fade-in">
+      {/* KPIs */}
+      <div className="kpis">
+        <div className="kpi" data-tone="primary" onClick={() => goTo('programs')} style={{cursor:'pointer'}}>
+          <div className="kpi-row"><span className="kpi-lbl">البرامج النشطة</span><span className="kpi-ico"><QIcon n="book"/></span></div>
+          <div className="kpi-num">{kActive}</div>
+          <div className="kpi-delta">+12% vs Q4 2025</div>
+        </div>
+        <div className="kpi" data-tone="accent" onClick={() => goTo('contacts')} style={{cursor:'pointer'}}>
+          <div className="kpi-row"><span className="kpi-lbl">إجمالي المتدربين النشطين</span><span className="kpi-ico"><QIcon n="users"/></span></div>
+          <div className="kpi-num">{fmt(kTrainees)}</div>
+          <div className="kpi-delta">+{Math.floor(data.kpis.total_attendees * 0.02)} خلال هذا الشهر</div>
+        </div>
+        <div className="kpi" data-tone="warning" onClick={() => goTo('nominations')} style={{cursor:'pointer'}}>
+          <div className="kpi-row"><span className="kpi-lbl">طلبات معلّقة</span><span className="kpi-ico"><QIcon n="inbox"/></span></div>
+          <div className="kpi-num">{kPending}</div>
+          <div className="kpi-delta dn">تحتاج مراجعة AI</div>
+        </div>
+        <div className="kpi" data-tone="success">
+          <div className="kpi-row"><span className="kpi-lbl">نسبة الإنجاز العامة</span><span className="kpi-ico"><QIcon n="target"/></span></div>
+          <div className="kpi-num">{kComp}%</div>
+          <div className="kpi-delta">في المسار</div>
+        </div>
+      </div>
+
+      {/* Row 2:1 — Programs Health Table | Tasks + Live */}
+      <div className="row r-2-1">
+        <div className="card">
+          <div className="card-head">
+            <h3>صحّة البرامج النشطة</h3>
+            <button className="btn btn-ghost btn-sm" onClick={() => goTo('programs')}>
+              عرض الكل <QIcon n="chevR" size={13}/>
+            </button>
+          </div>
+          <div className="card-body tight">
+            <table className="tbl">
+              <thead><tr><th>الرمز</th><th>البرنامج</th><th>الحالة</th><th>السعة</th><th>التقدّم</th></tr></thead>
+              <tbody>
+                {data.programs.length === 0 && (
+                  <tr><td colSpan={5} style={{textAlign:'center',padding:'30px',color:'var(--text-3)'}}>لا توجد برامج نشطة</td></tr>
+                )}
+                {data.programs.map(p => {
+                  const meta = STATUS_META[p.status || 'execution'] || STATUS_META.execution;
+                  const cap = p.capacity || 0;
+                  const enr = p.enrolled_count || p.attendees || 0;
+                  const fillPct = cap > 0 ? Math.round((enr / cap) * 100) : 0;
+                  return (
+                    <tr key={p.id} onClick={() => goTo('programs', p.id)} style={{cursor:'pointer'}}>
+                      <td className="code">{p.code || `#${p.id}`}</td>
+                      <td className="name">{p.title_ar}</td>
+                      <td><span className={`pill ${meta.class}`}>{meta.ar}</span></td>
+                      <td>
+                        <div className="cap-bar">
+                          <div className="b"><div className="f" style={{width:`${fillPct}%`}}></div></div>
+                          <span className="t">{enr}/{cap || '∞'}</span>
+                        </div>
+                      </td>
+                      <td className="mono" style={{color: fillPct > 50 ? 'var(--success)' : 'var(--text-3)'}}>{fillPct}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          {/* Tasks */}
+          <div className="card">
+            <div className="card-head">
+              <h3>مهام اليوم</h3>
+              <span className="meta">{data.tasks.filter(t => !t.done).length} مهمة</span>
+            </div>
+            <div className="card-body" style={{padding:12}}>
+              <div className="task-list">
+                {data.tasks.length === 0 && (
+                  <div style={{padding:'20px 8px',textAlign:'center',color:'var(--text-3)',fontSize:13}}>
+                    لا توجد مهام جديدة 🎉
+                  </div>
+                )}
+                {data.tasks.slice(0, 5).map(t => (
+                  <div key={t.id} className="task">
+                    <button className={`ck ${t.done ? 'done' : ''}`}>
+                      <QIcon n="check" size={11}/>
+                    </button>
+                    <div className={`body ${t.done ? 'done' : ''}`}>
+                      <b>{t.title}</b>
+                      <span>{t.program || '—'}</span>
+                    </div>
+                    <span className="due" style={{
+                      color: t.priority === 'high' ? 'var(--danger)' :
+                             t.priority === 'medium' ? 'var(--warning)' : 'var(--text-3)'
+                    }}>{t.due}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Live program */}
+          {live && (
+            <div className="card" style={{background:'var(--grad-1, var(--grad-purple))',color:'#fff',border:0}}>
+              <div className="card-body" style={{color:'#fff'}}>
+                <div className="pill info" style={{background:'rgba(255,255,255,.2)',color:'#fff'}}>
+                  جارٍ الآن{liveSessionsTotal > 0 ? ` — اليوم ${liveSessionDay} من ${liveSessionsTotal}` : ''}
+                </div>
+                <h3 style={{fontSize:18,fontWeight:700,margin:'10px 0 6px'}}>{live.title_ar}</h3>
+                <div style={{fontSize:12,opacity:.85,marginBottom:14}}>{live.provider || '—'}</div>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:6}}>
+                  <span>التقدّم</span><span className="mono" style={{fontWeight:600}}>{liveCompleted}%</span>
+                </div>
+                <div style={{height:6,background:'rgba(255,255,255,.2)',borderRadius:99,overflow:'hidden'}}>
+                  <div style={{height:'100%',background:'#fff',width:`${liveCompleted}%`,borderRadius:99,transition:'width 600ms'}}></div>
+                </div>
+                <button className="btn btn-ghost btn-sm" style={{marginTop:14,background:'rgba(255,255,255,.15)',color:'#fff',borderColor:'rgba(255,255,255,.2)'}}
+                        onClick={() => goTo('programs', live.id)}>
+                  افتح ملف البرنامج <QIcon n="chevR" size={13}/>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Row 3 — AI Agent Teasers */}
+      <div className="row r-3">
+        <AgentTeaser title="تحليل الترشيحات" desc={`${data.kpis.pending} طلبات جديدة تحتاج تقييم تلقائي`} icon="analyze" onClick={() => goTo('agents')}/>
+        <AgentTeaser title="مسوّدة إيميلات" desc="3 إشعارات قبول جاهزة للإرسال" icon="mail" onClick={() => goTo('agents')}/>
+        <AgentTeaser title="تقرير الأسبوع" desc="ملخص الأنشطة + تحليل الرضا" icon="chart" onClick={() => goTo('reports')}/>
+      </div>
+    </div>
+  );
+}
+
+function AgentTeaser({ title, desc, icon, onClick }: { title: string; desc: string; icon: string; onClick: () => void }) {
+  return (
+    <div className="card" style={{cursor:'pointer'}} onClick={onClick}>
+      <div className="card-body" style={{display:'flex',gap:14,alignItems:'flex-start'}}>
+        <div style={{width:42,height:42,borderRadius:10,background:'var(--grad-1, var(--grad-purple))',color:'#fff',display:'grid',placeItems:'center',flexShrink:0}}>
+          <QIcon n={icon} size={18}/>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
+            <span style={{fontSize:9,fontFamily:'var(--font-en)',letterSpacing:'.1em',color:'var(--text-3)',fontWeight:700}}>AI AGENT</span>
+            <span style={{width:6,height:6,borderRadius:'50%',background:'var(--success,#22C55E)',boxShadow:'0 0 6px var(--success,#22C55E)'}}></span>
+          </div>
+          <b style={{fontSize:14,fontWeight:600,display:'block',marginBottom:3}}>{title}</b>
+          <span style={{fontSize:12,color:'var(--text-3)'}}>{desc}</span>
+        </div>
+        <QIcon n="chevR" size={14}/>
+      </div>
+    </div>
+  );
+}

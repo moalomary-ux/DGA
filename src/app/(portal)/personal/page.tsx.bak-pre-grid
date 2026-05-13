@@ -1,0 +1,877 @@
+'use client';
+
+import { useEffect, useState, useRef, useCallback } from 'react';
+import Link from 'next/link';
+import Icon from '@/components/Icon';
+
+// ═══════════════════ Types ═══════════════════
+interface HomeData {
+  user: { name: string; initials: string; email: string };
+  myPrograms: {
+    id: number;
+    title_ar: string;
+    code: string | null;
+    provider: string | null;
+    start_date: string | null;
+    capacity: number | null;
+    enrolled_count: number | null;
+    status: string | null;
+    attendees: number;
+  }[];
+  upcoming: {
+    id: number;
+    title_ar: string;
+    code: string | null;
+    start_date: string;
+    provider: string | null;
+  }[];
+  myTasks: {
+    id: string;
+    title: string;
+    due: string;
+    priority: string;
+    program: string | null;
+    done: boolean;
+  }[];
+  stats: {
+    programs_count: number;
+    tasks_count: number;
+    pending_nominations: number;
+    inbox_count: number;
+    total_programs: number;
+    total_orgs: number;
+    total_people: number;
+  };
+}
+interface WeatherData {
+  ok: boolean;
+  city: string;
+  current: { temp: number; desc: string; is_day: boolean };
+  forecast: { date: string; max: number; min: number; label: string }[];
+}
+interface PrayerData {
+  ok: boolean;
+  city: string;
+  hijri: { date: string; month: { ar: string }; day: string };
+  prayers: { name: string; time: string; en: string }[];
+}
+interface NewsItem {
+  category: string;
+  title: string;
+  source: string;
+  url: string;
+  time: string;
+  icon: string;
+  color: string;
+}
+interface ChatMsg { r: 'u' | 'a'; t: string; model?: string; err?: boolean }
+
+const MODELS = [
+  { id: 'claude-sonnet', name: 'Claude Sonnet 4.5', tag: 'الافتراضي', desc: 'متوازن · للأعمال اليومية' },
+  { id: 'claude-opus', name: 'Claude Opus 4.5', tag: 'الأذكى', desc: 'تحليل عميق · مهام معقّدة' },
+  { id: 'claude-haiku', name: 'Claude Haiku 4.5', tag: 'السريع', desc: 'إجابات فورية' },
+];
+const STATUS_META: Record<string, { ar: string; cls: string }> = {
+  execution: { ar: 'قيد التنفيذ', cls: 'success' },
+  registration: { ar: 'فتح التسجيل', cls: 'info' },
+  development: { ar: 'تجهيز', cls: 'warning' },
+  review: { ar: 'مراجعة', cls: 'accent' },
+  closed: { ar: 'مغلق', cls: 'muted' },
+};
+const SUGGESTIONS = [
+  'كم برنامجاً نشطاً لدي؟',
+  'لخّص ترشيحات اليوم',
+  'اكتب إيميل ترحيب للمتدربين',
+  'اقترح موعد ورشة قادمة',
+];
+const NEWS_TAG_CLS: Record<string, string> = {
+  'اقتصاد': 'eco',
+  'رياضة': 'sport',
+  'سياسة': 'pol',
+  'تقنية': 'tech',
+};
+
+// ═══════════════════ Component ═══════════════════
+export default function PersonalPage() {
+  const [data, setData] = useState<HomeData | null>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [prayer, setPrayer] = useState<PrayerData | null>(null);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [time, setTime] = useState(new Date());
+
+  // AI chat
+  const [chat, setChat] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatBusy, setChatBusy] = useState(false);
+  const [model, setModel] = useState('claude-sonnet');
+  const [modelOpen, setModelOpen] = useState(false);
+  const chatBodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/api/home/data').then((r) => r.json()).then((d) => d.ok && setData(d));
+    fetch('/api/home/weather').then((r) => r.json()).then((d) => d.ok && setWeather(d));
+    fetch('/api/home/prayer').then((r) => r.json()).then((d) => d.ok && setPrayer(d));
+    fetch('/api/home/news').then((r) => r.json()).then((d) => d.ok && setNews(d.items));
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    chatBodyRef.current?.scrollTo({ top: chatBodyRef.current.scrollHeight, behavior: 'smooth' });
+  }, [chat, chatBusy]);
+
+  // Click outside model menu
+  useEffect(() => {
+    if (!modelOpen) return;
+    const close = () => setModelOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [modelOpen]);
+
+  const h = time.getHours();
+  const greet = h < 5 ? 'مساء الخير' : h < 12 ? 'صباح الخير' : h < 18 ? 'طاب يومك' : 'مساء الخير';
+  const dayName = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'][time.getDay()];
+  const monthEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][time.getMonth()];
+  const monthAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'][time.getMonth()];
+  const hh = String(time.getHours()).padStart(2, '0');
+  const mm = String(time.getMinutes()).padStart(2, '0');
+
+  // Next prayer calculation
+  const nowMin = time.getHours() * 60 + time.getMinutes();
+  const pList = prayer?.prayers || [];
+  const pMin = pList.map((p) => {
+    const [h, m] = p.time.split(':').map(Number);
+    return h * 60 + m;
+  });
+  let nextIdx = pMin.findIndex((m) => m > nowMin);
+  if (nextIdx === -1) nextIdx = 0;
+  const nextPrayer = pList[nextIdx];
+  const minsTo = nextPrayer ? (nextIdx === 0 ? 1440 - nowMin + pMin[0] : pMin[nextIdx] - nowMin) : 0;
+  const hToNext = Math.floor(minsTo / 60);
+  const mToNext = minsTo % 60;
+
+  const sendChat = useCallback(
+    async (text?: string) => {
+      const msg = (text || chatInput).trim();
+      if (!msg || chatBusy) return;
+      setChat((c) => [...c, { r: 'u', t: msg }]);
+      setChatInput('');
+      setChatBusy(true);
+      try {
+        const r = await fetch('/api/home/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg, model }),
+        });
+        const d = await r.json();
+        setChat((c) => [
+          ...c,
+          {
+            r: 'a',
+            t: d.ok ? d.reply : `خطأ: ${d.error || 'تعذّر الاتصال'}`,
+            model: d.ok ? d.model || MODELS.find((m) => m.id === model)?.name : undefined,
+            err: !d.ok,
+          },
+        ]);
+      } catch {
+        setChat((c) => [...c, { r: 'a', t: 'تعذّر الاتصال بالنموذج. حاول مرة أخرى.', err: true }]);
+      }
+      setChatBusy(false);
+    },
+    [chatInput, chatBusy, model]
+  );
+
+  if (!data) {
+    return (
+      <div className="page" style={{ display: 'grid', placeItems: 'center', minHeight: 400 }}>
+        <div style={{ color: 'var(--text-3)', fontSize: 13 }}>جارٍ التحميل...</div>
+      </div>
+    );
+  }
+
+  const stats = data.stats;
+  const currentModel = MODELS.find((m) => m.id === model)!;
+
+  return (
+    <div className="mypage fade-in">
+      {/* ═══════════ Hero ═══════════ */}
+      <div className="mp-hero">
+        <div className="mp-hero-bg">
+          <div className="orb o1" />
+          <div className="orb o2" />
+          <div className="orb o3" />
+        </div>
+        <div className="mp-hero-content">
+          <div className="mp-greet">
+            <div className="mp-greet-row">
+              <div className="mp-av">{data.user.initials || 'م'}</div>
+              <div>
+                <div className="mp-eyebrow">
+                  {dayName} · {time.getDate()} {monthEn} ·{' '}
+                  <span className="mono" dir="ltr">
+                    {hh}:{mm}
+                  </span>
+                </div>
+                <h1>
+                  {greet}، <span>{data.user.name?.split(' ')[0] || 'مستخدم'}</span>
+                </h1>
+                <p>
+                  لديك <b>{stats.tasks_count}</b> مهام مفتوحة، و <b>{stats.programs_count}</b> برامج جارية. هذا ملخص يومك.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mp-quickstats">
+            <div className="qstat">
+              <span className="lbl">برامجي</span>
+              <b className="num">{stats.programs_count}</b>
+              <span className="dt up">نشطة الآن</span>
+            </div>
+            <div className="qstat">
+              <span className="lbl">مهام اليوم</span>
+              <b className="num">{stats.tasks_count}</b>
+              <span className="dt warning">عاجل</span>
+            </div>
+            <div className="qstat">
+              <span className="lbl">ترشيحات معلّقة</span>
+              <b className="num">{stats.pending_nominations}</b>
+              <span className="dt">تحتاج مراجعة</span>
+            </div>
+            <div className="qstat">
+              <span className="lbl">رسائل واردة</span>
+              <b className="num">{stats.inbox_count}</b>
+              <span className="dt up">جديدة</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        <div className="bento-card info-strip">
+          <div className="info-bg" />
+
+          {/* Weather */}
+          <div className="info-seg seg-weather">
+            <div className="info-icon weather-ico">
+              <svg width="34" height="34" viewBox="0 0 64 64" fill="none">
+                <circle cx="32" cy="32" r="11" fill="#FFC857" className="sun" />
+                <g className="rays" stroke="#FFC857" strokeWidth="2.4" strokeLinecap="round">
+                  <line x1="32" y1="12" x2="32" y2="17" />
+                  <line x1="32" y1="47" x2="32" y2="52" />
+                  <line x1="12" y1="32" x2="17" y2="32" />
+                  <line x1="47" y1="32" x2="52" y2="32" />
+                  <line x1="18" y1="18" x2="22" y2="22" />
+                  <line x1="42" y1="42" x2="46" y2="46" />
+                  <line x1="46" y1="18" x2="42" y2="22" />
+                  <line x1="22" y1="42" x2="18" y2="46" />
+                </g>
+              </svg>
+            </div>
+            <div className="info-body">
+              <div className="info-l1">
+                <span className="info-lbl">{weather?.city || 'الرياض'}</span>
+              </div>
+              <div className="info-l2">
+                <span className="big mono">{weather?.current.temp ?? '--'}°</span>
+                <span className="small">{weather?.current.desc || '—'}</span>
+              </div>
+              <div className="info-l3 mono">
+                {weather?.forecast.slice(0, 3).map((f, i) => (
+                  <span key={i}>
+                    {f.label} {f.max}°
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="info-divider" />
+
+          {/* Prayer */}
+          <div className="info-seg seg-prayer">
+            <div className="info-icon">
+              <Icon n="badge" size={20} />
+            </div>
+            <div className="info-body">
+              <div className="info-l1">
+                <span className="info-lbl">الصلاة القادمة</span>
+              </div>
+              <div className="info-l2">
+                <span className="big">{nextPrayer?.name || '—'}</span>
+                <span className="small mono">{nextPrayer?.time || '--:--'}</span>
+              </div>
+              <div className="info-l3 muted-txt">
+                بعد{' '}
+                <b className="mono">
+                  {hToNext > 0 ? `${hToNext}س ` : ''}
+                  {mToNext}د
+                </b>
+              </div>
+            </div>
+          </div>
+
+          <div className="info-divider" />
+
+          {/* Calendar */}
+          <Link href="/calendar" className="info-seg seg-cal" style={{ cursor: 'pointer' }}>
+            <div className="info-icon">
+              <Icon n="calendar" size={20} />
+            </div>
+            <div className="info-body">
+              <div className="info-l1">
+                <span className="info-lbl">
+                  {monthAr} {time.getFullYear()}
+                </span>
+              </div>
+              <div className="info-l2">
+                <span className="big mono">{time.getDate()}</span>
+                <span className="small">{dayName}</span>
+              </div>
+              <div className="info-l3 muted-txt">
+                {prayer?.hijri ? `${prayer.hijri.day} ${prayer.hijri.month.ar}` : '—'}
+              </div>
+            </div>
+          </Link>
+
+          <div className="info-divider" />
+
+          {/* News ticker */}
+          <div className="info-seg seg-news">
+            <div className="info-icon">
+              <Icon n="globe" size={20} />
+            </div>
+            <div className="info-body">
+              <div className="info-l1">
+                <span className="info-lbl">آخر الأخبار</span>
+              </div>
+              <div className="news-ticker">
+                {news.slice(0, 3).map((n, i) => (
+                  <div key={i} className="news-tick">
+                    <span className={`news-tag ${NEWS_TAG_CLS[n.category] || 'tech'}`}>{n.category}</span>
+                    <b>{n.title}</b>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <MiniChat userName={data.user.name?.split(' ')[0] || ''} />
+
+
+
+
+      {/* ═══════════ Bento grid ═══════════ */}
+      <div className="bento">
+        {/* Tasks - Prominent (was AI Chat) */}
+        <div className="bento-card claude-chat">
+          <div className="cc-header">
+            <div className="cc-brand">
+              <div className="cc-logo"><Icon n="check2" size={16} /></div>
+              <div>
+                <b>مهامي اليوم</b>
+                <span>{data.myTasks.length} {data.myTasks.length === 1 ? 'مهمة' : 'مهام'} نشطة</span>
+              </div>
+            </div>
+            <a href="/work/tasks" style={{ fontSize: 13, color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>
+              عرض الكل ←
+            </a>
+          </div>
+          <div className="cc-body" style={{ padding: 18 }}>
+            {data.myTasks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: 'color-mix(in srgb, var(--text) 60%, transparent)' }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>☕</div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, color: 'var(--text)' }}>يوم هادئ</div>
+                <div style={{ fontSize: 13 }}>لا توجد مهام جديدة — استثمر الوقت في التخطيط</div>
+              </div>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {data.myTasks.slice(0, 8).map((t) => (
+                  <li key={t.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 14px',
+                    background: 'color-mix(in srgb, var(--primary) 5%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--text) 8%, transparent)',
+                    borderRadius: 10,
+                  }}>
+                    <div className={`tck ${t.priority}`} style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t.title}</div>
+                      <div style={{ fontSize: 12, color: 'color-mix(in srgb, var(--text) 60%, transparent)', marginTop: 2 }}>
+                        {t.due}{t.program ? ` · ${t.program}` : ''}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Info Strip: Weather · Prayer · Calendar · News */}
+
+        {/* My Programs */}
+        <div className="bento-card programs-card">
+          <div className="bc-head">
+            <b>
+              <Icon n="book" size={15} /> برامجي المسندة
+            </b>
+            <Link href="/programs" className="link-btn">
+              عرض الكل ({stats.total_programs}) <Icon n="chevR" size={12} />
+            </Link>
+          </div>
+          <div className="my-prog-list">
+            {data.myPrograms.length === 0 && (
+              <div className="empty" style={{ padding: '24px 12px' }}>
+                <Icon n="book" size={32} />
+                <p>لا توجد برامج مسندة لك حالياً</p>
+              </div>
+            )}
+            {data.myPrograms.map((p) => {
+              const cap = p.capacity || 0;
+              const enr = p.enrolled_count || p.attendees || 0;
+              const pct = cap > 0 ? Math.round((enr / cap) * 100) : 0;
+              const meta = STATUS_META[p.status || 'execution'];
+              return (
+                <Link key={p.id} href={`/programs/${p.id}`} className="my-prog">
+                  <div className="mp-head">
+                    <div>
+                      <span className="code mono">{p.code || `#${p.id}`}</span>
+                      <h4>{p.title_ar}</h4>
+                      <span className="partner">{p.provider || '—'}</span>
+                    </div>
+                    {meta && <span className={`pill ${meta.cls}`}>{meta.ar}</span>}
+                  </div>
+                  <div className="mp-prog">
+                    <div className="mp-prog-bar">
+                      <div className="mp-prog-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="mono">{pct}%</span>
+                  </div>
+                  <div className="mp-foot">
+                    <span>
+                      <Icon n="users" size={12} /> {enr}/{cap || '∞'}
+                    </span>
+                    <span>
+                      <Icon n="calendar" size={12} /> {p.start_date?.slice(0, 10) || '—'}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Upcoming */}
+        <div className="bento-card upcoming-card">
+          <div className="bc-head">
+            <b>
+              <Icon n="rocket" size={15} /> القادم
+            </b>
+            <Link href="/programs" className="link-btn">
+              كل البرامج <Icon n="chevR" size={12} />
+            </Link>
+          </div>
+          <div className="up-list">
+            {data.upcoming.length === 0 && (
+              <div className="empty" style={{ padding: '20px 12px' }}>
+                <p>لا توجد برامج قادمة</p>
+              </div>
+            )}
+            {data.upcoming.slice(0, 5).map((p) => {
+              const d = new Date(p.start_date);
+              return (
+                <Link key={p.id} href={`/programs/${p.id}`} className="up-item">
+                  <div className="up-date">
+                    <b className="mono">{d.getDate()}</b>
+                    <span>
+                      {['ينا', 'فبر', 'مار', 'أبر', 'ماي', 'يون', 'يول', 'أغس', 'سبت', 'أكت', 'نوف', 'ديس'][d.getMonth()]}
+                    </span>
+                  </div>
+                  <div className="up-body">
+                    <b>{p.title_ar}</b>
+                    <span className="code">
+                      {p.code || `#${p.id}`} · {p.provider || '—'}
+                    </span>
+                  </div>
+                  <Icon n="chevR" size={14} />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quick links */}
+        <div className="bento-card quicklinks-card">
+          <div className="bc-head">
+            <b>
+              <Icon n="rocket" size={15} /> إجراءات سريعة
+            </b>
+          </div>
+          <div className="ql-grid">
+            <Link href="/programs" className="ql">
+              <Icon n="plus" size={16} />
+              <span>برنامج جديد</span>
+            </Link>
+            <Link href="/admin/registrations" className="ql">
+              <Icon n="inbox" size={16} />
+              <span>طلبات التسجيل</span>
+            </Link>
+            <Link href="/workspace" className="ql">
+              <Icon n="bot" size={16} />
+              <span>مساعد AI</span>
+            </Link>
+            <Link href="/dashboard" className="ql">
+              <Icon n="chart" size={16} />
+              <span>تقاريري</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniChat({ userName }: { userName: string }) {
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const [input, setInput] = useState('');
+  const [streaming, setStreaming] = useState(false);
+  const [convId, setConvId] = useState<number | null>(null);
+  const [model, setModel] = useState('auto');
+  const [modelOpen, setModelOpen] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const C = {
+    bg: '#070B1A',
+    bgAccent: '#0B1023',
+    bgElevated: '#101935',
+    border: 'rgba(0, 209, 255, 0.15)',
+    primary: '#00D1FF',
+    primaryDark: '#00B8D9',
+    text: '#EAF4FF',
+    textMuted: '#A9B8D4',
+    online: '#00FF88',
+  };
+
+  const MODELS = [
+    { id: 'auto', label: 'Auto' },
+    { id: 'gpt-5', label: 'GPT-5' },
+    { id: 'claude', label: 'Claude' },
+    { id: 'gemini', label: 'Gemini' },
+    { id: 'local', label: 'Local' },
+  ];
+
+  useEffect(() => {
+    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages, streaming]);
+
+  const send = async (text?: string) => {
+    const msg = (text || input).trim();
+    if (!msg || streaming) return;
+    setInput('');
+    setMessages((m) => [...m, { role: 'user', content: msg }, { role: 'assistant', content: '' }]);
+    setStreaming(true);
+    try {
+      const body: any = { message: msg, model: model === 'auto' ? '__auto__' : model };
+      if (convId) body.conversationId = convId;
+      const res = await fetch('/api/assistant/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error('HTTP ' + res.status + (errText ? ': ' + errText.slice(0, 80) : ''));
+      }
+      if (!res.body) throw new Error('no response');
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let asst = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const events = buf.split('\n\n');
+        buf = events.pop() || '';
+        for (const ev of events) {
+          if (!ev.startsWith('data: ')) continue;
+          try {
+            const d = JSON.parse(ev.slice(6));
+            if (d.type === 'text') {
+              asst += d.text;
+              setMessages((m) => {
+                const copy = [...m];
+                copy[copy.length - 1] = { role: 'assistant', content: asst };
+                return copy;
+              });
+            } else if (d.type === 'meta' && d.conversationId) {
+              setConvId(d.conversationId);
+            }
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      setMessages((m) => {
+        const copy = [...m];
+        copy[copy.length - 1] = { role: 'assistant', content: 'خطأ: ' + (e?.message || '') };
+        return copy;
+      });
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  const newChat = () => { setMessages([]); setConvId(null); setInput(''); };
+
+  const chips = ['لخص التقرير', 'أنشئ دراسة', 'اقترح أفكار', 'تحليل البيانات'];
+  const isDisabled = streaming || !input.trim();
+  const modelLabel = MODELS.find((m) => m.id === model)?.label || 'Auto';
+
+  const containerStyle: React.CSSProperties = {
+    margin: '0 0 16px 0',
+    width: '100%',
+    height: 420,
+    background: C.bg,
+    border: `1px solid ${C.border}`,
+    borderRadius: 20,
+    boxShadow: '0 0 40px rgba(0, 209, 255, 0.05), 0 12px 32px rgba(0, 0, 0, 0.45)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+  };
+
+  const headerStyle: React.CSSProperties = {
+    padding: '12px 16px',
+    background: `linear-gradient(180deg, ${C.bgAccent}, ${C.bg})`,
+    borderBottom: `1px solid ${C.border}`,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  };
+
+  const avatarStyle: React.CSSProperties = {
+    width: 36, height: 36, borderRadius: '50%',
+    background: `radial-gradient(circle at 30% 30%, ${C.primary}, ${C.primaryDark})`,
+    boxShadow: '0 0 12px rgba(0, 209, 255, 0.45)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#001122', fontWeight: 800, fontSize: 16, flexShrink: 0,
+  };
+
+  const ghostBtn: React.CSSProperties = {
+    width: 32, height: 32, borderRadius: 8,
+    background: 'transparent',
+    border: `1px solid ${C.border}`,
+    color: C.textMuted,
+    fontSize: 13,
+    cursor: 'pointer',
+    flexShrink: 0,
+  };
+
+  const topGlowStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0, left: '20%', right: '20%',
+    height: 1,
+    background: `linear-gradient(90deg, transparent, ${C.primary}, transparent)`,
+    opacity: 0.5,
+    pointerEvents: 'none',
+  };
+
+  const titleStyle: React.CSSProperties = {
+    color: C.text, fontWeight: 700, fontSize: 14,
+    display: 'flex', alignItems: 'center', gap: 6,
+  };
+
+  const onlineStyle: React.CSSProperties = {
+    width: 7, height: 7, borderRadius: '50%',
+    background: C.online,
+    boxShadow: `0 0 8px ${C.online}`,
+    display: 'inline-block',
+  };
+
+  const modelBtnStyle: React.CSSProperties = {
+    padding: '5px 10px',
+    background: 'rgba(0, 209, 255, 0.08)',
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    color: C.text,
+    fontSize: 11,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+  };
+
+  const dropdownStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 'calc(100% + 4px)',
+    insetInlineEnd: 0,
+    background: C.bgElevated,
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    padding: 4,
+    minWidth: 110,
+    zIndex: 20,
+    boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+  };
+
+  const openFullStyle: React.CSSProperties = {
+    width: 28, height: 28,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'transparent',
+    border: `1px solid ${C.border}`,
+    borderRadius: 8,
+    color: C.textMuted,
+    textDecoration: 'none',
+    fontSize: 12,
+    flexShrink: 0,
+  };
+
+  const messagesAreaStyle: React.CSSProperties = {
+    flex: 1, padding: '14px 16px', overflow: 'auto', background: C.bg,
+    display: 'flex', flexDirection: 'column', gap: 10,
+  };
+
+  const emptyStateStyle: React.CSSProperties = {
+    flex: 1, display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    textAlign: 'center', color: C.textMuted, fontSize: 13, padding: 16,
+  };
+
+  const emptyIconStyle: React.CSSProperties = {
+    width: 56, height: 56, borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(0, 209, 255, 0.18), transparent)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 28, color: C.primary, marginBottom: 10,
+  };
+
+  const chipsStyle: React.CSSProperties = {
+    padding: '8px 16px',
+    borderTop: `1px solid ${C.border}`,
+    background: C.bgAccent,
+    display: 'flex', gap: 6, flexWrap: 'wrap',
+  };
+
+  const chipStyle: React.CSSProperties = {
+    padding: '5px 10px',
+    background: 'rgba(0, 209, 255, 0.06)',
+    border: `1px solid ${C.border}`,
+    borderRadius: 100,
+    color: C.textMuted,
+    fontSize: 11,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  };
+
+  const inputFormStyle: React.CSSProperties = {
+    padding: '10px 12px',
+    background: C.bgAccent,
+    borderTop: `1px solid ${C.border}`,
+    display: 'flex', gap: 6, alignItems: 'center',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    flex: 1, padding: '8px 12px',
+    background: 'rgba(0, 209, 255, 0.04)',
+    border: `1px solid ${C.border}`,
+    borderRadius: 10,
+    color: C.text, fontSize: 13, outline: 'none',
+  };
+
+  const sendBtnStyle: React.CSSProperties = {
+    width: 36, height: 36, borderRadius: 10,
+    background: isDisabled ? 'rgba(0, 209, 255, 0.15)' : `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})`,
+    border: 'none',
+    color: isDisabled ? C.textMuted : '#001122',
+    fontWeight: 800, fontSize: 14,
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+    boxShadow: isDisabled ? 'none' : '0 0 12px rgba(0, 209, 255, 0.3)',
+    flexShrink: 0,
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={topGlowStyle} />
+      <div style={headerStyle}>
+        <div style={avatarStyle}>{'\u2726'}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={titleStyle}>
+            المساعد الذكي
+            <span style={onlineStyle} />
+          </div>
+          <div style={{ color: C.textMuted, fontSize: 11 }}>
+            {streaming ? 'يكتب الآن...' : 'متصل · جاهز'}
+          </div>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <button type="button" onClick={() => setModelOpen((o) => !o)} style={modelBtnStyle}>
+            {modelLabel}
+            <span style={{ fontSize: 8 }}>{'\u25BE'}</span>
+          </button>
+          {modelOpen ? (
+            <div style={dropdownStyle}>
+              {MODELS.map((mm) => (
+                <button key={mm.id} type="button" onClick={() => { setModel(mm.id); setModelOpen(false); }} style={{
+                  display: 'block', width: '100%', padding: '6px 10px',
+                  background: mm.id === model ? 'rgba(0, 209, 255, 0.12)' : 'transparent',
+                  border: 'none', borderRadius: 6,
+                  color: mm.id === model ? C.primary : C.textMuted,
+                  fontSize: 12, cursor: 'pointer', textAlign: 'right',
+                }}>{mm.label}</button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <a href={convId ? `/assistant?cid=${convId}` : '/assistant'} title="افتح كامل" style={openFullStyle}>{'\u2197'}</a>
+      </div>
+
+      <div ref={bodyRef} style={messagesAreaStyle}>
+        {messages.length === 0 ? (
+          <div style={emptyStateStyle}>
+            <div style={emptyIconStyle}>{'\u2726'}</div>
+            <div style={{ color: C.text, fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+              أهلاً {userName}
+            </div>
+            <div style={{ fontSize: 12 }}>اسألني عن البرامج، الفريق، أو الترشيحات</div>
+          </div>
+        ) : (
+          messages.map((m, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-start' : 'flex-end' }}>
+              <div style={{
+                background: m.role === 'user' ? `linear-gradient(135deg, ${C.primaryDark}, ${C.primary})` : 'rgba(0, 209, 255, 0.05)',
+                border: m.role === 'user' ? 'none' : `1px solid ${C.border}`,
+                padding: '8px 12px',
+                borderRadius: m.role === 'user' ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+                color: m.role === 'user' ? '#001122' : C.text,
+                fontSize: 13, maxWidth: '78%',
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                boxShadow: m.role === 'user' ? '0 2px 10px rgba(0, 209, 255, 0.22)' : 'none',
+                fontWeight: m.role === 'user' ? 600 : 400, lineHeight: 1.55,
+              }}>
+                {m.content || (streaming && i === messages.length - 1 ? '...' : '')}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {messages.length === 0 ? (
+        <div style={chipsStyle}>
+          {chips.map((c) => (
+            <button key={c} type="button" onClick={() => send(c)} style={chipStyle}>{c}</button>
+          ))}
+        </div>
+      ) : null}
+
+      <form onSubmit={(e) => { e.preventDefault(); send(); }} style={inputFormStyle}>
+        <button type="button" onClick={newChat} title="محادثة جديدة" style={ghostBtn}>{'\u21BB'}</button>
+        <button type="button" title="رفع ملف" style={ghostBtn}>{'\uD83D\uDCCE'}</button>
+        <button type="button" title="صوت" style={ghostBtn}>{'\uD83C\uDFA4'}</button>
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="اكتب سؤالك..." disabled={streaming} autoComplete="off" style={inputStyle} />
+        <button type="submit" disabled={isDisabled} title="إرسال" style={sendBtnStyle}>{streaming ? '...' : '\u2192'}</button>
+      </form>
+    </div>
+  );
+}

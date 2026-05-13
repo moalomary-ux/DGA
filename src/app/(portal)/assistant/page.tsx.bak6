@@ -1,0 +1,669 @@
+'use client';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+
+type Attachment = { id: number; filename: string; mime: string; size_bytes: number };
+type ToolCall = { name: string; args: any; status: 'running'|'done'|'error'; summary?: string; ok?: boolean; duration_ms?: number };
+type Message = { id?: number; role: 'user'|'assistant'|'system'; content: string; streaming?: boolean; tokens?: number; model?: string; created_at?: string; attachments?: Attachment[]; toolCalls?: ToolCall[] };
+type Conversation = { id: number; title: string; model: string; message_count: number; created_at: string; updated_at: string };
+type Model = { id: string; name: string; desc: string; tier: string; ctx: number; icon: string; size_gb?: number };
+type PendingAttach = { id: number; name: string; size: number; mime: string; status: string };
+
+const AUTO_MODEL: Model = { id: '__auto__', name: 'Auto', desc: 'النظام يختار الموديل تلقائياً', tier: 'auto', ctx: 0, icon: '🎯' };
+const SUGGESTIONS = [
+  { icon: '💡', text: 'لخّص لي البرامج النشطة هذا الشهر' },
+  { icon: '📊', text: 'ما إحصائيات المتدربين هذا الربع؟' },
+  { icon: '📝', text: 'اكتب لي ملخص أداء الفريق' },
+  { icon: '🎯', text: 'اقترح 3 مبادرات للتطوير الرقمي' },
+];
+
+// Theme-aware color helpers (every value resolves at runtime per data-theme)
+const C = {
+  bg: 'var(--bg)',
+  surface: 'var(--surface)',
+  surface2: 'var(--surface-2)',
+  bg2: 'var(--bg-2)',
+  line: 'var(--line)',
+  line2: 'var(--line-2)',
+  text: 'var(--text)',
+  text2: 'var(--text-2)',
+  text3: 'var(--text-3)',
+  text4: 'var(--text-4)',
+  primary: 'var(--primary)',
+  accent: 'var(--accent)',
+  success: 'var(--success)',
+  danger: 'var(--danger)',
+  primaryBg: 'color-mix(in srgb, var(--primary) 12%, transparent)',
+  primaryBgStrong: 'color-mix(in srgb, var(--primary) 18%, transparent)',
+  primaryBorder: 'color-mix(in srgb, var(--primary) 30%, transparent)',
+  accentBg: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+  accentBorder: 'color-mix(in srgb, var(--accent) 30%, transparent)',
+  surfaceHover: 'color-mix(in srgb, var(--text) 6%, transparent)',
+  grad1: 'var(--grad-1)',
+  grad2: 'var(--grad-2)',
+  shadowMd: 'var(--shadow-md)',
+  shadowLg: 'var(--shadow-lg)',
+};
+
+function fmtSize(b: number): string {
+  if (b < 1024) return `${b}B`;
+  if (b < 1024*1024) return `${(b/1024).toFixed(1)}KB`;
+  return `${(b/1024/1024).toFixed(2)}MB`;
+}
+function mimeIcon(mime: string, name: string): string {
+  const n = (name || '').toLowerCase();
+  if (mime.startsWith('image/')) return '🖼';
+  if (mime.startsWith('video/')) return '🎬';
+  if (mime.startsWith('audio/')) return '🎵';
+  if (mime === 'application/pdf') return '📄';
+  if (mime.includes('word')) return '📝';
+  if (mime.includes('excel') || mime.includes('spreadsheet') || n.endsWith('.csv')) return '📊';
+  if (mime.includes('presentation')) return '🎯';
+  if (n.endsWith('.json')) return '🔧';
+  if (n.endsWith('.py') || n.endsWith('.js') || n.endsWith('.ts')) return '💻';
+  return '📎';
+}
+
+export default function AssistantPage() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [streaming, setStreaming] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<number | null>(null);
+  const [activeTitle, setActiveTitle] = useState<string>('');
+  const [bridgeStatus, setBridgeStatus] = useState<'unknown'|'connected'|'offline'>('unknown');
+  const [models, setModels] = useState<Model[]>([]);
+  const [selectedModel, setSelectedModel] = useState('__auto__');
+  const [showModelMenu, setShowModelMenu] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttach[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  const _sp = useSearchParams();
+  useEffect(() => {
+    const q = _sp?.get('q');
+    if (q) setInput(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const msgsEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const modelMenuRef = useRef<HTMLDivElement>(null);
+
+  const isEmpty = messages.length === 0;
+
+  useEffect(() => { loadConversations(); loadModels(); }, []);
+  useEffect(() => { if (!isEmpty) msgsEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isEmpty]);
+
+  useEffect(() => {
+    const ta = inputRef.current;
+    if (ta) {
+      ta.style.height = 'auto';
+      const min = isEmpty ? 120 : 60;
+      const max = isEmpty ? 360 : 220;
+      ta.style.height = Math.min(Math.max(ta.scrollHeight, min), max) + 'px';
+    }
+  }, [input, isEmpty]);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (modelMenuRef.current && !modelMenuRef.current.contains(e.target as Node)) setShowModelMenu(false);
+    }
+    if (showModelMenu) document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [showModelMenu]);
+
+  const loadConversations = async () => {
+    try { const r = await fetch('/api/assistant/conversations'); const d = await r.json(); if (d.ok) setConversations(d.conversations || []); } catch {}
+  };
+  const loadModels = async () => {
+    try { const r = await fetch('/api/assistant/models'); const d = await r.json(); if (d.ok) setModels(d.models || []); } catch {}
+  };
+  const loadConversation = async (id: number) => {
+    try {
+      const r = await fetch(`/api/assistant/conversations/${id}`);
+      const d = await r.json();
+      if (d.ok) { setMessages(d.messages || []); setActiveConvId(id); setActiveTitle(d.conversation?.title || ''); setPendingAttachments([]); }
+    } catch {}
+  };
+  const newChat = () => { setMessages([]); setActiveConvId(null); setActiveTitle(''); setInput(''); setPendingAttachments([]); inputRef.current?.focus(); };
+  const stop = () => { abortRef.current?.abort(); };
+
+  const uploadFile = useCallback(async (file: File) => {
+    setUploadError(null); setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      if (activeConvId) fd.append('conversationId', String(activeConvId));
+      const res = await fetch('/api/assistant/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.ok) {
+        setPendingAttachments(prev => [...prev, { id: data.file.id, name: data.file.name, size: data.file.size, mime: data.file.mime, status: data.file.status }]);
+      } else {
+        setUploadError(data.error || 'فشل الرفع'); setTimeout(() => setUploadError(null), 4000);
+      }
+    } catch (e: any) {
+      setUploadError(e?.message || 'خطأ شبكة'); setTimeout(() => setUploadError(null), 4000);
+    } finally { setUploading(false); }
+  }, [activeConvId]);
+
+  const onFilePicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    for (const f of files) await uploadFile(f);
+    if (e.target) e.target.value = '';
+  };
+  const removeAttach = (id: number) => setPendingAttachments(prev => prev.filter(a => a.id !== id));
+
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const filesToUpload: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const blob = item.getAsFile();
+        if (blob) {
+          const ext = (blob.type.split('/')[1] || 'bin').split('+')[0];
+          const fname = blob.name && blob.name !== 'image.png' ? blob.name : `paste-${Date.now()}.${ext}`;
+          filesToUpload.push(new File([blob], fname, { type: blob.type }));
+        }
+      }
+    }
+    if (filesToUpload.length > 0) {
+      e.preventDefault();
+      for (const f of filesToUpload) await uploadFile(f);
+    }
+  }, [uploadFile]);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); if (!dragActive) setDragActive(true); }
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    const rt = e.relatedTarget as Node;
+    if (!rt || !(e.currentTarget as Node).contains(rt)) setDragActive(false);
+  };
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault(); setDragActive(false);
+    const files = Array.from(e.dataTransfer.files);
+    for (const f of files) await uploadFile(f);
+  };
+
+  const send = async (text?: string) => {
+    const content = (text || input).trim();
+    if ((!content && pendingAttachments.length === 0) || streaming) return;
+    const displayContent = content || `📎 رفعت ${pendingAttachments.length} ملف`;
+    const attachSnapshot = pendingAttachments.map(p => ({ id: p.id, filename: p.name, mime: p.mime, size_bytes: p.size }));
+    setMessages(prev => [...prev,
+      { role: 'user', content: displayContent, attachments: attachSnapshot },
+      { role: 'assistant', content: '', streaming: true },
+    ]);
+    const attachIds = pendingAttachments.map(p => p.id);
+    setInput(''); setPendingAttachments([]); setStreaming(true);
+    const abort = new AbortController();
+    abortRef.current = abort;
+    try {
+      const res = await fetch('/api/assistant/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: activeConvId, message: content, model: selectedModel, attachments: attachIds }),
+        signal: abort.signal,
+      });
+      if (!res.ok || !res.body) {
+        setMessages(prev => { const u = [...prev]; u[u.length-1] = { role:'assistant', content:`❌ خطأ (${res.status})`, streaming:false }; return u; });
+        setBridgeStatus('offline'); return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = ''; let assistantContent = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split('\n\n');
+        buffer = blocks.pop() || '';
+        for (const block of blocks) {
+          const line = block.trim();
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const chunk = JSON.parse(line.slice(6));
+            if (chunk.type === 'meta') {
+              if (chunk.conversationId && !activeConvId) { setActiveConvId(chunk.conversationId); setActiveTitle(content.slice(0,80) || 'محادثة بمرفق'); }
+              if (chunk.resolvedModel) {
+                setMessages(prev => { const u = [...prev]; const last = u[u.length-1]; if (last?.role === 'assistant') u[u.length-1] = { ...last, model: chunk.resolvedModel }; return u; });
+              }
+            } else if (chunk.type === 'tool_call') {
+              setMessages(prev => {
+                const u = [...prev];
+                const last = u[u.length-1];
+                if (last?.role === 'assistant') {
+                  const newTC: ToolCall = { name: chunk.name, args: chunk.args, status: 'running' };
+                  u[u.length-1] = { ...last, toolCalls: [...(last.toolCalls || []), newTC] };
+                }
+                return u;
+              });
+            } else if (chunk.type === 'tool_result') {
+              setMessages(prev => {
+                const u = [...prev];
+                const last = u[u.length-1];
+                if (last?.role === 'assistant' && last.toolCalls) {
+                  const updated: ToolCall[] = last.toolCalls.map(t =>
+                    (t.name === chunk.name && t.status === 'running')
+                      ? { ...t, status: (chunk.ok ? 'done' : 'error') as 'done'|'error', summary: chunk.summary, ok: chunk.ok, duration_ms: chunk.duration_ms }
+                      : t
+                  );
+                  u[u.length-1] = { ...last, toolCalls: updated };
+                }
+                return u;
+              });
+            } else if (chunk.type === 'text') {
+              assistantContent += chunk.text;
+              setMessages(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], role:'assistant', content: assistantContent, streaming: true }; return u; });
+            } else if (chunk.type === 'done') {
+              setBridgeStatus('connected');
+              setMessages(prev => { const u = [...prev]; u[u.length-1] = { ...u[u.length-1], role:'assistant', content: assistantContent, streaming: false, tokens: chunk.tokens, model: chunk.model || u[u.length-1].model }; return u; });
+            } else if (chunk.type === 'error') {
+              setMessages(prev => { const u = [...prev]; u[u.length-1] = { role:'assistant', content:`❌ ${chunk.error}`, streaming:false }; return u; });
+              setBridgeStatus('offline');
+            }
+          } catch {}
+        }
+      }
+      setTimeout(() => loadConversations(), 400);
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        setMessages(prev => { const u = [...prev]; if (u[u.length-1]?.streaming) u[u.length-1] = { ...u[u.length-1], streaming:false, content: (u[u.length-1].content||'')+'\n\n_⏸ توقّف بواسطتك_' }; return u; });
+      } else setBridgeStatus('offline');
+    } finally { setStreaming(false); abortRef.current = null; }
+  };
+
+  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  };
+  const copyToClipboard = (text: string) => { try { navigator.clipboard.writeText(text); } catch {} };
+
+  const formatTime = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      const diff = (Date.now() - d.getTime()) / 1000;
+      if (diff < 60) return 'الآن';
+      if (diff < 3600) return `قبل ${Math.floor(diff/60)} د`;
+      if (diff < 86400) return `قبل ${Math.floor(diff/3600)} س`;
+      if (diff < 86400*7) return `قبل ${Math.floor(diff/86400)} ي`;
+      return `${d.getDate()}/${d.getMonth()+1}`;
+    } catch { return ''; }
+  };
+
+  const allModels = useMemo(() => [AUTO_MODEL, ...models], [models]);
+  const currentModel = useMemo(() => allModels.find(m => m.id === selectedModel) || AUTO_MODEL, [allModels, selectedModel]);
+  const hasInput = input.trim().length > 0 || pendingAttachments.length > 0;
+
+  const renderInputBox = (mode: 'centered'|'compact') => (
+    <div style={{ width: '100%', maxWidth: mode === 'centered' ? 720 : 820, margin: '0 auto' }}>
+      {uploadError && (
+        <div style={{ padding: '8px 12px', marginBottom: 8, background: 'color-mix(in srgb, var(--danger) 12%, transparent)', border: `1px solid color-mix(in srgb, var(--danger) 30%, transparent)`, borderRadius: 10, fontSize: 11, color: C.danger }}>⚠ {uploadError}</div>
+      )}
+      {pendingAttachments.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+          {pendingAttachments.map(a => (
+            <div key={a.id} style={{ padding: '6px 12px', background: C.primaryBg, border: `1px solid ${C.primaryBorder}`, borderRadius: 18, fontSize: 11, display: 'flex', alignItems: 'center', gap: 8, color: C.primary, animation: 'chipIn 0.2s' }}>
+              <span style={{ fontSize: 14 }}>{mimeIcon(a.mime, a.name)}</span>
+              <span style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+              <span style={{ fontSize: 9, opacity: 0.7 }}>{fmtSize(a.size)}</span>
+              <button onClick={() => removeAttach(a.id)} style={{ background: 'transparent', border: 0, color: C.primary, cursor: 'pointer', fontSize: 14, padding: 0, lineHeight: 1 }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div
+        onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
+        style={{
+          position: 'relative',
+          background: C.surface,
+          border: `1.5px solid ${dragActive ? C.primary : C.line2}`,
+          borderRadius: mode === 'centered' ? 20 : 16,
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          boxShadow: dragActive ? `0 0 0 4px ${C.primaryBg}` : (mode === 'centered' ? C.shadowMd : 'none'),
+        }}
+      >
+        {dragActive && (
+          <div style={{ position: 'absolute', inset: 0, background: C.primaryBg, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, fontSize: 16, fontWeight: 600, color: C.primary, pointerEvents: 'none', zIndex: 5, backdropFilter: 'blur(2px)' }}>
+            <div style={{ fontSize: 32 }}>📥</div><div>أفلت الملفات هنا</div>
+          </div>
+        )}
+        <textarea
+          ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey} onPaste={handlePaste}
+          placeholder={streaming ? '⏳ Hermes يكتب...' : (mode === 'centered' ? 'اسألني أي شيء، اسحب ملفاً، أو ألصق صورة...' : 'تابع المحادثة...')}
+          disabled={streaming} rows={1}
+          style={{
+            width: '100%', resize: 'none',
+            padding: mode === 'centered' ? '22px 22px 56px' : '14px 18px 48px',
+            background: 'transparent', border: 'none',
+            color: C.text, fontSize: mode === 'centered' ? 15 : 13, lineHeight: 1.6,
+            fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+            minHeight: mode === 'centered' ? 120 : 60,
+            maxHeight: mode === 'centered' ? 360 : 220,
+          }}
+        />
+        <div style={{ position: 'absolute', bottom: 8, left: 10, right: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 2 }}>
+            <ToolBtn onClick={() => fileInputRef.current?.click()} disabled={uploading} title="إرفاق ملف">{uploading ? '⏳' : '📎'}</ToolBtn>
+            <ToolBtn onClick={() => folderInputRef.current?.click()} disabled={uploading} title="إرفاق مجلد">📁</ToolBtn>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div ref={modelMenuRef} style={{ position: 'relative' }}>
+              <button onClick={() => setShowModelMenu(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: showModelMenu ? C.accentBg : 'color-mix(in srgb, var(--accent) 6%, transparent)', border: `1px solid ${C.accentBorder}`, borderRadius: 10, color: C.accent, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                <span style={{ fontSize: 13 }}>{currentModel.icon}</span>
+                <span style={{ maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentModel.name}</span>
+                <span style={{ fontSize: 8, opacity: 0.7, transition: 'transform 0.15s', transform: showModelMenu ? 'rotate(180deg)' : 'none' }}>▼</span>
+              </button>
+              {showModelMenu && (
+                <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, minWidth: 320, maxHeight: 420, overflowY: 'auto', background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: 6, zIndex: 100, boxShadow: C.shadowLg, animation: 'slideUp 0.18s ease-out' }}>
+                  {allModels.length === 0 ? (
+                    <div style={{ padding: 14, fontSize: 11, color: C.text3, textAlign: 'center' }}>تحميل الموديلات...</div>
+                  ) : allModels.map(m => (
+                    <div key={m.id} onClick={() => { setSelectedModel(m.id); setShowModelMenu(false); }}
+                      style={{ padding: '10px 12px', borderRadius: 8, cursor: 'pointer', background: selectedModel === m.id ? C.primaryBg : 'transparent', display: 'flex', alignItems: 'flex-start', gap: 12, transition: 'background 0.12s' }}
+                      onMouseEnter={e => { if (selectedModel !== m.id) e.currentTarget.style.background = C.surfaceHover; }}
+                      onMouseLeave={e => { if (selectedModel !== m.id) e.currentTarget.style.background = 'transparent'; }}>
+                      <span style={{ fontSize: 18, lineHeight: 1 }}>{m.icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: C.text, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {m.name}
+                          {selectedModel === m.id && <span style={{ fontSize: 10, color: C.primary }}>✓</span>}
+                        </div>
+                        <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>{m.desc}</div>
+                        {m.id !== '__auto__' && (<div style={{ fontSize: 9, color: C.text4, marginTop: 2 }}>{m.tier} · {Math.floor(m.ctx/1000)}k{m.size_gb ? ` · ${m.size_gb}GB` : ''}</div>)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {streaming ? (
+              <button onClick={stop} title="إيقاف" style={{ width: 36, height: 36, borderRadius: 10, background: C.danger, color: '#fff', border: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>■</button>
+            ) : (
+              <button onClick={() => send()} disabled={!hasInput} title="إرسال"
+                style={{ width: 36, height: 36, borderRadius: 10, background: !hasInput ? C.bg2 : C.grad2, color: !hasInput ? C.text4 : '#fff', border: 0, cursor: !hasInput ? 'not-allowed' : 'pointer', fontSize: 16, fontWeight: 700, transition: 'transform 0.1s', boxShadow: hasInput ? `0 4px 14px ${C.primaryBgStrong}` : 'none' }}
+                onMouseDown={e => { if (hasInput) e.currentTarget.style.transform = 'scale(0.93)'; }}
+                onMouseUp={e => (e.currentTarget.style.transform = 'scale(1)')}>↑</button>
+            )}
+          </div>
+        </div>
+      </div>
+      <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={onFilePicked} />
+      <input ref={folderInputRef} type="file" multiple style={{ display: 'none' }} onChange={onFilePicked}
+        /* @ts-expect-error webkitdirectory not in standard types */ webkitdirectory="" directory="" />
+      <div style={{ fontSize: 10, color: C.text4, textAlign: 'center', marginTop: 10, display: 'flex', justifyContent: 'center', gap: 14 }}>
+        <span>💡 اسحب وأفلت</span><span>📋 ألصق</span><span>⏎ إرسال</span><span>⇧⏎ سطر جديد</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      display: 'flex',
+      height: 'calc(100vh - 80px)',
+      background: C.bg,
+      color: C.text,
+      fontFamily: 'inherit',
+    }}>
+      {/* Sidebar */}
+      <aside style={{ width: 280, borderLeft: `1px solid ${C.line}`, display: 'flex', flexDirection: 'column', background: C.surface }}>
+        <div style={{ padding: 16, borderBottom: `1px solid ${C.line}` }}>
+          <button onClick={newChat} style={{ width: '100%', padding: '10px 14px', background: C.grad2, border: 0, borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'transform 0.15s, filter 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.filter = 'brightness(1.05)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.filter = 'brightness(1)'; }}>
+            ✨ محادثة جديدة
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px' }}>
+          {conversations.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 30, color: C.text4, fontSize: 12 }}>لا محادثات بعد</div>
+          ) : conversations.map(c => (
+            <div key={c.id} onClick={() => loadConversation(c.id)}
+              style={{ padding: '10px 12px', marginBottom: 4, borderRadius: 8, background: activeConvId === c.id ? C.primaryBg : 'transparent', border: `1px solid ${activeConvId === c.id ? C.primaryBorder : 'transparent'}`, cursor: 'pointer', transition: 'background 0.15s' }}
+              onMouseEnter={e => { if (activeConvId !== c.id) e.currentTarget.style.background = C.surfaceHover; }}
+              onMouseLeave={e => { if (activeConvId !== c.id) e.currentTarget.style.background = 'transparent'; }}>
+              <div style={{ fontSize: 12, color: C.text, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title || 'بدون عنوان'}</div>
+              <div style={{ fontSize: 10, color: C.text4, marginTop: 3, display: 'flex', justifyContent: 'space-between' }}>
+                <span>{c.message_count} رسالة</span><span>{formatTime(c.updated_at)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '10px 16px', borderTop: `1px solid ${C.line}`, fontSize: 10, color: C.text4, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: bridgeStatus === 'connected' ? C.success : bridgeStatus === 'offline' ? C.danger : C.text4 }} />
+          <span>Hermes {bridgeStatus === 'connected' ? 'متصل' : bridgeStatus === 'offline' ? 'غير متصل' : '...'}</span>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <header style={{ padding: '14px 28px', borderBottom: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 56 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>✨ مساعد قدراتك</div>
+            {activeTitle && <div style={{ fontSize: 11, color: C.text4, marginTop: 2, maxWidth: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeTitle}</div>}
+          </div>
+        </header>
+
+        {isEmpty ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 24px', gap: 28, overflowY: 'auto' }}>
+            <div style={{ textAlign: 'center', maxWidth: 540 }}>
+              <div style={{ fontSize: 56, marginBottom: 14, animation: 'float 3s ease-in-out infinite' }}>✨</div>
+              <h2 style={{ fontSize: 26, fontWeight: 700, marginBottom: 8, color: C.text }}>كيف أساعدك اليوم؟</h2>
+              <p style={{ fontSize: 13, color: C.text3 }}>أنا Hermes — أبحث، ألخّص، أكتب، أحلّل ملفاتك، وأنشئ وثائق.</p>
+            </div>
+            {renderInputBox('centered')}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, width: '100%', maxWidth: 720 }}>
+              {SUGGESTIONS.map((s, i) => (
+                <button key={i} onClick={() => send(s.text)}
+                  style={{ padding: '11px 14px', textAlign: 'right', background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, cursor: 'pointer', color: C.text2, fontSize: 12, display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.primaryBg; e.currentTarget.style.borderColor = C.primaryBorder; e.currentTarget.style.color = C.text; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = C.surface; e.currentTarget.style.borderColor = C.line; e.currentTarget.style.color = C.text2; }}>
+                  <span style={{ fontSize: 16 }}>{s.icon}</span>
+                  <span style={{ flex: 1 }}>{s.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 16px 8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 820, margin: '0 auto', paddingBottom: 16 }}>
+                {messages.map((m, i) => (<MessageRow key={i} message={m} onCopy={() => copyToClipboard(m.content)} />))}
+                <div ref={msgsEndRef} />
+              </div>
+            </div>
+            <div style={{ padding: '8px 16px 18px' }}>
+              {renderInputBox('compact')}
+            </div>
+          </>
+        )}
+      </main>
+
+      <style>{`
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes chipIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        textarea::-webkit-scrollbar { width: 6px; }
+        textarea::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 3px; }
+        textarea::-webkit-scrollbar-track { background: transparent; }
+      `}</style>
+    </div>
+  );
+}
+
+function ToolBtn({ children, onClick, disabled, title }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; title?: string }) {
+  return (
+    <button onClick={onClick} disabled={disabled} title={title}
+      style={{ width: 36, height: 36, borderRadius: 10, background: 'transparent', border: 'none', cursor: disabled ? 'wait' : 'pointer', color: disabled ? 'var(--text-4)' : 'var(--text-3)', fontSize: 17, transition: 'background 0.12s, color 0.12s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onMouseEnter={e => { if (!disabled) { e.currentTarget.style.background = 'color-mix(in srgb, var(--text) 6%, transparent)'; e.currentTarget.style.color = 'var(--text)'; } }}
+      onMouseLeave={e => { if (!disabled) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; } }}>
+      {children}
+    </button>
+  );
+}
+
+function MessageRow({ message, onCopy }: { message: Message; onCopy: () => void }) {
+  const isUser = message.role === 'user';
+  const [copied, setCopied] = useState(false);
+  const doCopy = () => { onCopy(); setCopied(true); setTimeout(() => setCopied(false), 1500); };
+  return (
+    <div style={{ display: 'flex', flexDirection: isUser ? 'row-reverse' : 'row', gap: 12, alignItems: 'flex-start' }}>
+      <div style={{ width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isUser ? 'var(--primary)' : 'var(--grad-1)', color: '#fff', flexShrink: 0, fontSize: 13 }}>{isUser ? '👤' : '✨'}</div>
+      <div style={{ flex: 1, maxWidth: '85%' }}>
+        {isUser && message.attachments && message.attachments.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6, justifyContent: 'flex-end' }}>
+            {message.attachments.map((a: Attachment) => (
+              <div key={a.id} style={{ padding: '4px 10px', background: 'color-mix(in srgb, var(--primary) 12%, transparent)', border: `1px solid color-mix(in srgb, var(--primary) 30%, transparent)`, borderRadius: 12, fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 5, color: 'var(--primary)' }}>
+                <span>{mimeIcon(a.mime, a.filename)}</span>
+                <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.filename}</span>
+                <span style={{ opacity: 0.6 }}>{fmtSize(a.size_bytes)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {!isUser && message.toolCalls && message.toolCalls.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            {message.toolCalls.map((tc, i) => <ToolCard key={i} tc={tc} />)}
+          </div>
+        )}
+        <div style={{
+          padding: '14px 18px',
+          background: isUser ? 'color-mix(in srgb, var(--primary) 10%, transparent)' : 'var(--surface)',
+          border: `1px solid ${isUser ? 'color-mix(in srgb, var(--primary) 28%, transparent)' : 'var(--line)'}`,
+          borderRadius: 14, fontSize: 13, lineHeight: 1.75, wordBreak: 'break-word', color: 'var(--text)',
+        }}>
+          <MessageContent content={message.content} />
+          {message.streaming && <span style={{ display: 'inline-block', width: 6, height: 14, background: 'var(--primary)', marginRight: 4, animation: 'blink 1s infinite', verticalAlign: 'middle' }} />}
+        </div>
+        {!isUser && !message.streaming && message.content && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 6, fontSize: 10, color: 'var(--text-4)', alignItems: 'center' }}>
+            <button onClick={doCopy} style={{ background: 'transparent', border: 0, color: 'var(--text-3)', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>{copied ? '✓ نُسخ' : '📋 نسخ'}</button>
+            {message.model && <span>· {message.model}</span>}
+            {message.tokens != null && <span>· {message.tokens} tokens</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MessageContent({ content }: { content: string }) {
+  const parts = content.split(/(```[\s\S]*?```)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('```')) {
+          const firstNl = part.indexOf('\n');
+          const lang = part.slice(3, firstNl).trim();
+          const code = part.slice(firstNl + 1, -3).replace(/\n$/, '');
+          return (
+            <pre key={i} style={{ background: 'var(--bg-2)', padding: 14, borderRadius: 10, overflow: 'auto', fontSize: 11.5, fontFamily: 'ui-monospace, monospace', margin: '8px 0', direction: 'ltr', textAlign: 'left', border: `1px solid var(--line)`, color: 'var(--text)' }}>
+              {lang && <div style={{ fontSize: 9, color: 'var(--text-3)', marginBottom: 6, fontFamily: 'inherit' }}>{lang}</div>}
+              <code>{code}</code>
+            </pre>
+          );
+        }
+        const lines = part.split('\n');
+        return (
+          <span key={i}>
+            {lines.map((line, j) => {
+              const segments = line.split(/(\*\*[^*]+\*\*)/g);
+              return (
+                <span key={j}>
+                  {segments.map((seg, k) => {
+                    if (seg.startsWith('**') && seg.endsWith('**')) return <strong key={k}>{seg.slice(2, -2)}</strong>;
+                    return <span key={k}>{seg}</span>;
+                  })}
+                  {j < lines.length - 1 && <br />}
+                </span>
+              );
+            })}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+
+function ToolCard({ tc }: { tc: ToolCall }) {
+  const iconMap: Record<string, string> = {
+    'web_search': '🔍',
+    'query_programs': '📚',
+    'query_team': '👥',
+    'query_attendances': '✅',
+    'query_nominations': '🎯',
+    'search_documents': '📄',
+  };
+  const icon = iconMap[tc.name] || '🔧';
+  const labelMap: Record<string, string> = {
+    'web_search': 'البحث في الويب',
+    'query_programs': 'استعلام البرامج',
+    'query_team': 'استعلام الفريق',
+    'query_attendances': 'استعلام الحضور',
+    'query_nominations': 'استعلام الترشيحات',
+    'search_documents': 'البحث في الوثائق',
+  };
+  const label = labelMap[tc.name] || tc.name;
+  const statusColor = tc.status === 'running' ? 'var(--text-3)'
+                    : tc.status === 'done' ? 'var(--success)' : 'var(--danger)';
+  const bg = tc.status === 'running' ? 'color-mix(in srgb, var(--text-3) 8%, transparent)'
+           : tc.status === 'done' ? 'color-mix(in srgb, var(--success) 10%, transparent)'
+           : 'color-mix(in srgb, var(--danger) 10%, transparent)';
+  const border = tc.status === 'running' ? 'color-mix(in srgb, var(--text-3) 25%, transparent)'
+              : tc.status === 'done' ? 'color-mix(in srgb, var(--success) 35%, transparent)'
+              : 'color-mix(in srgb, var(--danger) 35%, transparent)';
+
+  // First arg value as compact preview
+  let argHint = '';
+  if (tc.args && typeof tc.args === 'object') {
+    const k = Object.keys(tc.args)[0];
+    if (k) {
+      const v = tc.args[k];
+      argHint = typeof v === 'string' ? `"${v.slice(0, 30)}${v.length > 30 ? '…' : ''}"` : String(v).slice(0, 30);
+    }
+  }
+
+  return (
+    <div style={{
+      padding: '9px 14px',
+      background: bg,
+      border: `1px solid ${border}`,
+      borderRadius: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      fontSize: 11.5,
+      color: 'var(--text-2)',
+      transition: 'background 0.2s, border-color 0.2s',
+    }}>
+      <span style={{ fontSize: 14, lineHeight: 1 }}>{icon}</span>
+      <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 12 }}>{label}</span>
+      {argHint && (
+        <span style={{ fontSize: 10, color: 'var(--text-4)', fontFamily: 'monospace', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {argHint}
+        </span>
+      )}
+      <span style={{ flex: 1, opacity: 0.92, textAlign: 'left' }}>
+        {tc.status === 'running' ? '⟳ جاري التنفيذ...' : tc.summary || ''}
+      </span>
+      <span style={{ color: statusColor, fontSize: 13, fontWeight: 700 }}>
+        {tc.status === 'running' ? '' : tc.status === 'done' ? '✓' : '✗'}
+      </span>
+      {tc.duration_ms != null && tc.status !== 'running' && (
+        <span style={{ fontSize: 9, color: 'var(--text-4)', fontFamily: 'monospace' }}>
+          {tc.duration_ms}ms
+        </span>
+      )}
+    </div>
+  );
+}
+

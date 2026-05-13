@@ -1,0 +1,576 @@
+/* ============================================================================
+   Omary Platform — DGA Brand Identity System
+   Based on official DGA Brand Guidelines
+   Primary palette: Navy #2a206a · Purple #7c32c9 · Turquoise #00abaf · Green #1cc182
+   ============================================================================ */
+
+:root {
+  /* DGA brand palette */
+  --dga-navy:      #2a206a;
+  --dga-navy-2:    #3d2f8f;
+  --dga-navy-3:    #1a1442;
+  --dga-purple:    #7c32c9;
+  --dga-purple-2:  #9655d6;
+  --dga-turquoise: #00abaf;
+  --dga-turquoise-2: #1ec9cd;
+  --dga-green:     #1cc182;
+  --dga-green-2:   #3dd99a;
+
+  /* Tenant accent (overridden by data-tenant) */
+  --primary:       var(--dga-navy);
+  --primary-2:     var(--dga-navy-2);
+  --primary-3:     var(--dga-navy-3);
+  --primary-bg:    rgba(42, 32, 106, 0.06);
+  --primary-bg-2:  rgba(42, 32, 106, 0.10);
+  --accent:        var(--dga-turquoise);
+  --accent-2:      var(--dga-turquoise-2);
+  --accent-bg:     rgba(0, 171, 175, 0.10);
+  --accent-3:      var(--dga-purple);
+  --accent-3-bg:   rgba(124, 50, 201, 0.08);
+  --accent-4:      var(--dga-green);
+  --accent-4-bg:   rgba(28, 193, 130, 0.10);
+
+  /* Surface */
+  --bg:        #F8F7FB;
+  --bg-2:      #F2F0F8;
+  --surface:   #FFFFFF;
+  --surface-2: #F4F2FA;
+  --surface-3: #EBE7F5;
+  --line:      #E4E0EE;
+  --line-soft: #EFECF5;
+  --line-strong: #C9C0DC;
+
+  /* Text */
+  --text:    #1A1530;
+  --text-2:  #44395E;
+  --text-3:  #756B8C;
+  --text-4:  #A8A0BD;
+
+  /* Status */
+  --success: var(--dga-green); --success-bg: rgba(28, 193, 130, 0.10);
+  --warning: #D97706;          --warning-bg: rgba(217, 119, 6, 0.12);
+  --danger:  #DC2626;          --danger-bg:  rgba(220, 38, 38, 0.10);
+  --info:    var(--dga-turquoise); --info-bg: rgba(0, 171, 175, 0.10);
+
+  /* Typography */
+  --font-display: 'Diodrum Arabic', 'Tajawal', system-ui, sans-serif;
+  --font-body: 'Diodrum Arabic', 'Tajawal', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  /* Sizing */
+  --sidebar-w: 272px;
+  --header-h: 64px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+
+  /* Shadows (DGA-tinted) */
+  --shadow-sm: 0 1px 2px rgba(42, 32, 106, 0.06);
+  --shadow:    0 2px 8px rgba(42, 32, 106, 0.08), 0 1px 2px rgba(42, 32, 106, 0.04);
+  --shadow-md: 0 8px 24px rgba(42, 32, 106, 0.10);
+  --shadow-lg: 0 16px 40px rgba(42, 32, 106, 0.16);
+
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================================
+   TENANT PALETTES — كل بوابة تستخدم subset مختلف من DGA
+   ============================================================================ */
+
+[data-tenant="omary"] {
+  --primary: var(--dga-navy);
+  --primary-2: var(--dga-navy-2);
+  --primary-3: var(--dga-navy-3);
+  --primary-bg: rgba(42, 32, 106, 0.06);
+  --primary-bg-2: rgba(42, 32, 106, 0.10);
+  --accent: var(--dga-turquoise);
+  --accent-2: var(--dga-turquoise-2);
+  --accent-bg: rgba(0, 171, 175, 0.10);
+}
+
+[data-tenant="advice"] {
+  --primary: var(--dga-purple);
+  --primary-2: var(--dga-purple-2);
+  --primary-3: #5a1f97;
+  --primary-bg: rgba(124, 50, 201, 0.06);
+  --primary-bg-2: rgba(124, 50, 201, 0.10);
+  --accent: var(--dga-turquoise);
+  --accent-2: var(--dga-turquoise-2);
+  --accent-bg: rgba(0, 171, 175, 0.10);
+}
+
+[data-tenant="qtech"] {
+  --primary:   #15103a;
+  --primary-2: #1f1850;
+  --primary-3: #2a206a;
+  --primary-bg:   #f4f8f9;
+  --primary-bg-2: rgba(0,171,175,0.10);
+
+  --accent:    #00abaf;
+  --accent-2:  #1cc182;
+  --accent-bg: rgba(0,171,175,0.12);
+
+  --stat-color-1: #00abaf;
+  --stat-color-2: #1cc182;
+  --stat-color-3: #2a206a;
+  --stat-color-4: #7c32c9;
+}
+
+/* ============================================================================
+   FONT FACE — Diodrum Arabic (محلي من ~/.hermes/skills)
+   ============================================================================ */
+
+@font-face {
+  font-family: 'Diodrum Arabic';
+  src: url('/fonts/Diodrum-Arabic-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Diodrum Arabic';
+  src: url('/fonts/Diodrum-Arabic-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Diodrum Arabic';
+  src: url('/fonts/Diodrum-Arabic-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Diodrum Arabic';
+  src: url('/fonts/Diodrum-Arabic-Semibold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Diodrum Arabic';
+  src: url('/fonts/Diodrum-Arabic-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Diodrum Arabic';
+  src: url('/fonts/Diodrum-Arabic-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================================================================
+   RESET + BASE
+   ============================================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; font-feature-settings: "kern", "liga", "calt"; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+a { color: inherit; text-decoration: none; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font: inherit; color: inherit; }
+img, svg { display: block; max-width: 100%; }
+::selection { background: var(--primary); color: #fff; }
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+/* ============================================================================
+   BUTTONS
+   ============================================================================ */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 11px 22px; border-radius: var(--radius);
+  font-weight: 500; font-size: 14px; white-space: nowrap;
+  transition: all 200ms var(--ease);
+  font-family: var(--font-body);
+}
+.btn-primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
+.btn-primary:hover { background: var(--primary-2); box-shadow: var(--shadow); transform: translateY(-1px); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: var(--accent-2); }
+.btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--line); }
+.btn-secondary:hover { border-color: var(--primary); color: var(--primary); background: var(--surface-2); }
+.btn-ghost { background: transparent; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================================
+   FORMS
+   ============================================================================ */
+
+.input, .textarea, .select {
+  width: 100%; padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  font-size: 14px; font-family: var(--font-body);
+  transition: border-color 200ms, box-shadow 200ms; color: var(--text);
+}
+.input:focus, .textarea:focus, .select:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-bg-2);
+}
+.label {
+  display: block; margin-bottom: 8px; font-size: 12px;
+  font-weight: 600; color: var(--text-2); letter-spacing: 0.02em;
+}
+
+/* ============================================================================
+   CARDS
+   ============================================================================ */
+
+.card {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); padding: 24px;
+}
+.card-bordered {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.card-header {
+  padding: 18px 24px; border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title {
+  font-family: var(--font-display); font-size: 16px;
+  font-weight: 700; color: var(--text); letter-spacing: -0.01em;
+}
+.card-body { padding: 24px; }
+
+/* ============================================================================
+   HERO / WELCOME — DGA-style with geometric pattern
+   ============================================================================ */
+
+.hero {
+  background: linear-gradient(135deg, var(--primary-3) 0%, var(--primary) 50%, var(--primary-2) 100%);
+  color: #fff;
+  border-radius: var(--radius-2xl);
+  padding: 44px 48px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+/* Decorative pattern: hexagonal grid */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, var(--accent-bg) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, var(--accent-3-bg) 0%, transparent 50%);
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Geometric overlay */
+.hero::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -10%;
+  width: 50%;
+  height: 200%;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0,
+    transparent 80px,
+    rgba(255, 255, 255, 0.03) 80px,
+    rgba(255, 255, 255, 0.03) 81px
+  );
+  pointer-events: none;
+}
+
+.hero > * { position: relative; z-index: 1; }
+.hero-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--accent-2);
+  margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display);
+}
+.hero-eyebrow::before {
+  content: ''; width: 28px; height: 1px;
+  background: var(--accent-2);
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 44px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin: 0;
+  color: #fff;
+}
+.hero-subtitle {
+  margin-top: 14px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 15px;
+  max-width: 580px;
+  line-height: 1.7;
+}
+.hero-meta {
+  margin-top: 28px;
+  display: flex;
+  gap: 32px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  flex-wrap: wrap;
+}
+.hero-meta-item { color: rgba(255, 255, 255, 0.7); font-size: 13px; }
+.hero-meta-item strong {
+  color: #fff;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  display: block;
+  font-size: 18px;
+  margin-top: 2px;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================================
+   STAT CARDS — DGA accent colors per stat
+   ============================================================================ */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 240ms var(--ease);
+}
+.stat-card::after {
+  content: ''; position: absolute; bottom: 0; right: 0; left: 0;
+  height: 3px; background: var(--stat-color, var(--primary));
+  transform: scaleX(0); transform-origin: right;
+  transition: transform 300ms var(--ease);
+}
+.stat-card:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.stat-card:hover::after { transform: scaleX(1); }
+.stat-card-icon {
+  position: absolute;
+  top: 24px; left: 24px;
+  width: 40px; height: 40px;
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--stat-bg, var(--primary-bg));
+  color: var(--stat-color, var(--primary));
+}
+.stat-label {
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 14px; font-family: var(--font-display);
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.stat-trend {
+  font-size: 12px; margin-top: 10px;
+  display: flex; align-items: center; gap: 6px;
+  color: var(--text-3);
+}
+.stat-trend-up   { color: var(--success); }
+.stat-trend-down { color: var(--danger); }
+
+/* ============================================================================
+   BADGES
+   ============================================================================ */
+
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 11px; border-radius: 999px;
+  font-size: 12px; font-weight: 500; font-family: var(--font-body);
+}
+.badge-success { background: var(--success-bg); color: var(--success); }
+.badge-warning { background: var(--warning-bg); color: var(--warning); }
+.badge-danger  { background: var(--danger-bg);  color: var(--danger);  }
+.badge-info    { background: var(--info-bg);    color: var(--info);    }
+.badge-neutral { background: var(--surface-2);  color: var(--text-2);  }
+.badge-primary { background: var(--primary-bg-2); color: var(--primary); }
+.badge-accent  { background: var(--accent-bg); color: var(--accent); }
+.badge-purple  { background: var(--accent-3-bg); color: var(--accent-3); }
+.badge-green   { background: var(--accent-4-bg); color: var(--accent-4); }
+
+/* ============================================================================
+   TABLE
+   ============================================================================ */
+
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: right; padding: 14px 24px;
+  background: transparent; color: var(--text-3);
+  font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+}
+.table td {
+  padding: 16px 24px; border-bottom: 1px solid var(--line-soft);
+  vertical-align: middle; color: var(--text);
+}
+.table tr:hover td { background: var(--surface-2); }
+.table tr:last-child td { border-bottom: none; }
+
+/* ============================================================================
+   EMPTY STATE
+   ============================================================================ */
+
+.empty { padding: 64px 24px; text-align: center; color: var(--text-3); }
+.empty-icon {
+  width: 64px; height: 64px; margin: 0 auto 18px;
+  color: var(--text-4);
+  background: var(--surface-2);
+  border-radius: 16px; padding: 16px;
+}
+.empty-title {
+  font-family: var(--font-display); font-size: 17px;
+  font-weight: 700; color: var(--text-2); margin-bottom: 6px;
+}
+.empty-desc { font-size: 13px; line-height: 1.7; }
+
+/* ============================================================================
+   ACTIVITY TIMELINE
+   ============================================================================ */
+
+.activity-list { padding: 8px 0; }
+.activity-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 14px; align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 150ms;
+  position: relative;
+}
+.activity-row:hover { background: var(--surface-2); }
+.activity-row:last-child { border-bottom: none; }
+.activity-icon {
+  width: 40px; height: 40px; border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary-bg-2); color: var(--primary);
+}
+.activity-icon-success { background: var(--success-bg); color: var(--success); }
+.activity-icon-info    { background: var(--info-bg);    color: var(--info); }
+.activity-icon-warning { background: var(--warning-bg); color: var(--warning); }
+.activity-event {
+  font-family: var(--font-mono); font-size: 13px;
+  color: var(--text); font-weight: 500;
+}
+.activity-time {
+  font-size: 12px; color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+/* ============================================================================
+   QUICK ACTIONS
+   ============================================================================ */
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.quick-action {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  transition: all 200ms var(--ease);
+  cursor: pointer; position: relative;
+  overflow: hidden;
+}
+.quick-action:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.quick-action-icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary-bg-2); color: var(--primary);
+  flex-shrink: 0;
+}
+.quick-action-text { flex: 1; min-width: 0; }
+.quick-action-title {
+  font-family: var(--font-display);
+  font-weight: 600; font-size: 14px;
+  color: var(--text); margin-bottom: 2px;
+}
+.quick-action-sub { font-size: 12px; color: var(--text-3); }
+
+/* ============================================================================
+   PATTERN BACKGROUNDS — DGA geometric motifs
+   ============================================================================ */
+
+.pattern-dots {
+  background-image: radial-gradient(circle, var(--text-4) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.4;
+}
+
+/* ============================================================================
+   SECTION HEADERS
+   ============================================================================ */
+
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; gap: 12px;
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 700;
+  color: var(--text); letter-spacing: -0.015em;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title-bar {
+  width: 4px; height: 20px;
+  background: var(--primary);
+  border-radius: 2px;
+}

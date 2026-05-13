@@ -1,0 +1,125 @@
+import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 600;
+
+type FeedItem = { title: string; link: string; pubDate: string };
+type Filter = 'tech' | 'economy' | null;
+
+const CATEGORIES: { id: string; label: string; color: string; filter: Filter; feeds: { url: string; source: string }[] }[] = [
+  {
+    id: 'politics', label: 'سياسة', color: '#EF4444', filter: null,
+    feeds: [
+      { url: 'https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/52bea22b-3a3d-487f-9fcf-7d0a8c8a2f56', source: 'الجزيرة' },
+      { url: 'https://feeds.bbci.co.uk/arabic/middleeast/rss.xml', source: 'BBC العربية' },
+    ],
+  },
+  {
+    id: 'economy', label: 'اقتصاد', color: '#10B981', filter: 'economy',
+    feeds: [
+      { url: 'https://feeds.bbci.co.uk/arabic/business/rss.xml', source: 'BBC العربية' },
+      { url: 'https://www.aljazeera.net/aljazeerarss/4f51f922-a4bb-43f8-948b-77b56fc11d8a/9aaf9af6-aa9a-4d99-b3f7-d8eb71a16ec4', source: 'الجزيرة' },
+    ],
+  },
+  {
+    id: 'tech', label: 'تقنية وذكاء اصطناعي', color: '#8B5CF6', filter: 'tech',
+    feeds: [
+      { url: 'https://techcrunch.com/feed/', source: 'TechCrunch' },
+      { url: 'https://www.theverge.com/rss/index.xml', source: 'The Verge' },
+      { url: 'https://feeds.arstechnica.com/arstechnica/index', source: 'Ars Technica' },
+      { url: 'https://feeds.bbci.co.uk/arabic/scitech/rss.xml', source: 'BBC العربية' },
+    ],
+  },
+];
+
+async function fetchRSS(url: string): Promise<FeedItem[]> {
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(8000),
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; QudratokBot/1.0)' },
+    });
+    if (!res.ok) return [];
+    const xml = await res.text();
+    const items: FeedItem[] = [];
+    const itemRe = /<item[\s>][\s\S]*?<\/item>|<entry[\s>][\s\S]*?<\/entry>/g;
+    let m;
+    while ((m = itemRe.exec(xml)) !== null && items.length < 20) {
+      const block = m[0];
+      const titleM = block.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/);
+      const linkM = block.match(/<link[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/) || block.match(/<link[^>]+href="([^"]+)"/);
+      const pubM = block.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || block.match(/<published>([\s\S]*?)<\/published>/);
+      const t = titleM ? titleM[1].trim().replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>') : '';
+      const l = linkM ? linkM[1].trim() : '';
+      if (t && l) items.push({ title: t, link: l, pubDate: pubM ? pubM[1].trim() : '' });
+    }
+    return items;
+  } catch (e) {
+    return [];
+  }
+}
+
+const POLITICAL_RE = /إسرائيل|غزة|ترامب|الحرب\b|هجمات|قوات|صراع|فلسطين|بايدن|بوتين|أوكرانيا|هرمز|عسكر|قاعدة سرية|قتل|قصف|اغتيال|الاحتلال|إيران|الحوثي|الجيش|شي جين/;
+const SPORT_RE = /ريال مدريد|برشلونة|الهلال|النصر|الاتحاد|الأهلي|بطولة|كرة|مدرب|لاعب|دوري|كأس|FIFA|ميسي|رونالدو|نيمار|بيريز|champions league|premier league|football|soccer/i;
+const TECH_HINT_RE = /ذكاء|AI\b|تقنية|تكنولوجيا|روبوت|أبل|جوجل|مايكروسوفت|تطبيق|برمج|سحاب|chip|software|سامسونج|أمازون|ميتا|OpenAI|GPT|بطارية|electric|silicon|Anthropic|Claude|cloud|startup|fund|venture|API|app\b|tech|nvidia|tesla|spaceX|crypto|blockchain/i;
+const ECON_HINT_RE = /اقتصاد|بورصة|أسعار|نفط|سهم|سوق|تضخم|بنك|عملة|دولار|ريال|يورو|استثمار|شركة|أرباح|خسائر|GDP|الفيدرالي|فائدة|أرامكو|تجارة|exports|imports|trade|stock|inflation|rates|earnings|revenue|economy|finance/i;
+
+function badPath(link: string, category: string): boolean {
+  if (link.includes('/live/') || link.includes('/live-news/')) return true;
+  if (category === 'economy' || category === 'tech') {
+    if (link.includes('/sport/') || link.includes('/sports/')) return true;
+    if (link.includes('/politics/') || link.includes('/middleeast/') || link.includes('/world/')) return true;
+  }
+  if (category === 'tech') {
+    if (link.includes('/business/') && !link.includes('techcrunch')) return false; // business OK for tech sometimes
+  }
+  return false;
+}
+
+function passesFilter(title: string, filter: Filter): boolean {
+  if (SPORT_RE.test(title)) return filter === null; // sport allowed only for politics-mixed
+  if (!filter) return true;
+  const political = POLITICAL_RE.test(title);
+  if (filter === 'tech') {
+    if (TECH_HINT_RE.test(title)) return true;
+    if (political) return false;
+    return true;
+  }
+  if (filter === 'economy') {
+    if (ECON_HINT_RE.test(title)) return true;
+    if (political) return false;
+    return true;
+  }
+  return true;
+}
+
+export async function GET() {
+  const usedLinks = new Set<string>();
+  const usedTitles = new Set<string>();
+  const results: any[] = [];
+
+  for (const cat of CATEGORIES) {
+    let picked: any = null;
+    for (const f of cat.feeds) {
+      const items = await fetchRSS(f.url);
+      const fresh = items.find((it) =>
+        it.link &&
+        !usedLinks.has(it.link) &&
+        !usedTitles.has(it.title) &&
+        !badPath(it.link, cat.id) &&
+        passesFilter(it.title, cat.filter)
+      );
+      if (fresh) {
+        usedLinks.add(fresh.link);
+        usedTitles.add(fresh.title);
+        picked = {
+          category: cat.id, label: cat.label, color: cat.color,
+          source: f.source, title: fresh.title, link: fresh.link, pubDate: fresh.pubDate,
+        };
+        break;
+      }
+    }
+    if (picked) results.push(picked);
+  }
+
+  return NextResponse.json({ ok: true, items: results, fetched_at: new Date().toISOString() });
+}

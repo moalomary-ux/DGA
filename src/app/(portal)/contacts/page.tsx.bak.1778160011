@@ -1,0 +1,131 @@
+import { db, type Contact } from '@/lib/db';
+import { Search, Mail, Phone, Building2 } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ContactsPage() {
+  const contacts = await db<Contact[]>`
+    SELECT id, name_ar, name_en, email, phone, organization, department, position, relationship, scope, importance
+    FROM ecosystem_contacts
+    ORDER BY importance ASC, name_ar ASC
+  `;
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 24, marginBottom: 4 }}>جهات الاتصال</h1>
+        <p style={{ color: 'var(--text-3)', fontSize: 14 }}>
+          منظومة العلاقات — تُحدَّث كل 5 دقائق من Mac mini
+        </p>
+      </div>
+
+      {/* Search bar */}
+      <div className="card" style={{ marginBottom: 16, padding: 12 }}>
+        <div style={{ position: 'relative' }}>
+          <Search
+            size={16}
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-3)',
+            }}
+          />
+          <input
+            type="text"
+            className="input"
+            placeholder="ابحث باسم، جهة، أو إدارة…"
+            style={{ paddingRight: 40, border: 'none', background: 'transparent' }}
+          />
+        </div>
+      </div>
+
+      {contacts.length === 0 ? (
+        <div className="card">
+          <div className="empty">
+            <Building2 className="empty-icon" />
+            <div className="empty-title">لا توجد جهات اتصال بعد</div>
+            <div className="empty-desc">
+              ستُضاف من Mac mini تلقائياً عند الـ sync القادم
+              <br />
+              أو يمكنك تشغيل المزامنة يدوياً بـ <code>sami sync</code>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="card" style={{ padding: 0 }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الجهة / الإدارة</th>
+                <th>البريد</th>
+                <th>الجوال</th>
+                <th>النوع</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contacts.map((c) => (
+                <tr key={c.id}>
+                  <td>
+                    <div style={{ fontWeight: 500 }}>{c.name_ar}</div>
+                    {c.position && (
+                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.position}</div>
+                    )}
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 13 }}>{c.organization || '—'}</div>
+                    {c.department && (
+                      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.department}</div>
+                    )}
+                  </td>
+                  <td>
+                    {c.email ? (
+                      <a
+                        href={`mailto:${c.email}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          color: 'var(--primary)',
+                          fontSize: 13,
+                        }}
+                      >
+                        <Mail size={13} /> {c.email}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--text-4)' }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    {c.phone ? (
+                      <a
+                        href={`tel:${c.phone}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          color: 'var(--text-2)',
+                          fontSize: 13,
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        <Phone size={13} /> {c.phone}
+                      </a>
+                    ) : (
+                      <span style={{ color: 'var(--text-4)' }}>—</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="badge badge-neutral">{c.scope || '—'}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,92 @@
+import { NextResponse } from "next/server";
+
+export const revalidate = 900;
+
+interface NewsItem {
+  category: string; title: string; source: string;
+  url: string; time: string; icon: string; color: string;
+}
+
+const SOURCES = [
+  { name: "BBC العربية", url: "https://feeds.bbci.co.uk/arabic/rss.xml", category: "دولي",    icon: "globe",     color: "#00ABAF" },
+  { name: "سبق",         url: "https://sabq.org/rss",                    category: "محلي",    icon: "newspaper", color: "#7C32C9" },
+  { name: "أرقام",       url: "https://www.argaam.com/ar/rss",           category: "اقتصاد",  icon: "trending",  color: "#F59E0B" },
+];
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"").replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)));
+}
+
+function parseRSS(xml: string) {
+  const items: { title: string; link: string; pubDate: string }[] = [];
+  const re = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(xml)) !== null) {
+    const body = m[1];
+    const t = body.match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
+    const l = body.match(/<link>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/link>/i);
+    const d = body.match(/<pubDate>([\s\S]*?)<\/pubDate>/i);
+    if (t && l) {
+      const title = decodeEntities(t[1].trim()).replace(/<[^>]+>/g, "").trim();
+      if (title) items.push({ title, link: l[1].trim(), pubDate: d ? d[1].trim() : "" });
+    }
+  }
+  return items;
+}
+
+function timeAgo(p: string): string {
+  if (!p) return "";
+  const d = new Date(p);
+  if (isNaN(d.getTime())) return "";
+  const min = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (min < 1)    return "الآن";
+  if (min < 60)   return `قبل ${min} د`;
+  if (min < 1440) return `قبل ${Math.floor(min / 60)} س`;
+  return `قبل ${Math.floor(min / 1440)} يوم`;
+}
+
+export async function GET() {
+  try {
+    const results = await Promise.all(
+      SOURCES.map(async (src) => {
+        try {
+          const res = await fetch(src.url, {
+            headers: { "User-Agent": "Mozilla/5.0 QudratokBot" },
+            signal: AbortSignal.timeout(8000),
+            next: { revalidate: 900 },
+          });
+          if (!res.ok) return { src, items: [] as ReturnType<typeof parseRSS> };
+          return { src, items: parseRSS(await res.text()).slice(0, 4) };
+        } catch {
+          return { src, items: [] as ReturnType<typeof parseRSS> };
+        }
+      })
+    );
+
+    const queues = results.map((r) => r.items.map((it) => ({ ...it, _src: r.src })));
+    const out: NewsItem[] = [];
+    while (queues.some((q) => q.length > 0)) {
+      for (const q of queues) {
+        const it = q.shift();
+        if (it) out.push({
+          category: it._src.category, title: it.title, source: it._src.name,
+          url: it.link, time: timeAgo(it.pubDate), icon: it._src.icon, color: it._src.color,
+        });
+      }
+    }
+
+    if (out.length === 0) {
+      return NextResponse.json({
+        ok: true,
+        items: [{ category: "نظام", title: "تعذّر جلب الأخبار حالياً", source: "Qudratok", url: "#", time: "", icon: "info", color: "#94A3B8" }],
+      });
+    }
+
+    return NextResponse.json({ ok: true, items: out.slice(0, 12) });
+  } catch (e: unknown) {
+    return NextResponse.json({ ok: false, items: [], error: String(e) }, { status: 500 });
+  }
+}

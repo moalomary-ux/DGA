@@ -1,0 +1,103 @@
+'use client';
+import { useState, useEffect } from 'react';
+
+const PATHS: Record<string, string> = {
+  home:'M3 12l9-9 9 9v9a2 2 0 0 1-2 2h-3v-7H8v7H5a2 2 0 0 1-2-2v-9z',
+  dashboard:'M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z',
+  calendar:'M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm3-3v4m8-4v4',
+  book:'M4 4v15a2 2 0 0 0 2 2h13V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2zm0 0a2 2 0 0 0 2 2h13',
+  users:'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zm6 10v-2a4 4 0 0 0-3-3.87M2 21v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  handshake:'M12 14l-2-2-3 3a2 2 0 0 0 0 3 2 2 0 0 0 3 0l3-3-1-1zM10 12l4-4 3 3-4 4-3-3z',
+  bot:'M12 8V4M5 8h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm4 6h.01M15 14h.01',
+  target:'M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20zm0-4a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-4a2 2 0 1 1 0-4 2 2 0 0 1 0 4z',
+  inbox:'M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z',
+  user:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+  settings:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm7-3a7 7 0 0 1-.18 1.6l2.13 1.66-2 3.46-2.5-1a7 7 0 0 1-2.78 1.6L13.5 22h-4l-.4-2.68a7 7 0 0 1-2.78-1.6l-2.5 1-2-3.46 2.13-1.66A7 7 0 0 1 4 12c0-.55.06-1.09.18-1.6L2.05 8.74l2-3.46 2.5 1a7 7 0 0 1 2.78-1.6L9.5 2h4l.4 2.68a7 7 0 0 1 2.78 1.6l2.5-1 2 3.46-2.13 1.66c.12.51.18 1.05.18 1.6z',
+  bell:'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
+  search:'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm10 2l-4.35-4.35',
+  plus:'M12 5v14M5 12h14',
+  chevR:'M9 18l6-6-6-6', chevL:'M15 18l-6-6 6-6', chevD:'M6 9l6 6 6-6', chevU:'M18 15l-6-6-6 6',
+  check:'M5 12l5 5L20 7',
+  check2:'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4l-10 10-3-3',
+  x:'M18 6L6 18M6 6l12 12',
+  arrowL:'M19 12H5M12 19l-7-7 7-7', arrowR:'M5 12h14M12 5l7 7-7 7',
+  spark:'M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-7z',
+  mail:'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm0 0l8 7 8-7',
+  edit:'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z',
+  chart:'M3 3v18h18M7 16l4-4 4 4 6-6',
+  analyze:'M3 3v18h18M9 17V9m4 8V5m4 12v-6',
+  trend:'M3 17l6-6 4 4 8-8M14 7h7v7',
+  award:'M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14zm-3 1.5L7 22l5-3 5 3-2-5.5',
+  flag:'M4 21V5l8 4 8-4v12l-8 4-8-4z',
+  info:'M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20zm0-13v4m0 4h.01',
+  warning:'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4m0 4h.01',
+  clock:'M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20zm0-16v6l4 2',
+  refresh:'M23 4v6h-6M1 20v-6h6m0 0a9 9 0 0 0 14.85-3.36M3.51 9A9 9 0 0 1 18.36 5.64L23 10',
+  send:'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z',
+  sparkles:'M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3zM5 19l1-3 3-1-3-1-1-3-1 3-3 1 3 1 1 3zm14-9l1-2 2-1-2-1-1-2-1 2-2 1 2 1 1 2z',
+  lightbulb:'M9 18h6m-3-3a4 4 0 1 1 4-4c0 1.5-.8 2.8-2 3.6V18M11 22h2',
+  layers:'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+  rocket:'M5 13l4-4 6 6-4 4-6-6zM12 2L8 6l10 10 4-4L12 2zM7 17l-4 4',
+  globe:'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0zm-20 0h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20',
+  badge:'M9 12l2 2 4-4M5 12l-2-2 2-2v-3a2 2 0 0 1 2-2h3l2-2 2 2h3a2 2 0 0 1 2 2v3l2 2-2 2v3a2 2 0 0 1-2 2h-3l-2 2-2-2H7a2 2 0 0 1-2-2v-3z',
+  database:'M12 3c4.97 0 9 1.34 9 3v12c0 1.66-4.03 3-9 3s-9-1.34-9-3V6c0-1.66 4.03-3 9-3zM3 6c0 1.66 4.03 3 9 3s9-1.34 9-3M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3',
+  building:'M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M6 12h12M6 8h12M6 16h12M2 22h20',
+  star:'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+  chat:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',
+  list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  grid:'M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z',
+  briefcase:'M20 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2',
+  logout:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  filter:'M22 3H2l8 9.46V19l4 2v-8.54L22 3z',
+  eye:'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zm11 3a3 3 0 1 1 0-6 3 3 0 0 1 0 6z',
+  file:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6',
+  lock:'M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zm2 0V7a5 5 0 1 1 10 0v4',
+};
+
+export default function QIcon({ n, size = 18, className = '' }: { n: string; size?: number; className?: string }) {
+  const d = PATHS[n] || PATHS.info;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d={d} />
+    </svg>
+  );
+}
+
+export const fmt = (n: number) => Math.round(n).toLocaleString('en-US');
+
+export function useCounter(target: number, duration = 1100) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (target === 0) { setV(0); return; }
+    let start: number | null = null;
+    const tick = (ts: number) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      setV(Math.round(target * e));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, duration]);
+  return v;
+}
+
+// ✨ closed → muted (gray) — communicates "done/locked"
+export const STATUS_META: Record<string, { ar: string; class: string }> = {
+  ideation:     { ar: 'فكرة',         class: 'muted' },
+  development:  { ar: 'تطوير محتوى', class: 'warning' },
+  review:       { ar: 'مراجعة',       class: 'accent' },
+  registration: { ar: 'تسجيل مفتوح', class: 'info' },
+  execution:    { ar: 'قيد التنفيذ',  class: 'success' },
+  closed:       { ar: 'مكتمل · مقفل', class: 'muted' },
+};
+
+export const TYPE_META: Record<string, { ar: string; color: string; icon: string }> = {
+  international: { ar: 'دولي',          color: '#7C32C9', icon: 'globe' },
+  local:         { ar: 'محلي',          color: '#3F7DD9', icon: 'badge' },
+  workshop:      { ar: 'ورشة عمل',      color: '#FF8533', icon: 'lightbulb' },
+  virtual:       { ar: 'ندوة افتراضية', color: '#00ABAF', icon: 'rocket' },
+  seminar:       { ar: 'ندوة',          color: '#3F7DD9', icon: 'mail' },
+  training:      { ar: 'برنامج',        color: '#00ABAF', icon: 'book' },
+};

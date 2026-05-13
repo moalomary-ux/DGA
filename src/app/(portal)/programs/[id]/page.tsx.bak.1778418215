@@ -1,0 +1,189 @@
+'use client';
+import { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
+import QIcon, { fmt, STATUS_META } from '@/components/QIcon';
+
+const KIND_META: Record<string, { ar: string; color: string; icon: string }> = {
+  local: { ar:'محلي', color:'#3F7DD9', icon:'badge' },
+  international: { ar:'دولي', color:'#7C32C9', icon:'globe' },
+  workshop: { ar:'ورشة عمل', color:'#FF8533', icon:'lightbulb' },
+  virtual: { ar:'ندوة افتراضية', color:'#00ABAF', icon:'rocket' },
+};
+
+const JOURNEY_STAGES = [
+  { id:'idea',         ar:'الفكرة',           icon:'lightbulb', phase:'بناء' },
+  { id:'scoping',      ar:'تحديد النطاق',     icon:'target',    phase:'بناء' },
+  { id:'partner',      ar:'اختيار الشريك',    icon:'handshake', phase:'بناء' },
+  { id:'content',      ar:'تطوير المحتوى',    icon:'edit',      phase:'بناء' },
+  { id:'review',       ar:'مراجعة الجودة',    icon:'eye',       phase:'بناء' },
+  { id:'criteria',     ar:'معايير القبول',    icon:'filter',    phase:'تشغيل' },
+  { id:'registration', ar:'فتح التسجيل',      icon:'inbox',     phase:'تشغيل' },
+  { id:'screening',    ar:'فرز الترشيحات',    icon:'analyze',   phase:'تشغيل' },
+  { id:'communications', ar:'إرسال القبول',   icon:'mail',      phase:'تشغيل' },
+  { id:'execution',    ar:'تنفيذ البرنامج',   icon:'rocket',    phase:'تشغيل' },
+  { id:'monitoring',   ar:'متابعة الحضور',    icon:'activity',  phase:'تشغيل' },
+  { id:'feedback',     ar:'جمع الآراء',       icon:'star',      phase:'إغلاق' },
+  { id:'report',       ar:'تقرير الإغلاق',    icon:'chart',     phase:'إغلاق' },
+];
+
+export default function ProgramDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+  const [data, setData] = useState<{ program: Record<string, unknown>; attendees: Record<string, unknown>[]; orgBreakdown: Record<string, unknown>[] } | null>(null);
+  const [tab, setTab] = useState<'overview' | 'journey' | 'attendees' | 'orgs'>('overview');
+
+  useEffect(() => {
+    fetch(`/api/programs/${id}`).then(r => r.json()).then(d => { if (d.ok) setData(d); });
+  }, [id]);
+
+  if (!data) return <div className="page" style={{padding:60,textAlign:'center'}}><div className="spin" style={{margin:'0 auto'}}/></div>;
+
+  const p = data.program as Record<string, string | number | null | boolean>;
+  const km = KIND_META[(p.program_type as string) || 'local'] || KIND_META.local;
+  const st = STATUS_META[(p.status as string) || 'execution'] || STATUS_META.execution;
+  const cap = (p.capacity as number) || 0;
+  const enr = (p.enrolled_count as number) || (p.total_attendees as number) || 0;
+  const fillPct = cap > 0 ? Math.round((enr / cap) * 100) : 0;
+
+  return (
+    <div className="page fade-in">
+      {/* Hero */}
+      <div className="card" style={{background:`linear-gradient(135deg,${km.color}33,var(--bg-3))`,border:`1px solid ${km.color}55`,marginBottom:16}}>
+        <div className="card-body">
+          <button className="btn btn-ghost btn-sm" style={{width:'auto',marginBottom:14}} onClick={() => router.push('/programs')}>
+            <QIcon n="arrowR" size={14}/> العودة للبرامج
+          </button>
+          <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:20,flexWrap:'wrap'}}>
+            <div style={{flex:1,minWidth:280}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                <span className="code mono" style={{fontSize:12,color:km.color,fontWeight:700}}>{(p.code as string) || `#${p.id}`}</span>
+                <span className={`pill ${st.class}`}>{st.ar}</span>
+                <span className="kind-tag" style={{['--kc' as string]:km.color} as React.CSSProperties}>
+                  <QIcon n={km.icon} size={11}/> {km.ar}
+                </span>
+              </div>
+              <h1 style={{fontSize:24,fontWeight:700,marginBottom:6}}>{p.title_ar as string}</h1>
+              {p.title_en ? <div style={{fontSize:13,color:'var(--text-3)',marginBottom:10}}>{p.title_en as string}</div> : null}
+              <div style={{display:'flex',gap:18,fontSize:13,color:'var(--text-2)',flexWrap:'wrap'}}>
+                <span><QIcon n="building" size={13}/> {(p.provider as string) || '—'}</span>
+                <span><QIcon n="calendar" size={13}/> {(p.start_date as string)?.slice(0,10) || '—'} → {(p.end_date as string)?.slice(0,10) || '—'}</span>
+                <span><QIcon n="clock" size={13}/> {(p.duration_hours as number) || '—'} ساعة</span>
+                <span><QIcon n="users" size={13}/> {fmt(enr)}/{cap || '∞'}</span>
+              </div>
+            </div>
+            <div style={{minWidth:200}}>
+              <div style={{fontSize:11,color:'var(--text-3)',marginBottom:6}}>نسبة الإشغال</div>
+              <div className="mono" style={{fontSize:28,fontWeight:700,marginBottom:8}}>{fillPct}%</div>
+              <div style={{height:6,background:'var(--bg-2)',borderRadius:99,overflow:'hidden'}}>
+                <div style={{height:'100%',background:km.color,width:`${fillPct}%`,borderRadius:99}}/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="tab-bar" style={{marginBottom:16}}>
+        <button className={tab==='overview'?'active':''} onClick={()=>setTab('overview')}>نظرة عامة</button>
+        <button className={tab==='journey'?'active':''} onClick={()=>setTab('journey')}>دورة حياة البرنامج</button>
+        <button className={tab==='attendees'?'active':''} onClick={()=>setTab('attendees')}>المتدربون <span className="mono" style={{opacity:.6,marginInlineStart:4}}>{data.attendees.length}</span></button>
+        <button className={tab==='orgs'?'active':''} onClick={()=>setTab('orgs')}>الجهات</button>
+      </div>
+
+      {tab === 'overview' && (
+        <div className="row r-2-1">
+          <div className="card">
+            <div className="card-head"><h3>تفاصيل البرنامج</h3></div>
+            <div className="card-body">
+              <dl style={{display:'grid',gridTemplateColumns:'auto 1fr',gap:'10px 18px',fontSize:13}}>
+                <dt style={{color:'var(--text-3)'}}>الفئة</dt><dd>{(p.category as string) || '—'}</dd>
+                <dt style={{color:'var(--text-3)'}}>طريقة التقديم</dt><dd>{(p.delivery_mode as string) || '—'}</dd>
+                <dt style={{color:'var(--text-3)'}}>المدة</dt><dd>{(p.duration_hours as number) || '—'} ساعة</dd>
+                <dt style={{color:'var(--text-3)'}}>السعة</dt><dd>{cap || 'غير محدد'}</dd>
+                <dt style={{color:'var(--text-3)'}}>المسجّلين</dt><dd className="mono">{enr}</dd>
+                <dt style={{color:'var(--text-3)'}}>أكملوا</dt><dd className="mono" style={{color:'var(--success)'}}>{(p.completed_attendees as number) || 0}</dd>
+                <dt style={{color:'var(--text-3)'}}>التقييم</dt><dd>{p.rating ? `★ ${Number(p.rating).toFixed(1)}` : '—'}</dd>
+              </dl>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-head"><h3>الإجراءات السريعة</h3></div>
+            <div className="card-body" style={{display:'flex',flexDirection:'column',gap:8}}>
+              <button className="btn btn-primary btn-sm" onClick={()=>router.push('/nominations')}><QIcon n="inbox" size={13}/> مراجعة الترشيحات</button>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setTab('journey')}><QIcon n="layers" size={13}/> فتح دورة الحياة</button>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setTab('attendees')}><QIcon n="users" size={13}/> قائمة المتدربين</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'journey' && (
+        <div className="card">
+          <div className="card-body">
+            {['بناء','تشغيل','إغلاق'].map(phase => (
+              <div key={phase} style={{marginBottom:24}}>
+                <h3 style={{fontSize:13,color:'var(--text-3)',letterSpacing:'.1em',marginBottom:12,fontFamily:'var(--font-en)'}}>{phase.toUpperCase()} · {phase}</h3>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:10}}>
+                  {JOURNEY_STAGES.filter(s => s.phase === phase).map((stage, idx) => (
+                    <div key={stage.id} className="card" style={{padding:14,cursor:'pointer'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                        <div style={{width:32,height:32,borderRadius:8,background:'var(--grad-1, var(--grad-purple))',color:'#fff',display:'grid',placeItems:'center'}}>
+                          <QIcon n={stage.icon} size={14}/>
+                        </div>
+                        <span className="mono" style={{fontSize:11,color:'var(--text-3)'}}>المرحلة {JOURNEY_STAGES.indexOf(stage)+1}</span>
+                      </div>
+                      <b style={{fontSize:13,fontWeight:600}}>{stage.ar}</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'attendees' && (
+        <div className="card">
+          <table className="tbl">
+            <thead><tr><th>الاسم</th><th>الجهة</th><th>الدور</th><th>التاريخ</th><th>الحالة</th><th>التقييم</th></tr></thead>
+            <tbody>
+              {data.attendees.map((a: Record<string, unknown>) => (
+                <tr key={a.id as number}>
+                  <td className="name">{(a.full_name_ar as string) || (a.full_name_en as string) || '—'}</td>
+                  <td style={{fontSize:12,color:'var(--text-2)'}}>{(a.org_name as string) || '—'}</td>
+                  <td style={{fontSize:12}}>{(a.role as string) || (a.role_category as string) || '—'}</td>
+                  <td className="mono" style={{fontSize:11}}>{(a.attendance_date as string)?.slice(0,10) || '—'}</td>
+                  <td>{a.completed ? <span className="pill success">مكتمل</span> : <span className="pill warning">قيد التنفيذ</span>}</td>
+                  <td className="mono">{a.user_rating ? `★ ${a.user_rating}` : '—'}</td>
+                </tr>
+              ))}
+              {data.attendees.length === 0 && <tr><td colSpan={6} style={{textAlign:'center',padding:30,color:'var(--text-3)'}}>لا يوجد متدربون</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab === 'orgs' && (
+        <div className="card">
+          <table className="tbl">
+            <thead><tr><th>الجهة</th><th>عدد المتدربين</th><th>النسبة</th></tr></thead>
+            <tbody>
+              {data.orgBreakdown.map((o: Record<string, unknown>, i: number) => {
+                const total = data.attendees.length || 1;
+                const pct = Math.round(((o.cnt as number) / total) * 100);
+                return (
+                  <tr key={i}>
+                    <td className="name">{(o.org_name as string) || 'بدون جهة'}</td>
+                    <td className="mono">{o.cnt as number}</td>
+                    <td><div className="cap-bar"><div className="b"><div className="f" style={{width:`${pct}%`}}/></div><span className="t">{pct}%</span></div></td>
+                  </tr>
+                );
+              })}
+              {data.orgBreakdown.length === 0 && <tr><td colSpan={3} style={{textAlign:'center',padding:30,color:'var(--text-3)'}}>لا يوجد بيانات جهات</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

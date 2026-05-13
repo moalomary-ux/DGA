@@ -1,0 +1,268 @@
+'use client';
+// /programs/page.tsx — V2: year/month filters + closed/muted visual
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import QIcon from '@/components/QIcon';
+
+interface Pgm { id: number; code: string | null; title_ar: string; title_en?: string | null; provider: string | null; status: string | null; program_type: string | null; category: string | null; start_date: string | null; end_date: string | null; capacity: number | null; enrolled_count: number | null; rating: number | null; delivery_mode: string | null; attendees: number; }
+
+const KIND_META: Record<string, { ar: string; color: string; icon: string }> = {
+  local:         { ar: 'محلي',          color: '#3F7DD9', icon: 'badge' },
+  international: { ar: 'دولي',          color: '#7C32C9', icon: 'globe' },
+  workshop:      { ar: 'ورشة عمل',      color: '#FF8533', icon: 'lightbulb' },
+  virtual:       { ar: 'ندوة افتراضية', color: '#00ABAF', icon: 'rocket' },
+};
+
+// Closed gets MUTED/gray treatment — communicates "done"
+const STATUS_META: Record<string, { ar: string; class: string; muted?: boolean }> = {
+  ideation:     { ar: 'فكرة',         class: 'muted' },
+  development:  { ar: 'تطوير محتوى', class: 'warning' },
+  review:       { ar: 'مراجعة',       class: 'accent' },
+  registration: { ar: 'تسجيل مفتوح', class: 'info' },
+  execution:    { ar: 'قيد التنفيذ',  class: 'success' },
+  closed:       { ar: 'مكتمل',        class: 'muted', muted: true },
+};
+
+const STATUS_FILTERS = [
+  { id: 'all',          ar: 'كل البرامج' },
+  { id: 'execution',    ar: 'قيد التنفيذ' },
+  { id: 'registration', ar: 'تسجيل مفتوح' },
+  { id: 'development',  ar: 'تطوير' },
+  { id: 'review',       ar: 'مراجعة' },
+  { id: 'closed',       ar: 'مكتمل · مقفل' },
+];
+
+const MONTHS = [
+  { id:'all', ar:'كل الأشهر' },
+  { id:'1',  ar:'يناير' },{ id:'2',  ar:'فبراير' },{ id:'3',  ar:'مارس' },
+  { id:'4',  ar:'أبريل' },{ id:'5',  ar:'مايو' },  { id:'6',  ar:'يونيو' },
+  { id:'7',  ar:'يوليو' },{ id:'8',  ar:'أغسطس' },{ id:'9',  ar:'سبتمبر' },
+  { id:'10', ar:'أكتوبر' },{ id:'11', ar:'نوفمبر' },{ id:'12', ar:'ديسمبر' },
+];
+
+export default function ProgramsPage() {
+  const router = useRouter();
+  const [data, setData] = useState<{ programs: Pgm[]; total: number; counts: { status: Record<string, number>; kind: Record<string, number>; years: { yr: number; cnt: number }[] } } | null>(null);
+  const [filter, setFilter] = useState('all');
+  const [kindFilter, setKindFilter] = useState('all');
+  const [year, setYear] = useState('all');
+  const [month, setMonth] = useState('all');
+  const [search, setSearch] = useState('');
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+
+  const fetchData = useCallback(async () => {
+    const params = new URLSearchParams({ status: filter, kind: kindFilter, year, month, limit: '60' });
+    if (search) params.set('search', search);
+    const r = await fetch('/api/programs?' + params).then(r => r.json());
+    if (r.ok) setData(r);
+  }, [filter, kindFilter, year, month, search]);
+
+  useEffect(() => { const t = setTimeout(fetchData, 250); return () => clearTimeout(t); }, [fetchData]);
+
+  if (!data) return <div className="page" style={{padding:60,textAlign:'center'}}><div className="spin" style={{margin:'0 auto'}}/></div>;
+
+  const totalCount = data.total;
+  const years = data.counts.years || [];
+
+  const resetFilters = () => { setFilter('all'); setKindFilter('all'); setYear('all'); setMonth('all'); setSearch(''); };
+  const hasFilters = filter !== 'all' || kindFilter !== 'all' || year !== 'all' || month !== 'all' || search;
+
+  return (
+    <div className="page fade-in">
+      {/* Title */}
+      <div style={{marginBottom:16,display:'flex',alignItems:'flex-end',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+        <div>
+          <div style={{fontSize:11,color:'var(--text-3)',letterSpacing:'.1em',fontFamily:'var(--font-en)',fontWeight:700,marginBottom:4}}>PROGRAMS &amp; WORKSHOPS</div>
+          <h1 style={{fontSize:22,fontWeight:700}}>البرامج التدريبية وورش العمل</h1>
+          <div style={{fontSize:12,color:'var(--text-3)',marginTop:4}}>
+            {data.programs.length} من أصل {totalCount} برنامج
+            {hasFilters && <button onClick={resetFilters} style={{marginInlineStart:10,fontSize:11,color:'#FF8533',background:'none',border:0,cursor:'pointer'}}>مسح الفلاتر ✕</button>}
+          </div>
+        </div>
+        <button className="btn btn-primary" style={{width:'auto'}} onClick={()=>alert('سيُفتح مساعد إنشاء البرنامج بالـ AI قريباً')}>
+          <QIcon n="plus" size={14}/> برنامج جديد
+        </button>
+      </div>
+
+      <div className="card">
+        <div className="card-head" style={{flexWrap:'wrap',gap:12}}>
+          <div style={{display:'flex',alignItems:'center',gap:14,flex:1,minWidth:200}}>
+            <div className="topbar-search" style={{width:280,background:'var(--bg-2)'}}>
+              <QIcon n="search" size={14}/>
+              <input placeholder="ابحث برمز أو اسم البرنامج..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            </div>
+            <div className="theme-pick">
+              <button className={view==='grid'?'active':''} onClick={()=>setView('grid')}><QIcon n="grid" size={12}/></button>
+              <button className={view==='list'?'active':''} onClick={()=>setView('list')}><QIcon n="list" size={12}/></button>
+            </div>
+          </div>
+        </div>
+        <div className="card-body" style={{padding:14}}>
+          {/* Type chips */}
+          <div className="kind-filter">
+            <button className={`kind-chip ${kindFilter==='all'?'on':''}`} onClick={()=>setKindFilter('all')}
+                    style={{['--kc' as string]:'var(--text-2)'} as React.CSSProperties}>
+              <span className="kc-dot"></span>كل الأنواع<span className="mono kc-num">{totalCount}</span>
+            </button>
+            {Object.entries(KIND_META).map(([k, m]) => (
+              <button key={k} className={`kind-chip ${kindFilter===k?'on':''}`} onClick={()=>setKindFilter(k)}
+                      style={{['--kc' as string]:m.color} as React.CSSProperties}>
+                <span className="kc-dot"></span>
+                <QIcon n={m.icon} size={12}/>
+                {m.ar}
+                <span className="mono kc-num">{data.counts.kind[k] || 0}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Status chips */}
+          <div className="chips" style={{marginTop:10}}>
+            {STATUS_FILTERS.map(f => (
+              <button key={f.id} className={`chip ${filter===f.id?'active':''}`} onClick={()=>setFilter(f.id)}>
+                {f.ar} <span className="mono" style={{opacity:.6,marginInlineStart:4}}>
+                  {f.id === 'all' ? totalCount : (data.counts.status[f.id] || 0)}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Year + Month filters */}
+          <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid var(--line)',display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+            <span style={{fontSize:11,color:'var(--text-3)',marginInlineEnd:4}}><QIcon n="calendar" size={12}/> فلترة بالتاريخ:</span>
+            
+            {/* Year chips */}
+            <div className="chips" style={{margin:0}}>
+              <button className={`chip ${year==='all'?'active':''}`} onClick={()=>setYear('all')}>كل السنوات</button>
+              {years.map(y => (
+                <button key={y.yr} className={`chip ${year===String(y.yr)?'active':''}`} onClick={()=>setYear(String(y.yr))}>
+                  {y.yr} <span className="mono" style={{opacity:.6,marginInlineStart:4}}>{y.cnt}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Month dropdown */}
+            <select value={month} onChange={e=>setMonth(e.target.value)}
+                    style={{padding:'6px 12px',background:'var(--bg-2)',color:'var(--text)',border:'1px solid var(--line)',borderRadius:99,fontSize:12,cursor:'pointer',outline:'none',fontFamily:'inherit'}}>
+              {MONTHS.map(m => <option key={m.id} value={m.id}>{m.ar}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style={{height:16}}/>
+
+      {view === 'grid' ? (
+        <div className="row r-3" style={{margin:0}}>
+          {data.programs.map(p => <ProgramCard key={p.id} p={p} onClick={() => router.push(`/programs/${p.id}`)}/>)}
+          {data.programs.length === 0 && (
+            <div className="card" style={{gridColumn:'1/-1'}}>
+              <div className="card-body" style={{textAlign:'center',padding:40,color:'var(--text-3)'}}>
+                لا توجد برامج تطابق الفلاتر — <button onClick={resetFilters} style={{color:'#FF8533',background:'none',border:0,cursor:'pointer',textDecoration:'underline'}}>مسح الفلاتر</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="card">
+          <table className="tbl">
+            <thead><tr><th>الرمز</th><th>البرنامج</th><th>الفئة</th><th>النوع</th><th>الشريك</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+            <tbody>
+              {data.programs.map(p => {
+                const st = STATUS_META[p.status || 'execution'] || STATUS_META.execution;
+                const km = KIND_META[p.program_type || 'local'] || KIND_META.local;
+                const isClosed = p.status === 'closed';
+                return (
+                  <tr key={p.id} onClick={()=>router.push(`/programs/${p.id}`)} 
+                      style={{cursor:'pointer',opacity:isClosed?0.65:1}}>
+                    <td className="code">{p.code || `#${p.id}`}</td>
+                    <td className="name" style={{textDecoration:isClosed?'line-through':'none',textDecorationColor:'var(--text-4)'}}>
+                      {isClosed && <QIcon n="check2" size={12} className="" />}{' '}{p.title_ar || p.title_en}
+                    </td>
+                    <td>{p.category || '—'}</td>
+                    <td><span className="pill" style={{background:'transparent',border:'1px solid var(--line)',color:isClosed?'var(--text-3)':km.color}}>{km.ar}</span></td>
+                    <td style={{fontSize:12}}>{p.provider || '—'}</td>
+                    <td className="mono" style={{fontSize:11,color:'var(--text-3)'}}>{p.start_date?.slice(0,10) || '—'}</td>
+                    <td><span className={`pill ${st.class}`}>{st.ar}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgramCard({ p, onClick }: { p: Pgm; onClick: () => void }) {
+  const st = STATUS_META[p.status || 'execution'] || STATUS_META.execution;
+  const km = KIND_META[p.program_type || 'local'] || KIND_META.local;
+  const cap = p.capacity || 0;
+  const enr = p.enrolled_count || p.attendees || 0;
+  const fillPct = cap > 0 ? (enr / cap) * 100 : 0;
+  const isClosed = p.status === 'closed';
+  const year = p.start_date ? new Date(p.start_date).getFullYear() : null;
+
+  return (
+    <div className="card prog-card" 
+         style={{
+           cursor:'pointer',
+           transition:'all 240ms',
+           opacity:isClosed?0.72:1,
+           filter:isClosed?'grayscale(35%)':'none',
+           ['--kc' as string]: isClosed ? '#94A3B8' : km.color,
+         } as React.CSSProperties} 
+         onClick={onClick}>
+      <div className="prog-stripe"></div>
+      
+      {/* Closed badge overlay */}
+      {isClosed && (
+        <div style={{position:'absolute',top:10,insetInlineStart:10,zIndex:2,display:'flex',alignItems:'center',gap:4,padding:'3px 8px',background:'rgba(148,163,184,0.18)',border:'1px solid rgba(148,163,184,0.35)',borderRadius:99,fontSize:10,color:'var(--text-3)',fontWeight:600}}>
+          <QIcon n="check2" size={10}/> مقفل
+        </div>
+      )}
+
+      <div className="card-body">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+          <span className="code mono" style={{fontSize:11,color:isClosed?'var(--text-3)':'var(--primary,#00ABAF)',fontWeight:600}}>{p.code || `#${p.id}`}</span>
+          <span className={`pill ${st.class}`}>{st.ar}</span>
+        </div>
+        
+        <h3 style={{
+          fontSize:15,
+          fontWeight:600,
+          marginBottom:6,
+          minHeight:40,
+          lineHeight:1.4,
+          color: isClosed ? 'var(--text-2)' : 'var(--text)',
+        }}>{p.title_ar || p.title_en}</h3>
+        
+        <div style={{fontSize:11,color:'var(--text-3)',marginBottom:14,display:'flex',justifyContent:'space-between'}}>
+          <span>{p.provider || '—'}</span>
+          {year && <span className="mono">{year}</span>}
+        </div>
+
+        <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap'}}>
+          <span className="kind-tag" style={{['--kc' as string]:isClosed?'#94A3B8':km.color} as React.CSSProperties}>
+            <QIcon n={km.icon} size={11}/> {km.ar}
+          </span>
+          {p.category && <span className="pill muted">{p.category}</span>}
+        </div>
+
+        <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--text-3)',marginBottom:6}}>
+          <span>{isClosed ? 'الحضور النهائي' : 'الإشغال'}</span>
+          <span className="mono" style={{color:'var(--text-2)',fontWeight:600}}>{enr}/{cap || '∞'}</span>
+        </div>
+        <div style={{height:5,background:'var(--bg-2)',borderRadius:99,overflow:'hidden'}}>
+          <div style={{
+            height:'100%',
+            background: isClosed ? 'linear-gradient(90deg,#64748B,#94A3B8)' : 'var(--grad-2, var(--grad-purple))',
+            width:`${fillPct}%`,
+            borderRadius:99,
+            transition:'width 600ms'
+          }}/>
+        </div>
+      </div>
+    </div>
+  );
+}

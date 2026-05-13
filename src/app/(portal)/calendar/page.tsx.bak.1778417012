@@ -1,0 +1,46 @@
+import { headers } from 'next/headers';
+import { detectTenant } from '@/lib/tenant';
+import { getSession } from '@/lib/auth';
+import { getEventsInRange } from '@/lib/calendar-events';
+import { CalendarView } from './CalendarView';
+
+export const dynamic = 'force-dynamic';
+
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; month?: string }>;
+}) {
+  const params = await searchParams;
+  const session = await getSession();
+  const h = await headers();
+  const tenant = detectTenant(h.get('host') || 'localhost');
+
+  const now = new Date();
+  const year  = params.year  ? parseInt(params.year)  : now.getFullYear();
+  const month = params.month ? parseInt(params.month) : now.getMonth(); // 0-indexed
+
+  // نطاق الشهر الكامل + هامش لعرض الأسابيع المجاورة
+  const monthStart = new Date(year, month, 1);
+  const monthEnd   = new Date(year, month + 1, 0, 23, 59, 59);
+  const rangeStart = new Date(year, month, -7);
+  const rangeEnd   = new Date(year, month + 1, 7, 23, 59, 59);
+
+  const events = await getEventsInRange(rangeStart, rangeEnd, tenant.id, session.userId);
+
+  // serialize Date → string للـ client component
+  const serialized = events.map((e) => ({
+    ...e,
+    date:    e.date.toISOString(),
+    endDate: e.endDate?.toISOString(),
+  }));
+
+  return (
+    <CalendarView
+      year={year}
+      month={month}
+      events={serialized}
+      tenantId={tenant.id}
+    />
+  );
+}
