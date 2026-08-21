@@ -1,0 +1,1361 @@
+<title>مراجعة تحريرية · قيادات الذكاء الاصطناعي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#F6F7F4; --surface:#FFFFFF; --surface-2:#FBFCFA;
+  --ink:#16211D; --ink-2:#5C6862; --ink-3:#8A958F;
+  --line:#DDE2DC; --line-2:#EAEEE8;
+  --accent:#0E6B52; --accent-soft:#E7F0EB; --accent-line:#B9D5C8;
+  --cut:#A93B2E; --cut-soft:#FAEEEC; --cut-line:#E8C7C1;
+  --note:#8A6A2C; --note-soft:#F7F1E3; --note-line:#E2D2AC;
+  --keep:#1D5C87; --keep-soft:#E9F1F7; --keep-line:#BFD6E6;
+  --shadow:0 1px 2px rgba(20,40,32,.05),0 8px 24px -12px rgba(20,40,32,.12);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1412; --surface:#151D1A; --surface-2:#111917;
+    --ink:#E7EDE9; --ink-2:#96A49D; --ink-3:#6E7C76;
+    --line:#26302B; --line-2:#1D2622;
+    --accent:#57C09B; --accent-soft:#122C24; --accent-line:#2A5546;
+    --cut:#E68C7E; --cut-soft:#2C1A17; --cut-line:#5A322B;
+    --note:#CBA863; --note-soft:#2A2416; --note-line:#54462A;
+    --keep:#79B6DC; --keep-soft:#15242E; --keep-line:#2E4A5C;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px -14px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1412; --surface:#151D1A; --surface-2:#111917;
+  --ink:#E7EDE9; --ink-2:#96A49D; --ink-3:#6E7C76;
+  --line:#26302B; --line-2:#1D2622;
+  --accent:#57C09B; --accent-soft:#122C24; --accent-line:#2A5546;
+  --cut:#E68C7E; --cut-soft:#2C1A17; --cut-line:#5A322B;
+  --note:#CBA863; --note-soft:#2A2416; --note-line:#54462A;
+  --keep:#79B6DC; --keep-soft:#15242E; --keep-line:#2E4A5C;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px -14px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans Arabic","Segoe UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.85; font-weight:400;
+  -webkit-font-smoothing:antialiased;
+}
+.rtl{direction:rtl; text-align:right}
+.wrap{max-width:1080px; margin:0 auto; padding:0 28px}
+.narrow{max-width:760px}
+h1,h2,h3,h4{margin:0; text-wrap:balance; font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:3px}
+
+/* ── masthead ── */
+.mast{border-bottom:1px solid var(--line); background:var(--surface)}
+.mast-in{display:flex; flex-direction:column; gap:22px; padding:56px 28px 44px; max-width:1080px; margin:0 auto}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:500;
+  letter-spacing:.18em; color:var(--accent); text-transform:uppercase;
+}
+.mast h1{font-family:Amiri,Georgia,serif; font-size:clamp(34px,5.2vw,54px); line-height:1.25; letter-spacing:-.01em}
+.mast .sub{font-size:17px; color:var(--ink-2); max-width:64ch; line-height:1.8}
+.mast-meta{display:flex; flex-wrap:wrap; gap:10px 26px; padding-top:8px; border-top:1px solid var(--line-2); font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-3); letter-spacing:.03em}
+
+/* ── generic section ── */
+section{padding:60px 0}
+.sec-head{display:flex; flex-direction:column; gap:10px; margin-bottom:34px}
+.sec-head h2{font-family:Amiri,Georgia,serif; font-size:clamp(26px,3.4vw,36px); line-height:1.35}
+.sec-head .lede{color:var(--ink-2); font-size:16px; max-width:70ch}
+.rule{height:1px; background:var(--line); border:0; margin:0}
+
+/* ── verdict blocks ── */
+.stack{display:flex; flex-direction:column; gap:18px}
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:24px 26px; display:flex; flex-direction:column; gap:12px}
+.card h3{font-size:17px; line-height:1.5}
+.card p{color:var(--ink-2); font-size:15.2px}
+.card .n{font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--accent); letter-spacing:.1em}
+
+.callout{border-inline-start:3px solid var(--accent); background:var(--accent-soft); padding:20px 22px; border-radius:0 4px 4px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-color:var(--cut); background:var(--cut-soft)}
+.callout h4{font-size:15px}
+.callout p{font-size:15px; color:var(--ink-2)}
+
+blockquote.pull{
+  margin:0; font-family:Amiri,Georgia,serif; font-size:clamp(21px,2.8vw,27px);
+  line-height:1.6; color:var(--ink); border:0; padding:8px 0;
+}
+blockquote.pull cite{display:block; font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-style:normal; color:var(--ink-3); letter-spacing:.1em; margin-top:12px}
+
+/* ── page index ── */
+.idx{display:grid; grid-template-columns:repeat(auto-fill,minmax(58px,1fr)); gap:8px}
+.idx a{
+  display:flex; align-items:center; justify-content:center; height:46px;
+  background:var(--surface); border:1px solid var(--line); border-radius:3px;
+  font-family:"IBM Plex Mono",monospace; font-size:14px; font-weight:500;
+  color:var(--ink-2); text-decoration:none; transition:.15s;
+}
+.idx a:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+.idx a.ref{color:var(--ink-3)}
+
+/* ── page cards ── */
+.pages{display:flex; flex-direction:column; gap:26px}
+.pg{background:var(--surface); border:1px solid var(--line); border-radius:5px; box-shadow:var(--shadow); overflow:hidden; scroll-margin-top:20px}
+.pg-head{display:flex; align-items:flex-start; gap:20px; padding:22px 26px; border-bottom:1px solid var(--line-2); background:var(--surface-2)}
+.pg-num{
+  flex:0 0 auto; min-width:62px; height:62px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; border:1px solid var(--accent-line);
+  background:var(--accent-soft); border-radius:4px; color:var(--accent);
+  font-family:"IBM Plex Mono",monospace; line-height:1;
+}
+.pg-num b{font-size:23px; font-weight:600; font-variant-numeric:tabular-nums}
+.pg-num span{font-size:9px; letter-spacing:.14em; margin-top:5px; opacity:.8}
+.pg-title{display:flex; flex-direction:column; gap:5px; padding-top:3px}
+.pg-title h3{font-size:19px; font-family:Amiri,Georgia,serif; line-height:1.4}
+.pg-title .where{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3); letter-spacing:.05em}
+.pg-body{padding:8px 26px 26px; display:flex; flex-direction:column}
+
+.blk{padding:20px 0; border-bottom:1px dashed var(--line-2); display:flex; flex-direction:column; gap:11px}
+.blk:last-child{border-bottom:0; padding-bottom:4px}
+.tag{
+  display:inline-flex; align-items:center; gap:7px; align-self:flex-start;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600;
+  letter-spacing:.13em; padding:4px 9px; border-radius:3px; border:1px solid;
+}
+.t-diag{color:var(--keep); background:var(--keep-soft); border-color:var(--keep-line)}
+.t-cut{color:var(--cut); background:var(--cut-soft); border-color:var(--cut-line)}
+.t-text{color:var(--accent); background:var(--accent-soft); border-color:var(--accent-line)}
+.t-design{color:var(--note); background:var(--note-soft); border-color:var(--note-line)}
+.blk p{font-size:15.2px; color:var(--ink-2)}
+.blk p strong{color:var(--ink); font-weight:600}
+.blk ul{margin:0; padding-inline-start:20px; display:flex; flex-direction:column; gap:8px}
+.blk li{font-size:15.2px; color:var(--ink-2)}
+.blk li strong{color:var(--ink); font-weight:600}
+
+.del{color:var(--cut); background:var(--cut-soft); border:1px solid var(--cut-line); border-radius:3px; padding:3px 8px; display:inline; text-decoration:line-through; text-decoration-thickness:1px; text-decoration-color:currentColor; text-decoration-thickness:1px}
+.why{font-size:14.2px; color:var(--ink-3)}
+.why b{color:var(--cut); font-weight:600}
+
+.draft{
+  background:var(--surface-2); border:1px solid var(--accent-line); border-radius:4px;
+  padding:22px 24px; display:flex; flex-direction:column; gap:13px;
+}
+.draft p{color:var(--ink); font-size:15.6px; line-height:1.95}
+.draft .h-lvl1{font-family:Amiri,Georgia,serif; font-size:22px; font-weight:700; color:var(--ink); line-height:1.4}
+.draft .h-lvl2{font-size:15.5px; font-weight:600; color:var(--accent); letter-spacing:.01em}
+.draft ul{margin:0; padding-inline-start:20px; display:flex; flex-direction:column; gap:6px}
+.draft li{font-size:15.4px; color:var(--ink); line-height:1.8}
+.draft .kicker{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em; color:var(--ink-3)}
+
+.tbl-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:4px}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:14.4px}
+th,td{padding:11px 14px; text-align:right; border-bottom:1px solid var(--line-2); vertical-align:top}
+th{background:var(--surface-2); font-weight:600; color:var(--ink); font-size:13.4px; white-space:nowrap}
+td{color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+
+code{font-family:"IBM Plex Mono",monospace; font-size:.9em; background:var(--surface-2); border:1px solid var(--line); border-radius:3px; padding:1px 5px; color:var(--ink); direction:ltr; display:inline-block}
+sup{font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--accent); font-weight:600; margin:0 1px}
+.chip{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600; letter-spacing:.1em; padding:3px 8px; border-radius:99px; border:1px solid var(--line); color:var(--ink-2); background:var(--surface-2)}
+.chip.cut{color:var(--cut); border-color:var(--cut-line); background:var(--cut-soft)}
+.chip.ok{color:var(--accent); border-color:var(--accent-line); background:var(--accent-soft)}
+
+footer{border-top:1px solid var(--line); background:var(--surface); padding:44px 0 60px; margin-top:20px}
+footer p{color:var(--ink-3); font-size:14px}
+
+@media (max-width:640px){
+  body{font-size:15.4px}
+  .wrap{padding:0 18px}
+  .mast-in{padding:40px 18px 34px}
+  .pg-head{padding:18px; gap:14px}
+  .pg-body{padding:4px 18px 20px}
+  .pg-num{min-width:52px; height:52px}
+  .pg-num b{font-size:19px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+</style>
+<div class="rtl">
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">مراجعة تحريرية · صفحة بصفحة</div>
+    <h1>تطوير القيادات الحكومية العليا في الذكاء الاصطناعي</h1>
+    <p class="sub">مراجعة كاملة للإصدار 3.1 من الدراسة المعيارية — رأي عام في البناء والترابط، ثم فحص كل صفحة من الأربع والعشرين: ما يُحذف ولماذا، والنص العربي المقترح بديلاً، وما يجب أن يتغير في الشكل والتصميم.</p>
+    <div class="mast-meta">
+      <span>الملف المراجَع: النسخة العربية 3.1 (docx) + النسخة الإنجليزية 3.1 (pdf)</span>
+      <span>24 صفحة A4</span>
+      <span>6 أقسام + 71 مرجعاً</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">أولاً</div>
+      <h2>الرأي في الدراسة كاملة</h2>
+      <p class="lede">قبل الدخول في الصفحات: ما الذي تفعله هذه الدراسة جيداً، وأين ينكسر الترابط، ولماذا تُقرأ اليوم كأنها مكتوبة بأكثر من يد.</p>
+    </div>
+
+    <div class="stack">
+      <div class="callout">
+        <h4>الحكم المختصر</h4>
+        <p>الدراسة قوية في مادتها وضعيفة في تحريرها. الفكرة المركزية — تصنيف القيادات بنوع القرار لا بالمسمى الوظيفي — فكرة أصيلة وقابلة للتطبيق على أكثر من 300 جهة، ونظام تصنيف الأدلة (S/E/P/R/N/I/J/T) نادر في دراسات من هذا النوع ويرفع مصداقيتها فوق ما هو معتاد. لكن المادة نفسها مكتوبة أربع مرات في أربعة مواضع، والانتقالات مصنوعة يدوياً بين كل فرع وفرع، والتوصية النهائية — وهي سبب وجود الدراسة — أخفّ أجزائها وتصل في الصفحة 19 من 24.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <span class="n">القوة 01</span>
+          <h3>الأطروحة تصمد</h3>
+          <p>«التوافر يتدرج عكسياً مع المستوى القيادي» نتيجة نظيفة ومسنودة وقابلة للتصرف: كلما ارتفع المستوى قلّ ما يمكن شراؤه. وعليها تُبنى المسارات الأربعة منطقياً لا اعتباطاً. هذه النتيجة وحدها تبرر الدراسة.</p>
+        </div>
+        <div class="card">
+          <span class="n">القوة 02</span>
+          <h3>انضباط الأدلة</h3>
+          <p>كل رقم منسوب، وكل حكم تحليلي موسوم بأنه حكم لا دليل، والتقديرات الاسترشادية معلنة بذلك. الدراسة لا تدّعي أكثر مما تملك، وهذا أثمن ما فيها.</p>
+        </div>
+        <div class="card">
+          <span class="n">القوة 03</span>
+          <h3>ثلاث فقرات تستحق البقاء كما هي</h3>
+          <p>تقسيم السوق إلى ثلاث فئات (3.1)، وقاعدة ما يُستورد وما يُملك (5.7)، وجملة «ما يصل إلى مكتب الوزير قرار سيادي بالبناء، لا منتج تعليمي يُلتقط من رف تجاري». هذه لغة صانع قرار، لا لغة باحث.</p>
+        </div>
+        <div class="card">
+          <span class="n">القوة 04</span>
+          <h3>الفصل بين الملاءمة والسعر</h3>
+          <p>ملاحظة أن أغلى صفوف الجدول أبعدها عن السياق الحكومي، وأرخصها المدفوعة أعمقها تطبيقاً — ملاحظة تمنع خطأ شراء حقيقياً. قليل من الدراسات يقولها.</p>
+        </div>
+      </div>
+
+      <hr class="rule">
+
+      <div class="sec-head" style="margin:16px 0 0">
+        <h2 style="font-size:24px">أين ينكسر الترابط</h2>
+      </div>
+
+      <div class="stack">
+        <div class="card">
+          <span class="n">العطب 01 · الأهم</span>
+          <h3>الجسور المصنوعة بين الفروع</h3>
+          <p>ينتهي كل فرع تقريباً بجملة تعلن ما سيقوله الفرع التالي: «وهذا ما يبينه الفرع الآتي»، «هذا ما يجيب عنه القسم الآتي»، «وهو ما يقدمه القسم الآتي». رصدتُ خمس عشرة جملة من هذا النوع. هي أوضح بصمة على نص مولّد أو مجمّع، وحذفها كلها يوفّر نحو صفحة كاملة ولا يفقد المعنى شيئاً — لأن العنوان التالي يقول ما تقوله الجملة، وبأسرع منها. النص المترابط لا يشرح ترابطه.</p>
+        </div>
+        <div class="card">
+          <span class="n">العطب 02</span>
+          <h3>كل شيء مكتوب أربع مرات</h3>
+          <p>قرارات المستويات الأربعة وبروتوكولاتها تُسرد كاملة في 2.2–2.5، ثم تُلخَّص في جدول 2.6، ثم تُعاد في 4.1–4.4، ثم في جدول 4.5، ثم تتفرع مرة أخيرة في 5.2. والتقييم البريطاني «غير الحاسم» يظهر خمس مرات. ووفد ستانفورد أربع مرات. وقاعدة «يختلف البرنامج بنوع القرار لا بالساعات» أربع مرات بالنص نفسه. هذا هو مصدر الإحساس بأن الدراسة مجمّعة من كتّاب متعددين: ليس تنافراً في الأسلوب، بل تكراراً في المضمون. كل كاتب يظن أنه أول من يقول الجملة.</p>
+        </div>
+        <div class="card">
+          <span class="n">العطب 03</span>
+          <h3>القسم الرابع لا يضيف دليلاً واحداً</h3>
+          <p>كل أمثلة القسم الرابع — غانا، الإمارات، ستانفورد، بلافاتنك، جونز هوبكنز، مصر، أبوليتيكال، سدايا — وردت كاملة في القسم الثالث قبل صفحتين. الجديد الوحيد فيه أربعة أحكام: بناء، تطوير مشترك، شراء وتكييف، ترخيص. وهذه الأحكام تسع جدولاً واحداً. القسم بحجمه الحالي صفحتان، وقيمته الفعلية ثلث صفحة وجدول.</p>
+        </div>
+        <div class="card">
+          <span class="n">العطب 04</span>
+          <h3>نبرة تتأرجح بين المذكرة والبحث</h3>
+          <p>الدراسة تعتذر عن نفسها باستمرار: «دون افتراض عدم وجوده»، «لا إثبات لعدم الوجود»، «ولا تفترض الدراسة عجزاً لدى أحد»، «تُقرأ هذه القوائم خريطة عمل لا حكم قيمة». التحفّظ المنهجي يُقال مرة واحدة في 1.2 بوصفه قاعدة، ثم يُسكت عنه. تكراره في كل قسم يوحي بأن الكاتب غير واثق مما كتب، وهو عكس ما تحتاجه دراسة استكشافية موجهة لمتخذ قرار.</p>
+        </div>
+        <div class="card">
+          <span class="n">العطب 05 · الأخطر</span>
+          <h3>التوصية — سبب وجود الدراسة — أنحف أجزائها</h3>
+          <p>الهدف المعلن في 1.1 هو «كيف يمكن بناء برنامج وطني يخدم أربعة مستويات قيادية». والجواب يصل في الصفحة 19: ثماني توصيات، كل واحدة سطران، بلا ترتيب زمني، وبلا مالك لكل خطوة، وبلا ربط بالتكلفة التي حُسبت قبل صفحتين، وبلا بوابة قرار واحدة. عشرون صفحة من التأسيس تنتهي إلى قائمة. هذا الخلل وحده هو الذي يجعل القارئ يغلق الدراسة دون أن يعرف ماذا يفعل صباح الغد.</p>
+        </div>
+        <div class="card">
+          <span class="n">العطب 06</span>
+          <h3>سؤال لا تجيب عنه الدراسة: لماذا «قدراتك»؟</h3>
+          <p>القسم السادس يفترض أن «قدراتك» هو المنفّذ. لكن القسم 3.4 يُظهر أن «سدايا» درّبت 278 قائداً حكومياً بأدلة منشورة، بينما «قدراتك» يملك منصة وشراكات في القيادة الرقمية لا في قرارات الذكاء الاصطناعي. الدراسة لا تعالج هذا التوتر بجملة واحدة. وهو أول ما سيُطرح في أول اجتماع مراجعة.</p>
+        </div>
+      </div>
+
+      <hr class="rule">
+
+      <div class="sec-head" style="margin:16px 0 0">
+        <h2 style="font-size:24px">الرأي في الشكل: هذه دراسة استكشافية تلبس ثوب بحث أكاديمي</h2>
+        <p class="lede">أربع وعشرون صفحة A4 نصّها متصل بلا انقطاع بصري تقريباً. الجداول تُقرأ بصعوبة، والأرقام مدفونة في فقرات، والفكرة المركزية لا تظهر في أي رسم.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <span class="n">شكل 01</span>
+          <h3>لا يوجد رسم واحد في الدراسة</h3>
+          <p>سبعة جداول وصفر رسوم. وأطروحة الدراسة كلها — التوافر ينخفض كلما ارتفع المستوى — رسم واحد بسيط. غيابه يعني أن القارئ يستنتج الأطروحة من عشرين صفحة نصّ بدل أن يراها في ثانيتين.</p>
+        </div>
+        <div class="card">
+          <span class="n">شكل 02</span>
+          <h3>ثلاث صفحات لأربع فقرات متطابقة البنية</h3>
+          <p>الفروع 2.2 إلى 2.5 لها الهيكل نفسه حرفياً: فئة، طبيعة، نوع قرار، بروتوكول، مخرج. أربع مرات، نصاً متصلاً، على ثلاث صفحات. هذا بالضبط ما تُخترع الجداول من أجله. المحتوى نفسه يسع صفحة واحدة بأربعة أعمدة.</p>
+        </div>
+        <div class="card">
+          <span class="n">شكل 03</span>
+          <h3>جدول الاثني عشر برنامجاً غير قابل للقراءة</h3>
+          <p>ستة أعمدة واثنا عشر صفاً بالعربية على A4. لا أحد يقرأه؛ الجميع يمسح عمود السعر. عمود «المصدر» وحده يمكن دمجه في اسم البرنامج فيتحرر خُمس عرض الجدول.</p>
+        </div>
+        <div class="card">
+          <span class="n">شكل 04</span>
+          <h3>أفضل جملتين في الدراسة مدفونتان</h3>
+          <p>«من يبنِ القياس منذ الفوج الأول يسبق السوق كله» و«الفجوة تقديمية أكثر منها معرفية» — كلتاهما في نهاية فقرة طويلة في منتصف صفحة. هاتان جملتان تُقتبسان في صفحة كاملة، لا تُختمان بهما فقرات.</p>
+        </div>
+      </div>
+
+      <blockquote class="pull">
+        الخلاصة: الدراسة لا تحتاج مادة جديدة. تحتاج مقصّاً ومصمماً. عشرون صفحة نصّ تنزل إلى أربع عشرة، والقسم السادس يكبر ضعفين، فتصبح دراسة استكشافية فعلاً — تُقرأ في عشرين دقيقة وتنتهي بقرار.
+      </blockquote>
+
+      <div class="callout warn">
+        <h4>حذف عابر للوثيقة كلها — يُطبَّق قبل أي تعديل صفحي</h4>
+        <p>هذه العبارات تتكرر في الدراسة ولا تحمل معلومة. حذفها كاملاً يوفر نحو صفحة ونصف ويرفع أثر «النص المولَّد» فوراً:</p>
+        <ul>
+          <li><span class="del">وهذا ما يبينه الفرع الآتي / هذا ما يجيب عنه القسم الآتي / وهو ما يقدمه القسم الآتي / كما تبين الفروع الآتية / هي موضوع الفقرة التالية</span> <span class="why">— <b>15 موضعاً.</b> العنوان التالي يؤدي الوظيفة نفسها فوراً.</span></li>
+          <li><span class="del">ومغزى ذلك أن…</span> <span class="why">— <b>5 مواضع متتالية</b> في 6.1. صيغة آلية؛ تُدمج الدلالة في جملة النتيجة نفسها.</span></li>
+          <li><span class="del">دون افتراض عدم وجوده / لا إثبات لعدم الوجود / ولا تفترض الدراسة عجزاً لدى أحد</span> <span class="why">— <b>4 مواضع.</b> تحفّظ منهجي يُذكر مرة في 1.2 ثم يُسكت عنه.</span></li>
+          <li><span class="del">وبهذا يكتمل / وبهذا تكتمل صورة / وبتحديد الفئات الأربع يكتمل إطار</span> <span class="why">— <b>4 مواضع.</b> إعلان اكتمال لا يضيف شيئاً إلى ما اكتمل.</span></li>
+          <li><span class="del">في السوق التي روعيت</span> <span class="why">— <b>4 مواضع،</b> والصياغة نفسها ركيكة. البديل: «ضمن نطاق المراجعة» ومرة واحدة.</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">ثانياً</div>
+      <h2>المراجعة صفحة بصفحة</h2>
+      <p class="lede">أرقام الصفحات بحسب النسخة المنسّقة A4 (24 صفحة). كل صفحة فيها أربعة أشياء: التشخيص، وما يُحذف مع السبب، والنص العربي المقترح جاهزاً للنقل، وملاحظة الشكل.</p>
+    </div>
+    <nav class="idx" aria-label="فهرس الصفحات">
+      <a href="#p1">1</a><a href="#p2">2</a><a href="#p3">3</a><a href="#p4">4</a><a href="#p5">5</a><a href="#p6">6</a>
+      <a href="#p7">7</a><a href="#p8">8</a><a href="#p9">9</a><a href="#p10">10</a><a href="#p11">11</a><a href="#p12">12</a>
+      <a href="#p13">13</a><a href="#p14">14</a><a href="#p15">15</a><a href="#p16">16</a><a href="#p17">17</a><a href="#p18">18</a>
+      <a href="#p19">19</a><a href="#p20">20</a><a class="ref" href="#p21">21</a><a class="ref" href="#p22">22</a><a class="ref" href="#p23">23</a><a class="ref" href="#p24">24</a>
+    </nav>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="pages">
+
+<article class="pg" id="p1">
+  <div class="pg-head">
+    <div class="pg-num"><b>01</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>الغلاف</h3><div class="where">العنوان · العنوان الفرعي · بيانات الوثيقة</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>الغلاف يقول الشيء نفسه ثلاث مرات: «دراسة معيارية استكشافية» في الترويسة، ثم عنوان، ثم عنوان فرعي، ثم سطر ثالث يعيد صياغة العنوان الفرعي، ثم حقل «نوع الوثيقة: دراسة معيارية استكشافية». وبيانات الوثيقة معروضة كنموذج إداري من ثلاثة حقول. الغلاف لا يحمل رقماً واحداً ولا فكرة واحدة من الدراسة.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">مقارنة معيارية عالمية ومحلية ونموذج سعودي مقترح لأربعة مستويات قيادية</span> <span class="why">— <b>تكرار كامل</b> للعنوان الفرعي الذي يليه بسطر واحد. الاثنان يقولان: مقارنة + نموذج + أربعة مستويات.</span></li>
+        <li><span class="del">نوع الوثيقة: دراسة معيارية استكشافية</span> <span class="why">— <b>مذكور في ترويسة الغلاف نفسه.</b> الحقل الإداري لا يُكرر ما هو مطبوع فوقه بأربعة أسطر.</span></li>
+        <li><span class="del">كلمة «معيارية» من الترويسة</span> <span class="why">— الوصف الدقيق لما فُعل هو <b>استكشاف سوق</b>، لا مقارنة معيارية بمعناها المنهجي (لا يوجد معيار مرجعي تُقاس عليه البرامج). الاحتفاظ بالكلمة يَعِد بما لا تقدمه الدراسة، والدراسة نفسها تنفيه في 1.2.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="kicker">هيئة الحكومة الرقمية — برنامج «قدراتك»</p>
+        <p class="h-lvl1">تطوير القيادات الحكومية العليا في الذكاء الاصطناعي</p>
+        <p>أربعة مستويات قيادية: ما يقدّمه السوق اليوم، وما يحتاج إلى بناء سعودي.</p>
+        <p class="kicker">دراسة استكشافية · أغسطس 2026 · الإصدار 3.1</p>
+        <p class="kicker" style="border-top:1px solid var(--line); padding-top:12px">مبنية على معلومات منشورة حتى 21 أغسطس 2026. للاستكشاف لا للشراء؛ تُعاد مراجعة الأسعار والمواعيد قبل أي قرار.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>ضع أطروحة الدراسة على الغلاف.</strong> رسم واحد بأربعة أعمدة تنخفض من اليمين إلى اليسار — الوزراء / أصحاب المعالي / الوكلاء / الوكلاء المساعدون — بارتفاع يمثل «ما يمكن شراؤه جاهزاً». هذا هو استنتاج الدراسة كله، وهو موجود فعلاً في 6.1، وسيقرأه متخذ القرار قبل أن يفتح الوثيقة. وانقل التنويه من ذيل صفحة المحتويات إلى أسفل الغلاف حيث يُقرأ.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p2">
+  <div class="pg-head">
+    <div class="pg-num"><b>02</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>المحتويات</h3><div class="where">خريطة الوثيقة · التنويه</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>كل مدخل من الستة يحمل سطر وصف تحته. وهذه الأسطر الستة تُطبع مرة ثانية حرفياً تحت عنوان كل قسم في صفحته. القارئ يقرأ الجملة نفسها مرتين خلال صفحتين. والتنويه — وهو أهم سطر قانوني في الوثيقة — مدفون في ذيل صفحة لا يقرؤها أحد.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">أسطر الوصف الستة تحت مداخل المحتويات</span> <span class="why">— <b>تُعاد نصاً</b> تحت عنوان كل قسم. الفهرس يدل، ولا يشرح.</span></li>
+        <li><span class="del">التنويه من هذه الصفحة</span> <span class="why">— <b>يُنقل إلى الغلاف.</b> لا يُحذف مضمونه؛ يُنقل إلى حيث يُقرأ.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">المحتويات</p>
+        <p>1. سياق الدراسة ومنهجيتها &nbsp;·&nbsp; 2. الفئات القيادية الأربع &nbsp;·&nbsp; 3. نتائج المقارنة &nbsp;·&nbsp; 4. التوافر حسب المستوى &nbsp;·&nbsp; 5. النموذج المقترح &nbsp;·&nbsp; 6. توصيات «قدراتك» &nbsp;·&nbsp; المراجع</p>
+        <p class="h-lvl2" style="margin-top:6px">ثلاثة أسئلة تجيب عنها الدراسة</p>
+        <ul>
+          <li>ما البرامج المتاحة عالمياً ومحلياً لهذه الفئة؟</li>
+          <li>ما الذي نفّذته الحكومات فعلاً؟</li>
+          <li>كيف يُبنى برنامج وطني يخدم أربعة مستويات قيادية، وبكم؟</li>
+        </ul>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>حوّل المحتويات إلى صفحة عمل.</strong> الأسئلة الثلاثة موجودة أصلاً في 1.1؛ رفعها إلى صفحة المحتويات يجعلها أول ما يراه القارئ ويحوّل الفهرس من قائمة عناوين إلى عقد بين الدراسة وقارئها. والعناوين الستة تسع سطراً واحداً — لا تحتاج صفحة كاملة، فيتحرر نصف الصفحة للأسئلة.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p3">
+  <div class="pg-head">
+    <div class="pg-num"><b>03</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>1.1 الخلفية والتكليف · 1.2 النطاق والحدود · 1.3 تصنيف الأدلة</h3><div class="where">القسم الأول — بداية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>الفقرة الثانية في 1.1 — «القرارات لم تعد تقنية بل سيادية… والذي يوقّع عليها هم شاغلو المستويات العليا لا مهندسو النماذج» — <strong>أقوى فقرة في الدراسة كلها</strong>، وهي مبرر وجودها. ثم تُتبَع فوراً بجملة اعتذار تُضعفها، ثم بجملة جسر تعلن الفرع التالي. و1.2 ثلاث فقرات لمضمون فقرة واحدة. وجدول الأدلة يبدأ هنا وينكسر إلى الصفحة التالية.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">ولا تفترض الدراسة عجزاً لدى أحد؛ بل ترصد ما يقدمه السوق العالمي والمحلي لهذه الفئة، وتترك الحكم للأدلة.</span> <span class="why">— <b>اعتذار يسبق الاتهام.</b> الفقرة قبله لم تتهم أحداً أصلاً، فالنفي يخلق في ذهن القارئ التهمة التي ينفيها.</span></li>
+        <li><span class="del">وتحديد الإجابة عن الأسئلة الثلاثة يستلزم أولاً تثبيت نطاق المراجعة وحدودها، حتى يعرف القارئ ما الذي تغطيه الدراسة وما الذي لا تدّعيه؛ وهذا ما يبينه الفرع الآتي.</span> <span class="why">— <b>جسر.</b> العنوان «1.2 نطاق الدراسة وحدودها» يقول هذا كله في أربع كلمات.</span></li>
+        <li><span class="del">ولأن قيمة دراسة كهذه تقاس بقوة أدلتها، يعرض الفرع الآتي نظام تصنيف الأدلة المعتمد في جميع الفصول.</span> <span class="why">— <b>جسر ثانٍ في الصفحة نفسها.</b></span></li>
+        <li><span class="del">فكل ما ورد فيها يصف السوق كما كان في هذا التاريخ</span> <span class="why">— <b>إعادة صياغة</b> لنصف الجملة السابقة عليها مباشرة («المنشورة حتى 21 أغسطس 2026»).</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">1.1 الخلفية والتكليف</p>
+        <p>طلبت لجنة الذكاء الاصطناعي الحكومية، عبر مسار التدريب، أن يُجري برنامج «قدراتك» في هيئة الحكومة الرقمية دراسة مقارنة لبرامج الذكاء الاصطناعي الموجهة للقيادات الحكومية العليا.<sup>[1]</sup> وتجيب الدراسة عن ثلاثة أسئلة: ما المتاح عالمياً ومحلياً لهذه الفئة؟ وما الذي نفّذته الحكومات؟ وكيف يُبنى برنامج وطني لأربعة مستويات قيادية، وبكم؟</p>
+        <p>وسبب التكليف واضح: قرارات الذكاء الاصطناعي في الحكومة لم تعد قرارات تقنية تُفوَّض إلى الإدارات المتخصصة. صارت قرارات تمس البيانات الوطنية، والمشتريات العامة، وجودة الخدمة، والمساءلة عنها. ومن يوقّع عليها هم شاغلو المستويات القيادية العليا، لا مهندسو النماذج. فالفجوة التي تختبرها هذه الدراسة ليست في الاستراتيجية الوطنية — وموقع المملكة فيها متقدم كما سيأتي — بل في جاهزية من يتخذ القرار.</p>
+        <p class="h-lvl2">1.2 النطاق والحدود</p>
+        <p>تغطي الدراسة البرامج والأطر والممارسات المنشورة حتى 21 أغسطس 2026. ولا تشمل تقييم الاحتياج الداخلي لكل جهة، ولا اختيار مزوّد، ولا عرض سعر تعاقدي. وأرقام التكلفة فيها إما منشورة منسوبة إلى ناشرها، أو تقديرات استرشادية موسومة بذلك.</p>
+        <p>ومصادرها معلومات متاحة علناً، إضافة إلى الوثائق الداخلية المقدمة ضمن التكليف. وحين لا تتوافر معلومة منشورة عن برنامج، تقول الدراسة «لم تُرصد ضمن نطاق المراجعة» — وهي عبارة تصف حدود المراجعة، لا حدود الواقع. تُقرأ هذه القاعدة مرة هنا، وتسري على كل ما بعدها.</p>
+        <p class="h-lvl2">1.3 تصنيف الأدلة</p>
+        <p>تحمل كل معلومة مهمة علامة مصدر مرقمة تقود إلى سجل المراجع، ورمزاً يصف قوة الدليل:</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>الفقرة الثانية في 1.1 تُخرَج من النص.</strong> اجعلها اقتباساً بحجم مضاعف في عمود جانبي أو أعلى الصفحة — هي أطروحة الدراسة، لا فقرة فيها. <strong>وجدول الأدلة الثمانية</strong> لا يجوز أن ينكسر بين صفحتين: اجعله شريطاً أفقياً من ثمانية رموز مربّعة ملوّنة بعرض الصفحة، سطر واحد لكل رمز. يوفّر ثلثي مساحته ويصبح مرجعاً بصرياً يعود إليه القارئ بلمحة.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p4">
+  <div class="pg-head">
+    <div class="pg-num"><b>04</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>بقية جدول الأدلة · 1.4 مؤشرات الطلب · رأس القسم الثاني</h3><div class="where">القسم الأول — نهاية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>الفرع 1.4 هو أكثف فقرة في الدراسة: ست إحصاءات ومؤشران دوليان وإفادة داخلية، وعشر علامات مصدر، في كتلتين نصيتين. لا يمكن قراءتها ولا استخراج رقم منها. والأسوأ أنها تبدأ بجملة تُبطل نفسها — تقول إن الأرقام «مؤشرات لا إثبات» قبل أن يقرأ القارئ الأرقام أصلاً. ثم يهبط رأس القسم الثاني في منتصف الصفحة فيبدو كأنه سقط سهواً.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">تُقدَّم الأرقام الآتية مؤشراتٍ على الحاجة إلى تطوير القدرة القيادية، لا إثباتاً سببياً بأن القيادة هي العامل الوحيد في فجوة القيمة.</span> <span class="why">— <b>التحفظ نفسه قيل في 1.2</b> بوصفه قاعدة عامة. تكراره هنا يُضعف الأرقام قبل عرضها؛ والفقرة تنتهي أصلاً بالجملة الصحيحة: «وتدعم هذه المؤشرات مجتمعة الحاجة إلى…».</span></li>
+        <li><span class="del">وقبل فحص ما يقدمه السوق، لا بد من تحديد من نعني بالقيادات العليا تحديداً؛ فالبرامج التي تعامل «القيادات» كتلة واحدة لا تصلح أساساً للمقارنة. هذا التحديد هو موضوع القسم الثاني.</span> <span class="why">— <b>جسر.</b> الجملة الأولى منه فكرة حقيقية وتستحق البقاء، لكن موضعها الصحيح مطلع القسم الثاني لا نهاية الأول.</span></li>
+        <li><span class="del">وتفصيل ما يقدمه السوق العالمي والمحلي من هذه الصيغ وأمثالها يأتي في القسم الثالث.</span> <span class="why">— <b>جسر ثانٍ في الصفحة نفسها.</b></span></li>
+        <li><span class="del">وتقيس هذه المؤشرات البيئة الوطنية من حيث الاستراتيجية والتنظيم والبنية المؤسسية والتبني</span> <span class="why">— <b>شرح لما يقيسه المؤشر</b> لا يحتاجه القارئ؛ المهم هو ما لا يقيسه، وهو ما تقوله بقية الجملة.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">1.4 مؤشرات الطلب وموقع المملكة</p>
+        <p>ارتفعت نسبة المؤسسات التي تستخدم الذكاء الاصطناعي من 78% في مارس 2025<sup>[2]</sup> إلى 88% في نوفمبر من العام نفسه، بينما بقيت المؤسسات التي تجني أكثر من 5% من أرباحها التشغيلية منه عند 6% تقريباً.<sup>[3]</sup> الأدوات انتشرت، والقيمة لم تلحق بها. وتشير مسوح «غارتنر» إلى أن عدداً من الرؤساء التنفيذيين يرون فرقهم القيادية ونماذجهم التشغيلية دون الجاهزية المطلوبة،<sup>[4][5][6]</sup> وتصف نتائج «ديلويت» و«أكسنتشر» الفجوة نفسها في القطاع العام: نشرٌ للأدوات دون جاهزية لاستخدامها مؤسسياً.<sup>[7][8]</sup></p>
+        <p>وموقع المملكة متقدم على مستوى البيئة الوطنية: المركز الرابع عشر عالمياً والأول عربياً في المؤشر العالمي للذكاء الاصطناعي 2024، متصدرةً محور الاستراتيجية الحكومية،<sup>[9]</sup> والأولى في الشرق الأوسط وشمال أفريقيا في مؤشر «أكسفورد إنسايتس» 2025.<sup>[10]</sup> لكن هذين المؤشرين يقيسان البيئة الوطنية، لا جاهزية كل مستوى قيادي لاتخاذ القرار. فقوة البيئة مثبتة، وجاهزية الأفراد هي السؤال المفتوح.</p>
+        <p>وعلى الصعيد العملي، توصي إفادة «غارتنر» الداخلية لدى الجهة الطالبة بتدريب فردي خاص للقيادات العليا، وإرشاد عكسي، ووحدات قصيرة عند الطلب — لا تدريباً عاماً للموظفين.<sup>[11]</sup></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>هذا الفرع رسم بياني لا فقرة.</strong> شريط من أربعة أرقام كبيرة بعرض الصفحة: <span class="chip">88٪ تستخدم</span> <span class="chip">6٪ تجني أثراً</span> <span class="chip">14 عالمياً</span> <span class="chip">1 عربياً</span>، وتحت كل رقم سطر واحد ورمز الدليل. الفجوة بين 88 و6 هي الرسالة، وهي تُرى في لحظة ولا تُقرأ في فقرة. <strong>ورأس القسم الثاني</strong> يبدأ صفحة جديدة دائماً — كل قسم يفتتح صفحته، بلا استثناء، وإلا بدت الوثيقة متدفقة بلا تحرير.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p5">
+  <div class="pg-head">
+    <div class="pg-num"><b>05</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>2.1 أساس التصنيف · 2.2 المستوى الأول: الوزراء</h3><div class="where">القسم الثاني — بداية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>الفرع 2.1 يقول فكرة واحدة في ثلاث فقرات: المسميات مختلفة، فالتصنيف بنوع القرار. الفقرة الثانية تعيد نتيجة الأولى بصياغة أخرى. ثم يبدأ 2.2 أول أربع كتل متطابقة البنية حرفياً — فئة، طبيعة، نوع قرار، بروتوكول، مخرج — ستستهلك الصفحات 5 و6 و7. هذا هو أكبر خلل شكلي في الدراسة: أربعة أشياء متوازية معروضة نصاً متتابعاً بدل أن تُعرض متجاورة.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">ويتيح هذا التصنيف تطبيق البرنامج على أكثر من 300 جهة حكومية ذات هياكل تنظيمية مختلفة، دون افتراض أن جميع الجهات تستخدم التسلسل الوظيفي نفسه؛ كما يضمن تخصيص المحتوى وصيغة التنفيذ والبروتوكول التدريبي بما يتناسب مع مستوى القيادة.</span> <span class="why">— <b>إعادة صياغة كاملة</b> للفقرة السابقة عليها؛ الفقرة الأولى ذكرت الـ300 جهة واختلاف الهياكل والمعايير الثلاثة. تُدمج جملة OECD وحدها في الفقرة الأولى.</span></li>
+        <li><span class="del">كما تبين الفروع الآتية</span> <span class="why">— <b>جسر.</b></span></li>
+        <li><span class="del">هذه فئة قيادية خاصة ونوعية</span> <span class="why">— «خاصة ونوعية» <b>مترادفان</b> لا يضيف ثانيهما شيئاً؛ وما بعدهما في الجملة يشرح الخصوصية فعلاً.</span></li>
+        <li><span class="del">وتشارك في القرارات الحكومية العليا</span> <span class="why">— <b>مضمّن</b> في «تتحمل مسؤولية التوجه العام للقطاع» وفي بند «اتخاذ القرارات المشتركة بين الجهات» بعده بأسطر.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">2.1 أساس التصنيف</p>
+        <p>لا تعكس المسميات الوظيفية وحدها مستوى القرار: قد يحمل شخصان مسميين مختلفين ويتخذان قرارات متقاربة في المستوى والنطاق، والجهات التي يتجاوز عددها 300 جهة ضمن نطاق الدراسة لا تستخدم هيكلاً ولا مسميات موحدة.<sup>[1]</sup> لذلك تصنّف الدراسة القيادات بثلاثة معايير — نطاق القرار، ومستوى الصلاحية والمساءلة، والبروتوكول التدريبي المناسب — وتُدرج المسميات المتقاربة وظيفياً تحت مستواها لا تحت اسمها. ويتوافق هذا مع إطار منظمة التعاون الاقتصادي والتنمية (2026) الذي يفصل بين عموم الموظفين والقادة والخبراء التقنيين، مع تفصيل طبقة القادة إلى أربع طبقات قرار.<sup>[12]</sup></p>
+        <p>وعلى هذا التصنيف تقوم قاعدة التصميم التي تحكم الدراسة كلها: <strong>يختلف البرنامج بنوع القرار، لا بعدد الساعات.</strong><sup>[13]</sup> فليست أمامنا نسخة واحدة بأربعة أطوال، بل أربعة مسارات مختلفة البروتوكول والمساءلة والمخرج.</p>
+        <p class="h-lvl2" style="margin-top:6px">2.2 المستوى الأول — الوزراء</p>
+        <p><strong>من هم.</strong> الوزراء أصحاب الحقائب، ووزراء الدولة، ومن يُعتمد ضمن الفئة الوزارية المرتبطة بمجلس الوزراء.</p>
+        <p><strong>لماذا يختلفون.</strong> يتحملون مسؤولية التوجه العام للقطاع، ويخضعون لبروتوكول رسمي وعملي مختلف عن بقية المستويات. ولذلك لا تصلح معهم صيغة الدورة التدريبية أصلاً — لا لطولها، بل لطبيعتها.</p>
+        <p><strong>قرارهم.</strong> في طبقة الاتجاه لا التنفيذ: تحديد التوجه الاستراتيجي للقطاع، ومستوى المخاطر المقبول، واعتماد الأولويات الكبرى، والقرارات المشتركة بين الجهات، والنظر في الاستثمارات والتحولات الكبرى، وتحمّل المسؤولية العامة عن النتائج.</p>
+        <p><strong>بروتوكولهم.</strong> جلسات قصيرة ومغلقة، بعدد محدود جداً، بمحتوى تنفيذي غير تقني، وسرية تعاقدية واضحة، وحالات مبنية على قرارات حقيقية.</p>
+        <p><strong>مخرجهم.</strong> مذكرة قرار سرية في ملف فعلي: الهدف، والقيمة العامة، ومستوى المخاطر، والجهة المسؤولة، وشروط الاستمرار أو التوقف.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>القرار الشكلي الأهم في الوثيقة كلها:</strong> ادمج 2.2 و2.3 و2.4 و2.5 في <em>صفحة واحدة بأربعة أعمدة</em> بدل ثلاث صفحات نصّ متتابع. البنية متطابقة في الأربعة (من هم / لماذا يختلفون / قرارهم / بروتوكولهم / مخرجهم)، فاجعلها خمسة صفوف أفقية تقطع الأعمدة الأربعة. القارئ عندئذٍ <em>يقارن</em> المستويات بدل أن يقرأها بالتتابع ويحاول تذكّر الأول وهو في الرابع — وهذا بالضبط ما تريده الدراسة منه. المكسب: صفحتان كاملتان، وفهم أسرع، واختفاء الشعور بالتكرار الذي تولّده أربع كتل متشابهة.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p6">
+  <div class="pg-head">
+    <div class="pg-num"><b>06</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>2.3 أصحاب المعالي · 2.4 الوكلاء</h3><div class="where">القسم الثاني — وسط</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>الفرعان جيدان في مضمونهما، وأهم ما فيهما هو التفريق بين المستوى الثاني والثالث — وهو تفريق حقيقي ومبرَّر. لكن الصياغة دفاعية: «لا ينبغي أن تُدمج مع الوكلاء» جملة تخاطب معترضاً غير موجود. والأصح أن يُقال الفرق إيجاباً فيقتنع القارئ به بلا مجادلة.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">لكنها لا ينبغي أن تُدمج مع الوكلاء أو القيادات التنفيذية</span> <span class="why">— <b>صياغة دفاعية.</b> بقية الجملة تعدّد خمسة فروق حقيقية؛ عرضها وحدها أقنع من تحذير سابق عليها.</span></li>
+        <li><span class="del">وهو آخر مستوى رئيسي يراجع كثيراً من المبادرات قبل الالتزام بالميزانية والوقت والتعاقد</span> <span class="why">— <b>ادّعاء غير مسنود ولا صحيح إطلاقاً</b> (الوكيل المساعد يراجع بعدها، ولجان المشتريات كذلك). ويكفي عنه: «قبل الالتزام بالميزانية والتعاقد» في وصف القرار.</span></li>
+        <li><span class="del">ومن هنا يكون محتواه التدريبي أقرب إلى التطبيق الموجه منه إلى الإطلاع العام</span> <span class="why">— <b>يعيد قوله</b> عنوان «البروتوكول التدريبي» بعده بسطرين. وفيها خطأ إملائي: «الإطلاع» ← «الاطلاع».</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">2.3 المستوى الثاني — أصحاب المعالي</p>
+        <p><strong>من هم.</strong> نواب الوزراء، ومن يعادلهم من المحافظين في الهيئات والجهات الحكومية، ومساعدو الوزراء، والمسميات المعتمدة مكافئةً في الصلاحية والبروتوكول.</p>
+        <p><strong>لماذا يختلفون.</strong> فئة قائمة بذاتها بين الوزير والوكيل، تفصلها عن الوكلاء خمسة فروق: نطاق الصلاحية، ودرجة المساءلة، وإدارة المحافظ الاستثمارية، والاتصال المباشر بالمستوى الوزاري، والبروتوكول التدريبي.</p>
+        <p><strong>قرارهم.</strong> ترجمة التوجه الوزاري إلى عمل ممول ومحكوم: تحويل التوجه إلى محفظة مبادرات، وترتيب حالات الاستخدام، وتحديد الأولويات والتمويل، واعتماد نموذج الحوكمة التشغيلي، ومتابعة أداء الاستثمارات، وقرارات الاستمرار أو الإيقاف، والتنسيق بين الجهات والقطاعات.</p>
+        <p><strong>بروتوكولهم.</strong> أفواج صغيرة وانتقائية بخصوصية عالية، وحالات حكومية سعودية، وتعلّم بين أقران من المستوى نفسه، في برنامج مكثف أو إقامة تنفيذية قصيرة، تعقبها متابعة تطبيقية.</p>
+        <p><strong>مخرجهم.</strong> حزمة محفظة وحوكمة: حالات الاستخدام مرتّبة، ومُلّاكها، وميزانياتها، وضوابطها، ومراحل تنفيذها.</p>
+        <p class="h-lvl2" style="margin-top:6px">2.4 المستوى الثالث — الوكلاء</p>
+        <p><strong>من هم.</strong> وكلاء الوزارات، ونواب المحافظين، والمسميات المكافئة في الصلاحية التنفيذية.</p>
+        <p><strong>لماذا يختلفون.</strong> هنا تتحول المحفظة المعتمدة إلى قرارات جاهزية وتنفيذ، وهنا تُراجَع المبادرة قبل الالتزام بالميزانية والوقت والتعاقد.</p>
+        <p><strong>قرارهم.</strong> الجاهزية والالتزام: تقييم جاهزية حالات الاستخدام، وقرارات البيانات والوصول والمشاركة، ومراجعة التعاقد والمشتريات، وإدارة المخاطر الأمنية والتنظيمية، ومتابعة التنفيذ، وإعداد القوى العاملة، والتأكد من وجود مؤشرات أداء ومُلّاك واضحين.</p>
+        <p><strong>بروتوكولهم.</strong> برنامج مدمج يمتد أسابيع، يعمل الفوج فيه على حالة عمل حقيقية، بتدريب عملي على المشتريات والبيانات والحوكمة، وإشراف تنفيذي على المشروع التطبيقي.</p>
+        <p><strong>مخرجهم.</strong> ميثاق تنفيذ يربط حالة الاستخدام بالبيانات والضوابط والتعاقد والمالك والمراحل ومؤشرات القياس.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>ملاحظة اتساق لغوي حرجة بين النسختين:</strong> النسخة الإنجليزية 3.1 تترجم المستوى الثاني <em>Vice Ministers</em> والثالث <em>Undersecretaries</em>، وهذا صحيح ويميّزهما. لكن النسخة الإنجليزية المحدَّثة تستخدم <em>Deputy Ministers</em> للمستويين معاً — فيصير المستويان اسماً واحداً بالإنجليزية بينما الدراسة كلها مبنية على التفريق بينهما. <strong>يجب توحيد المصطلح</strong>: المستوى الثاني <em>Vice Minister</em>، والثالث <em>Undersecretary</em>، والرابع <em>Assistant Undersecretary</em> — وإلا انهار القسم الثاني كله في النسخة الإنجليزية.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p7">
+  <div class="pg-head">
+    <div class="pg-num"><b>07</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>2.5 الوكلاء المساعدون · 2.6 جدول ملخص المستويات</h3><div class="where">القسم الثاني — نهاية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>جدول 2.6 هو الشكل الصحيح لكل ما سبقه — ووجوده بعد ثلاث صفحات من النص هو الدليل على أن الصفحات الثلاث لم تكن ضرورية. الملاحظة أسفل الجدول جيدة ومهمة (التصنيف بالصلاحية لا بالمسمى)، لكن نصفها الثاني يشرح فائدة القاعدة بدل أن يكتفي بالقاعدة.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">وتمنع هذه القاعدة الاعتراضات الناشئة عن اختلاف الهياكل بين الجهات، وتجعل التصنيف قابلاً للتطبيق على أي جهة مهما اختلف تسلسلها الوظيفي.</span> <span class="why">— <b>شرح لفائدة قاعدة</b> قيلت في السطر السابق، وقيلت قبلها في 2.1. ثلاث مرات للفكرة الواحدة.</span></li>
+        <li><span class="del">وبتحديد الفئات الأربع ومسؤولياتها في القرار يكتمل إطار «من نعني بالقيادات»؛ والسؤال الذي يطرح نفسه الآن: ماذا يقدم السوق العالمي والمحلي لكل فئة من هذه الفئات؟ هذا ما تفحصه نتائج المقارنة المعيارية في القسم الثالث.</span> <span class="why">— <b>جسر مزدوج:</b> إعلان اكتمال + إعلان القسم التالي. حذفه كاملاً.</span></li>
+        <li><span class="del">ويختلف عن المستوى الثالث في أن تركيزه الأكبر يقع على…</span> <span class="why">— <b>الصياغة بالمقارنة السلبية</b> تُلزم القارئ بالعودة إلى الصفحة السابقة. يُقال الدور إيجاباً.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">2.5 المستوى الرابع — الوكلاء المساعدون والقيادات التنفيذية المكافئة</p>
+        <p><strong>من هم.</strong> الوكلاء المساعدون، والرؤساء التنفيذيون في الجهات بحسب حجمها ونطاق صلاحيتها، والمديرون التنفيذيون، والمسؤولون التنفيذيون الأول، والمسميات المكافئة التي تشرف مباشرة على التنفيذ والتشغيل.</p>
+        <p><strong>لماذا يختلفون.</strong> هنا تتحول السياسة والضابط إلى إجراء عمل يومي، وهنا يُقاس التزام الفرق به.</p>
+        <p><strong>قرارهم.</strong> تشغيلي يومي: تطبيق الأدوات داخل سير العمل، ومتابعة الاستخدام المسؤول، وتحويل الضوابط إلى إجراءات، وإعداد الفرق، ومتابعة الأداء والانحرافات، وتصعيد المخاطر والحالات غير المتوقعة، وتوثيق الالتزام.</p>
+        <p><strong>بروتوكولهم.</strong> محتوى تطبيقي مباشر، وتعلّم مدمج أو رقمي موجه، وحالات من العمليات اليومية، وأدوات وقوائم تحقق جاهزة، ومتابعة لمؤشرات التطبيق والالتزام.</p>
+        <p><strong>مخرجهم.</strong> خطة تطبيق على مستوى القطاع أو الإدارة، مرتبطة بسجل تشغيلي للالتزام بالضوابط ورفع المخاطر.</p>
+        <p class="h-lvl2" style="margin-top:6px">2.6 ملخص المستويات</p>
+        <p class="kicker">تحت الجدول، سطر واحد فقط:</p>
+        <p>المسميات المكافئة استرشادية. يُصنَّف المشارك بنطاق صلاحيته ونوع قراره، لا بمسماه الوظيفي.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>الجدول يستحق صفحة كاملة أفقية.</strong> بعد دمج 2.2–2.5 في لوحة الأعمدة الأربعة (صفحة 5)، يصبح جدول 2.6 هو الخلاصة المطبوعة التي تُقتطع وتُعلّق. اجعل رأس كل عمود ملوّناً بلون المستوى، واستخدم اللون نفسه لهذا المستوى في كل الوثيقة — في جدول التوافر (4.5)، وجدول المسارات (5.1)، وفي التوصيات. <strong>أربعة ألوان ثابتة تسري في ست صفحات هي أرخص أداة ترابط في الوثيقة كلها،</strong> وهي تعالج مباشرةً الإحساس بأن الأقسام كُتبت منفصلة.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p8">
+  <div class="pg-head">
+    <div class="pg-num"><b>08</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>رأس القسم الثالث · 3.1 أنواع البرامج الدولية</h3><div class="where">القسم الثالث — بداية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>ثلاث طبقات تمهيد قبل أول معلومة: جسر من القسم الثاني، ثم عنوان القسم بوصفه، ثم فقرة تعدّد ما سيأتي في القسم («أنواع البرامج، ثم سجل الأسعار، ثم تجارب الدول، ثم…»). القارئ يمرّ بثلاث بوابات قبل أن يقرأ شيئاً. <strong>وفي الفقرة نفسها إشكال يستحق المعالجة:</strong> تقول الدراسة إنها تستند إلى سجل من 32 برنامجاً، ثم لا تعرض إلا اثني عشر. العشرون الباقية غير موجودة في الوثيقة ولا في المراجع، فلا يستطيع القارئ التحقق منها.</p>
+      <p>أما 3.1 نفسه — تقسيم السوق إلى تجاري وحكومي وسيادي — فهو <strong>أقوى تحليل في الدراسة</strong> ويصمد كما هو تقريباً.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">انتهى القسم السابق إلى تحديد من نعني بالضبط في كل مستوى من المستويات الأربعة؛ وبهذا التحديد يصبح السؤال العملي…</span> <span class="why">— <b>جسر.</b></span></li>
+        <li><span class="del">يجمع هذا القسم الإجابة في مكان واحد: أنواع البرامج الدولية، ثم سجل أبرز البرامج وأسعارها، ثم تجارب الدول، ثم القدرات المتاحة داخل المملكة، فخلاصة ما نضج وما لا يزال يمثل فجوة.</span> <span class="why">— <b>فهرس مصغَّر لقسم من ست صفحات.</b> عناوين الفروع 3.1–3.5 تؤدي هذا حرفياً وبترتيبه نفسه.</span></li>
+        <li><span class="del">والخلط بينها أصل أخطاء الشراء</span> <span class="why">— <b>يُنقل ولا يُحذف:</b> هذه أهم جملة في الفرع وموضعها الصحيح <b>نهايته</b> بعد عرض الفئات الثلاث، حيث تصير خلاصة مسنودة بدل ادّعاء مسبق.</span></li>
+      </ul>
+      <p class="why" style="margin-top:4px"><b>يُعالج ولا يُحذف:</b> «سجل من 32 برنامجاً» — إما يُنشر السجل كاملاً في ملحق، أو تُعدَّل العبارة إلى «اثنا عشر برنامجاً مختارة من سجل أوسع رُوجع». الرقم غير القابل للتحقق يُضعف نظام الأدلة الذي بُنيت عليه الدراسة كلها.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl1">3. نتائج المقارنة</p>
+        <p>تستند هذه النتائج إلى اثني عشر برنامجاً مختارة من سجل أوسع رُوجعت صفحات مزوّديه وجماهيره المعلنة وأسعاره المنشورة في 21 أغسطس 2026، في سياق تعلن فيه 32 دولة من 36 في منظمة التعاون الاقتصادي والتنمية برامج تدريب حكومية على الذكاء الاصطناعي.<sup>[14]</sup></p>
+        <p class="h-lvl2">3.1 السوق ثلاث فئات لا فئة واحدة</p>
+        <p><strong>الفئة الأولى — برامج تجارية بارزة.</strong> كليات الأعمال الكبرى، لجمهور تنفيذي مختلط القطاعات، برسم مقعد من 12,000 إلى 28,000 دولار: كيلوغ عند 28,000<sup>[15]</sup>، وMIT xPRO من 25,000 إلى 28,000 بحسب دورة التسعير<sup>[16]</sup>، وكامبريدج جادج عند 20,000 جنيه (نحو 101,993 ريالاً).<sup>[17]</sup> هي الأعلى سعراً وأبعدها عن السياق الحكومي: المحتوى مصوغ للمؤسسات التجارية، والقرار الحكومي لا يظهر فيه إلا عرضاً. السعر هنا ثمن العلامة الأكاديمية وشبكة الأقران، لا مؤشر على الملاءمة الحكومية.</p>
+        <p><strong>الفئة الثانية — برامج حكومية متخصصة.</strong> مكتوبة لموظفي الحكومة بالاسم، وأرخص منهجياً: مجانية تماماً كبرنامج «بارتنرشيب فور بابليك سيرفس»<sup>[18]</sup> وسلسلة إدارة الخدمات العامة<sup>[19]</sup>، أو بمئات اليوروات كماستركلاس معهد الإدارة العامة الأيرلندي (480 يورو، نحو 2,101 ريال)<sup>[20]</sup>، أو بآلاف الدولارات كدارن (4,700)<sup>[21]</sup> وجونز هوبكنز (2,450 بتاريخ الفحص)<sup>[22]</sup>، وتتوجها مدرسة لي كوان يو عند 6,800 دولار سنغافوري.<sup>[23]</sup> والسبب أن التسعير رسالي لا تجاري: موّلت Google.org برنامج بارتنرشيب بعشرة ملايين دولار<sup>[24]</sup>، ومنصة أبوليتيكال بخمسة<sup>[25]</sup>، وما لا تغطيه المنح تغطيه ميزانيات الدول. لكن أشدّها ارتباطاً بالسياق العام مقيَّد بالجنسية أو جهة العمل: وجود البرنامج في السوق شيء، وقدرة القائد السعودي على الالتحاق به شيء آخر.</p>
+        <p><strong>الفئة الثالثة — برامج سيادية مغلقة.</strong> تبنيها الدول لنفسها ولا تعرضها للبيع. الإمارات أقرّت في 18 مايو 2026 هدفاً تدريبياً لـ80,000 موظف اتحادي «من الوزراء إلى الموظفين الجدد» — هدفاً معلناً لا إنجازاً محققاً<sup>[26]</sup> — تلته شراكة معرفية مع جامعة محمد بن زايد<sup>[27]</sup> وملتقى جمع أكثر من 400 وزير وقائد اتحادي.<sup>[28]</sup> وسنغافورة أعلنت معهد الحكومة الرقمية لأكثر من 150,000 موظف، ولم يبدأ التشغيل.<sup>[29]</sup> وبريطانيا خصّصت برنامج التميز الرقمي للخدمة المدنية العليا.<sup>[30]</sup> وغانا نفّذت معسكراً وزارياً مغلقاً مع برنامج الأمم المتحدة الإنمائي.<sup>[31]</sup></p>
+        <p>ودلالة هذا التقسيم مباشرة: ما يصل إلى مكتب الوزير قرار سيادي بالبناء، لا منتج تعليمي يُلتقط من رف تجاري. والخلط بين الفئات الثلاث هو أصل أخطاء الشراء.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>ثلاث بطاقات متجاورة بدل ثلاث فقرات متتابعة.</strong> كل بطاقة: اسم الفئة، ونطاق السعر رقماً كبيراً، وسطر «هل يمكن للقائد السعودي الالتحاق؟» بعلامة نعم/انتقائي/لا. عمود الالتحاق هذا هو أهم معلومة في الفرع كله وهو اليوم مدفون في آخر جملة من الفقرة الثانية.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p9">
+  <div class="pg-head">
+    <div class="pg-num"><b>09</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>3.2 جدول الاثني عشر برنامجاً</h3><div class="where">القسم الثالث — الجدول الرئيسي</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>ستة أعمدة في اثني عشر صفاً، بعضها فقرات كاملة داخل خلية («كبار القادة والممارسين المسؤولين عن استراتيجية الذكاء الاصطناعي وحوكمته أو تطويره أو تنفيذه»). النتيجة أن الجدول لا يُقرأ؛ يُمسَح عمود السعر ويُقلَب. وهذا هدر لأثمن بيانات في الدراسة.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">عمود «المصدر» المستقل</span> <span class="why">— <b>يُدمج</b> كرقم مرفوع بجانب اسم البرنامج. يحرّر خُمس عرض الجدول بلا فقدان معلومة.</span></li>
+        <li><span class="del">عمود «المدة والصيغة»</span> <span class="why">— <b>ينزل إلى سطر ثانٍ رمادي</b> تحت اسم البرنامج. ليس معياراً للمقارنة بين الصفوف، بل وصفاً للصف نفسه.</span></li>
+        <li><span class="del">إعادة صياغة الجمهور المعلن في جمل طويلة</span> <span class="why">— <b>يُختصر إلى وسم</b>: «حكومي»، «مختلط»، «تنفيذي أعلى». الصياغة الحرفية من صفحة المزوّد تنزل إلى المراجع.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">البنية المقترحة للجدول</span>
+      <div class="tbl-wrap" style="margin-top:2px">
+        <table>
+          <thead><tr><th>البرنامج</th><th>الجمهور</th><th>السعر ≈ ريال</th><th>هل يلتحق قائد سعودي؟</th></tr></thead>
+          <tbody>
+            <tr><td>لي كوان يو<sup>[23]</sup><br><span class="why">4 أيام حضورية · مقرّر لم يُنفَّذ</span></td><td>حكومي</td><td class="num">20,050</td><td><span class="chip ok">نعم</span></td></tr>
+            <tr><td>GAILP — محمد بن زايد<sup>[32]</sup><br><span class="why">5 أيام · أبوظبي</span></td><td>تنفيذي أعلى</td><td class="num">45,950</td><td><span class="chip">بدعوة</span></td></tr>
+            <tr><td>بلافاتنك — أكسفورد<sup>[35]</sup><br><span class="why">6 أيام · فوج أول لم يبدأ</span></td><td>مختلط</td><td class="num">52,271</td><td><span class="chip">انتقائي</span></td></tr>
+            <tr><td>هارفارد كينيدي<sup>[36]</sup><br><span class="why">أسبوع حضوري</span></td><td>مختلط</td><td class="num">43,875</td><td><span class="chip ok">نعم</span></td></tr>
+            <tr><td>دارن — فرجينيا<sup>[21]</sup><br><span class="why">2.5 يوم · واشنطن</span></td><td>حكومي</td><td class="num">17,625</td><td><span class="chip ok">نعم</span></td></tr>
+            <tr><td>بارتنرشيب فور بابليك سيرفس<sup>[18]</sup><br><span class="why">6 جلسات على 4 أشهر</span></td><td>حكومي</td><td class="num">مجاني</td><td><span class="chip cut">لا — أمريكي</span></td></tr>
+            <tr><td>إمبريال كوليدج<sup>[37]</sup><br><span class="why">9 أشهر · مشروع داخل الجهة</span></td><td>حكومي</td><td class="num">7,649</td><td><span class="chip cut">لا — بريطاني</span></td></tr>
+            <tr><td>كامبريدج جادج<sup>[17]</sup><br><span class="why">4 أشهر مدمج</span></td><td>شركاتي</td><td class="num">101,993</td><td><span class="chip ok">نعم</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="why" style="margin-top:8px">نموذج مختصر — تُستكمل الصفوف الاثنا عشر بالبنية نفسها. الترتيب المقترح: <strong>بحسب قابلية الالتحاق</strong> لا بحسب السعر، لأن السؤال العملي للقارئ السعودي هو «ما المتاح لي؟» لا «ما الأغلى؟».</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>أضف رسماً واحداً فوق الجدول:</strong> محور أفقي = السعر، محور رأسي = الملاءمة الحكومية، وكل برنامج نقطة. سيُظهر الرسم فوراً ما تحتاج الدراسة اليوم فقرتين لقوله: كامبريدج في أقصى اليمين الأسفل (الأغلى والأبعد)، وإمبريال في أقصى اليسار الأعلى (الأرخص والأعمق تطبيقاً). <strong>الرسم يجعل الاستنتاج مرئياً بدل أن يكون مزعوماً</strong> — وهو أقوى مكسب بصري ممكن في الوثيقة كلها. ولوّن النقاط المقيّدة برمادي باهت، فتظهر الفجوة الحقيقية: أكثر التصاميم ملاءمةً هي أقلها إتاحةً.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p10">
+  <div class="pg-head">
+    <div class="pg-num"><b>10</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>ملاحظات الجدول · قراءة النتائج · بداية جدول 3.3</h3><div class="where">القسم الثالث</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>الفقرة التحليلية بعد الجدول ممتازة وتحتوي على ثلاث نتائج حقيقية — لكنها مكتوبة ككتلة نصّ متصلة تحت جدول ضخم، فلا تُقرأ. والملاحظات الثلاث تحت الجدول مختلطة: اثنتان منهجيتان (تسعير الأفواج المخصصة) وواحدة تحقُّقية (سعر جونز هوبكنز)، والثلاث بمستوى واحد.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">وإذا كان هذا ما يعرضه السوق، فماذا فعلت الحكومات نفسها حين قررت تدريب قياداتها بدل انتظار السوق؟ هذا ما يجيب عنه القسم الآتي.</span> <span class="why">— <b>جسر</b> بصيغة سؤال بلاغي.</span></li>
+        <li><span class="del">أما البرامج التي وصلت إلى الوزراء وأصحاب المعالي، فجاءت غالباً من خلال صيغ مغلقة أو انتقائية أو شراكات حكومية.</span> <span class="why">— <b>تُقال بعدها بسطر</b> بصياغة أدق: «وما بلغ الوزراء فعلاً جاء بصيغ سيادية مغلقة». الجملتان في فقرة واحدة.</span></li>
+        <li><span class="del">الملاحظة 3 عن كون برنامجي لي كوان يو وبلافاتنك مقرّرين لا منفّذين</span> <span class="why">— <b>تكرار:</b> المعلومة نفسها مكتوبة داخل خلية «المدة والصيغة» لكل منهما في الجدول أعلاه.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="kicker">يُوضع في إطار مستقل بعنوان: ماذا يقول الجدول</p>
+        <p><strong>1 · الخيارات تقلّ كلما ارتفع المستوى.</strong> السقف المعلن في السوق يقف عند «كبار القادة». ولم يُرصد ضمن نطاق المراجعة برنامج مخصص موثّق علناً يخاطب الوزراء جمهوراً أساسياً؛ وما بلغ الوزراء فعلاً جاء بصيغ سيادية مغلقة.<sup>[31][26]</sup></p>
+        <p><strong>2 · الأنسب هو الأصعب وصولاً.</strong> أشدّ التصاميم ملاءمةً للمستويين الثاني والثالث — بارتنرشيب، وإمبريال، وجونز هوبكنز، وإدارة الخدمات العامة — مقيَّدة كلها بجنسية أو جهة عمل. ولا يبقى مفتوحاً أمام القادة السعوديين سوى لي كوان يو، ودارن، وبلافاتنك انتقائياً، وبرنامج محمد بن زايد الإقليمي الانتقائي.</p>
+        <p><strong>3 · السعر لا يدل على الملاءمة.</strong> أغلى صفّ في الجدول شركاتي خالص (كامبريدج)، وأرخص صفّ مدفوع هو أعمقها تطبيقاً (إمبريال). بطاقة السعر تقيس العلامة الأكاديمية، لا الجودة الحكومية.</p>
+        <p class="kicker" style="margin-top:6px">تحت الجدول — ملاحظتان فقط:</p>
+        <p>الأسعار المعروضة أسعار مقاعد فردية في أفواج مفتوحة، ولا تمثل عرضاً لفوج مغلق؛ فالبرنامج المخصص يُسعَّر مشروعاً لا مقاعد، ولا تنشر الجامعات بطاقات أسعار له.<sup>[39]</sup></p>
+        <p>(*) عرضت صفحة جونز هوبكنز سابقاً نسخة أقصر بسعر أدنى؛ يُعاد التأكد قبل أي التحاق.<sup>[22]</sup></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>ارفع «ماذا يقول الجدول» فوق الجدول لا تحته.</strong> القارئ التنفيذي يقرأ النتيجة ثم يتحقق منها في البيانات، لا العكس. ثلاث نتائج مرقّمة في إطار ملوّن أعلى الصفحة، والجدول تحتها بوصفه سنداً. هذا التبديل وحده يحوّل الصفحة من صفحة بيانات إلى صفحة قرار.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p11">
+  <div class="pg-head">
+    <div class="pg-num"><b>11</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>3.3 جدول الدول العشر · سياقات غانا والإمارات وبريطانيا والهند وكازاخستان</h3><div class="where">القسم الثالث — أكبر مواضع الحشو</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>هنا أكبر تكرار في الدراسة. جدول من عشرة صفوف يعرض لكل دولة: النموذج، والمستوى المستهدف، والآلية، والحجم والحالة. ثم تأتي <strong>ثماني فقرات سردية تعيد قراءة خلايا الجدول نفسها بجمل كاملة</strong>. فقرة الهند تقول ما يقوله صفّ الهند. فقرة سنغافورة تقول ما يقوله صفّ سنغافورة. القارئ يقرأ المعلومة مرتين خلال صفحتين، وهذا بالضبط ما يولّد شعور «مكتوبة بأكثر من يد ثم جُمّعت».</p>
+      <p><strong>المعيار الفاصل:</strong> تبقى الفقرة فقط إذا حملت درساً <em>لا تستطيع خلية الجدول حمله</em>. وبهذا المعيار تبقى أربع فقرات وتسقط أربع.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">فقرة «الهند — ربط التعلم بمنظومة الأداء» كاملة</span> <span class="why">— <b>خلية الجدول تقول:</b> «إلزام يُقيد في تقرير التقييم السنوي» + «218 مقرراً وأكثر من 73 مليون تسجيل». الفقرة تعيد الرقمين نفسيهما. والجملة الوحيدة المضافة («حجم التسجيل ليس دليل قدرة») تُنقل إلى فقرة الخلاصة.</span></li>
+        <li><span class="del">فقرة «سنغافورة — معهد معلن يغطي الخدمة العامة» كاملة</span> <span class="why">— <b>خلية الجدول تقول:</b> «معلَن في مارس 2026 ولم يبدأ». والفقرة تشرح معهداً لم يعمل بعدُ في خمسة أسطر، ثم تنتهي إلى أنه «لا يُحتج به نموذجاً عاملاً» — أي أن خمسة الأسطر لا لزوم لها أصلاً.</span></li>
+        <li><span class="del">فقرة «أستراليا وفرنسا والاتحاد الأوروبي» كاملة</span> <span class="why">— <b>ثلاثة صفوف جدول</b> أُعيدت نصاً، بالأرقام نفسها (185,000 و100,000 و2 فبراير 2025). ورواندا وحدها إضافة جديدة، وتُدرَج صفاً في الجدول.</span></li>
+        <li><span class="del">فقرة «مصر — برنامج عربي للقيادات» كاملة</span> <span class="why">— <b>خلية الجدول تقول</b> كل شيء عدا جملة «أقرب المقارنات ثقافياً ولغوياً»، وهذه تُنقل إلى الخلاصة.</span></li>
+      </ul>
+      <p class="why" style="margin-top:6px"><b>المكسب:</b> صفحة ونصف تقريباً، وهو أكبر توفير مفرد في الدراسة.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح — أربع حالات فقط، كل واحدة بدرس مختلف</span>
+      <div class="draft">
+        <p class="h-lvl2">3.3 ما فعلته الحكومات</p>
+        <p>خلال 2025 و2026 انتقل تدريب القيادات في أكثر من عشر دول من النية إلى سياسة: برامج قائمة، وأفواج مدرَّبة، وأدوات إلزام، وتقييم تجريبي واحد بمجموعة ضابطة. ويكشف الجدول ملاحظتين قبل التفاصيل: <strong>كل تجربة عبرت عتبة المستويين الأول والثاني جاءت بصيغة سيادية مغلقة لا بمنتج مشترى؛ ودليل الأثر ضعيف في جميعها.</strong></p>
+        <p class="kicker">[ الجدول هنا — عشرة صفوف + رواندا ]</p>
+        <p><strong>غانا — الوزير يُدرَّب حين يكون المؤشر باسمه.</strong> برنامج سكني ثلاثة أيام من 25 إلى 27 يوليو 2025، جمع وزراء المجموعات الوزارية الخمس مع نقطة اتصال مسماة من كل وزارة، وكان الخروج منه مشروطاً بمخرجات استخدام ومؤشرات أداء لكل وزارة.<sup>[31]</sup> الدرس ليس في المعسكر، بل في الشرط.</p>
+        <p><strong>الإمارات — الدور القيادي أولاً، ثم تدريب شاغله.</strong> استُحدث دور مسؤول الذكاء الاصطناعي الرئيسي بقرار من مجلس الوزراء، ثم صُمم له برنامج تنفيذي.<sup>[47]</sup> والتدريب كله معلَّق على هدف تشغيلي معلن لا على عدد ساعات.<sup>[26]</sup></p>
+        <p><strong>بريطانيا — أقوى دليل في الدراسة، وهو غير حاسم.</strong> بلغت التراخيص المشتراة نحو 2,500 من جمهور مستهدف قدره نحو 7,000 حتى سبتمبر 2024.<sup>[30]</sup> وكلّف مكتب مجلس الوزراء جهة مستقلة بأول تقييم تجريبي بمجموعة ضابطة لدورة تدريبية في تاريخ الخدمة المدنية، فأظهر «دليلاً واعداً» على تحسن سلوك مُبلَّغ عنه ذاتياً، ووصفه مُقيّمه بغير الحاسم.<sup>[40]</sup> وهذا هو سقف الأدلة المتاحة عالمياً اليوم.</p>
+        <p><strong>كازاخستان — أول من استهدف المستوى الثاني بالاسم.</strong> برنامج «حوكمة الذكاء الاصطناعي 500» عبر أكاديمية الإدارة العامة التابعة لرئاسة الجمهورية، بفوج أول من 100 مسؤول من نواب الوزراء ونواب الحكام، في طريقه إلى فيلق مسمّى قوامه 500.<sup>[42]</sup> وهو أقرب نظير هيكلي لفكرة فيلق سعودي مسمّى ومُساءل.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>أضف عمود «أداة الإلزام» إلى الجدول ورتّبه به.</strong> الدراسة تكتشف في خلاصتها أن أدوات الربط تتصاعد: تشريع ← قيد في التقييم السنوي ← تكليف سياسي ← تطوعي. رتّب الصفوف بهذا التدرج بدل الترتيب العشوائي الحالي، فيصير الجدول <em>يبرهن</em> الخلاصة بترتيبه بدل أن ينتظر فقرة تقولها. والحالات الأربع الباقية تُعرض بطاقاتٍ صغيرة بعنوان «الدرس» لا فقرات — بحيث يُقرأ الدرس أولاً والتفصيل ثانياً.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p12">
+  <div class="pg-head">
+    <div class="pg-num"><b>12</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>بقية السياقات · خلاصة التجارب · 3.4 القدرات المحلية</h3><div class="where">القسم الثالث</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>فقرة الخلاصة هنا هي الجزء الأثمن في الفرع كله: أدوات الربط تتصاعد من التشريع إلى التقييم إلى التكليف، وأدوار المساءلة سبقت التدريب في ثلاث دول، ولم تنشر أي دولة دليل أثر. ثلاث نتائج مركّبة حقيقية — مدفونة في نهاية فقرة طويلة بعد ثماني فقرات سردية.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">وبعد صورة العالم، تقتضي إنصاف المقارنة أن نسأل: ما الذي تملكه المملكة اليوم فعلاً من قدرات في هذا المجال؟</span> <span class="why">— <b>جسر.</b> والعنوان «3.4 القدرات المتاحة داخل المملكة» يليه مباشرة.</span></li>
+        <li><span class="del">مع اختلاف السياق بين دولة وأخرى</span> <span class="why">— <b>تحفظ يتكرر مرتين</b> في الفقرة نفسها («مع اختلاف السياق» ثم «وتُقرأ المقارنة مع مراعاة اختلاف السياق» في 6.1). يُقال مرة واحدة في 1.2.</span></li>
+        <li><span class="del">تكشف المراجعة المحلية عن صورة أدق من ثنائية «موجود وغير موجود»</span> <span class="why">— <b>تمهيد بلاغي</b> لا يحمل معلومة؛ الفقرة بعده تعرض الصورة مباشرة وبأوضح مما يعد به.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="kicker">خلاصة التجارب — تُوضع في إطار مستقل</p>
+        <p><strong>الربط يوسّع التغطية.</strong> بلغ النموذج البريطاني التطوعي نحو 2,500 من نحو 7,000 مستهدف<sup>[30]</sup>، بينما حققت الهند تغطية واسعة بربط التدريب بالتقييم السنوي.<sup>[41]</sup> وتتصاعد أدوات الربط من التشريع الملزم (الاتحاد الأوروبي) إلى القيد في التقييم الوظيفي (الهند) إلى التكليف السياسي المباشر (كازاخستان والإمارات).</p>
+        <p><strong>الدور قبل التدريب.</strong> استُحدثت أدوار المساءلة قبل التدريب في الإمارات وأستراليا وكازاخستان — لا بعده.</p>
+        <p><strong>ولا دليل أثر في أي منها.</strong> لم تنشر أي من هذه الدول دليلاً على أثر التدريب في جودة القرار أو الأداء المؤسسي.<sup>[51]</sup> وحجم التسجيل ليس دليل قدرة.</p>
+        <p class="h-lvl2" style="margin-top:6px">3.4 ما تملكه المملكة اليوم</p>
+        <p>المكوّنات موجودة، لكنها متفرقة ولم تُجمَّع في برنامج واحد متدرج المستويات.</p>
+        <p><strong>«سدايا» — قدرة تنفيذ مثبتة بالأرقام.</strong> درّبت أكثر من 278 قائداً حكومياً في البيانات والذكاء الاصطناعي حتى يونيو 2026، ارتفاعاً من نحو 80 بنهاية 2024، ضمن قاعدة تجاوزت 1,563,983 مستفيداً.<sup>[52][53]</sup> لكن المعلومات المنشورة لا تبيّن توزيع المشاركين على المستويات ولا تفاصيل المناهج والقياس، فلا يمكن التحقق علناً من وجود مسارات متدرجة وفق التصنيف المعتمد هنا.</p>
+        <p><strong>«قدراتك» — قاعدة جاهزة تنقصها المادة.</strong> مسار للقيادة الرقمية بسبعة تخصصات، وشراكات أكاديمية موثقة مع هارفارد وبيركلي وإمبريال وكولومبيا.<sup>[54]</sup> المنصة والشراكات جاهزتان؛ الناقص محتوى متخصص في <em>قرارات</em> الذكاء الاصطناعي، وحالات سعودية، وإطار قياس. فالمسار كما هو موثق يعالج القيادة الرقمية، لا قرار الذكاء الاصطناعي.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>خلاصة التجارب الثلاث في إطار عرضي ملوّن،</strong> لأن هذه هي النتائج التي ستُنقل إلى القسم السادس. وكل نتيجة بعنوان من ثلاث كلمات فوقها. القاعدة العامة للوثيقة كلها: <em>كل خلاصة قسم تخرج من النص إلى إطار</em> — فتصير الأقسام الستة قابلة للقراءة السريعة عبر أُطُرها وحدها.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p13">
+  <div class="pg-head">
+    <div class="pg-num"><b>13</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>بقية 3.4 · 3.5 ما نضج وما لا يزال فجوة</h3><div class="where">القسم الثالث — نهاية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>فقرة ستانفورد تقول الشيء ثلاث مرات: وفد سعودي شارك، ثم «تقدم المشاركة دليلاً على وجود طلب فعلي»، ثم «كما توضح أهمية توفير خيار محلي». والجملتان الأخيرتان تُعادان حرفياً في النتيجة 03 من القسم السادس. أما 3.5 فثلاث قوائم نقطية متتالية — وهو أنسب موضع في الدراسة كلها لمصفوفة بصرية. وفيها جملة تستحق صفحة: «من يبنِ القياس منذ الفوج الأول يسبق السوق كله».</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">تقدم المشاركة السعودية في برنامج ستانفورد دليلاً على وجود طلب فعلي لدى القيادات العليا على برامج القيادة في الذكاء الاصطناعي. كما توضح أهمية توفير خيار محلي يراعي السياق الحكومي السعودي واللغة والسرية والقياس.</span> <span class="why">— <b>الجملتان تُعادان نصاً في النتيجة 03 (صفحة 19).</b> تبقيان هناك لأنه موضع النتائج، وتُحذفان هنا. والجملة الأخيرة في الفقرة («ففي الصيغة الخارجية لا تملك الجهة السعودية ضبط الحالات ولا شروط السرية ولا قياس الأثر») أدق منهما وتكفي وحدها.</span></li>
+        <li><span class="del">وتُقرأ هذه القوائم الثلاث على أنها خريطة عمل لا حكم قيمة</span> <span class="why">— <b>اعتذار.</b> القوائم بيانات؛ لا أحد سيقرؤها حكم قيمة.</span></li>
+        <li><span class="del">فمن يريد منهجاً ناضجاً في التأطير الاستراتيجي والحوكمة والحالات الحكومية يجده جاهزاً</span> <span class="why">— <b>يعيد</b> قائمة «ما نضج» التي فوقه مباشرة بالبنود نفسها.</span></li>
+        <li><span class="del">وبهذا تكتمل صورة العرض والطلب والتجارب؛ ويبقى السؤال الذي بنيت عليه الدراسة كلها…</span> <span class="why">— <b>جسر</b> + إعلان اكتمال.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p><strong>المشاركة في ستانفورد — طلب مثبت.</strong> في نوفمبر 2025 شارك وفد سعودي ضم وزراء وكبار مسؤولين ومختصين في برنامج لقيادة الذكاء الاصطناعي بجامعة ستانفورد.<sup>[55]</sup> وفي الصيغة الخارجية لا تملك الجهة السعودية ضبط الحالات المدروسة، ولا شروط السرية، ولا قياس الأثر.</p>
+        <p><strong>البرامج التجارية المحلية — طلب متكرر بلا تدرّج.</strong> «الذكاء الاصطناعي للقيادات وصناع القرار» عُقد ثلاث مرات (مايو 2025، وأكتوبر 2025، وأبريل 2026)، وهو مملوك لشركة رناد المجد، واستضافت جامعة الملك سعود نسخته الأخيرة استضافةً مكانية لا ملكية أكاديمية.<sup>[56][57]</sup> والحضور المسمّى في النسخة الأخيرة بمستوى مدير تنفيذي ومشرف عام — أي المستويين الثالث والرابع — دون دليل منشور على مشاركة وزراء أو مساعدي وزراء.<sup>[56]</sup></p>
+        <p>ولمعهد الإدارة العامة أكاديمية قيادات ومسارات تطوير واسعة الانتشار<sup>[58]</sup>، لكن لم يُرصد ضمن نطاق المراجعة برنامج مخصص موثّق علناً للذكاء الاصطناعي موجه للقيادات لديه أو لدى الجامعات السعودية الكبرى.</p>
+        <p><strong>الخلاصة:</strong> الفجوة المحلية أضيق من «لا شيء». توجد قدرة تنفيذ مثبتة، ومنصة وشراكات، وطلب قيادي مثبت، وطلب تجاري متكرر. الناقص واحد: تنظيم هذا كله في برنامج واحد، بمالك واحد، ومواصفة واحدة.</p>
+        <p class="h-lvl2" style="margin-top:6px">3.5 ما نضج وما لا يزال فجوة</p>
+        <p class="kicker">[ مصفوفة بستة صفوف وثلاثة أعمدة — تحل محل القوائم النقطية الثلاث ]</p>
+        <p><strong>وأخطر ما في الصورة:</strong> لا أحد في السجل كله يملك برنامجاً قيادياً مثبت الأثر بدليل مستقل. من يبنِ القياس منذ الفوج الأول يسبق السوق كله.<sup>[51]</sup></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>القوائم الثلاث تصير مصفوفة بثلاث حالات.</strong> ستة صفوف (المحتوى الأساسي، الحوكمة، الحالات الحكومية، التدرج بين المستويات، بروتوكول القمة، القياس المرتبط بالقرار) × ثلاثة أعمدة (ناضج / متفرق / غير مثبت) بعلامة في الخانة. القارئ يرى في لحظة أن الصفوف العليا خضراء والسفلى فارغة — وهذه هي رسالة الفرع.</p>
+      <p style="margin-top:8px"><strong>والجملة الأخيرة تُقتبَس بحجم كبير في نصف صفحة.</strong> هي أفضل جملة في الدراسة، وهي اليوم آخر سطر في فقرة رمادية في منتصف صفحة. هذه الجملة وحدها هي ما سيتذكره متخذ القرار بعد أسبوع.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p14">
+  <div class="pg-head">
+    <div class="pg-num"><b>14</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>رأس القسم الرابع · 4.1 إلى 4.4</h3><div class="where">القسم الرابع — بؤرة التكرار</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>هذا القسم لا يقدّم دليلاً واحداً جديداً. راجعتُ أمثلته واحداً واحداً:</p>
+      <ul style="margin-top:2px">
+        <li><strong>4.1</strong> يعيد غانا (ص 11) والملتقى الإماراتي (ص 8 و11) ووفد ستانفورد (ص 13).</li>
+        <li><strong>4.2</strong> يعيد GAILP وبلافاتنك وMEP — الثلاثة في جدول ص 9.</li>
+        <li><strong>4.3</strong> يعيد AI GLP وجونز هوبكنز (جدول ص 9) ومبادرة مصر (جدول ص 10).</li>
+        <li><strong>4.4</strong> يعيد أبوليتيكال (ص 12) وسدايا (ص 12) ومقررات أكسفورد (جدول ص 9).</li>
+      </ul>
+      <p style="margin-top:6px">الجديد الوحيد في القسم أربعة أحكام: <strong>بناء / تطوير مشترك / شراء وتكييف / ترخيص وتوسيع</strong> — وهي أحكام مهمة وصحيحة، لكنها أربع جمل لا صفحتان. <strong>هذا القسم بصيغته الحالية هو المصدر الأول لشعور «مجمّعة تجميعاً»</strong>، لأن القارئ يقرأ في الصفحة 14 ما قرأه في الصفحة 9 بصياغة مختلفة قليلاً.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">إعادة سرد الأمثلة في 4.1 و4.2 و4.3 و4.4</span> <span class="why">— <b>كل مثال ورد كاملاً في القسم الثالث.</b> تبقى علامات المصادر داخل جدول 4.5 فيحتفظ القارئ بالإسناد بلا إعادة السرد.</span></li>
+        <li><span class="del">ولهذا الغياب تفسير بنيوي: فبروتوكول الفئة الوزارية — من سرية المداولات إلى ضآلة العدد إلى ارتباط المحتوى بقرارات فعلية — لا يتوافق مع صيغة الدورة المفتوحة</span> <span class="why">— <b>قيل حرفياً في 2.2</b> (طبيعة الفئة) وفي 3.1 (الفئة السيادية المغلقة). ثلاث مرات.</span></li>
+        <li><span class="del">والجواب ليس واحداً؛ فقد تبين من المراجعة، بحدود ما هو منشور وموثق حتى 21 أغسطس 2026، أن سهولة الحصول على برنامج مناسب تتفاوت جوهرياً من فئة قيادية إلى أخرى.</span> <span class="why">— <b>يقول ما تقوله الجملة التالية له بدقة أكبر</b> («تنخفض سهولة شراء برنامج جاهز كلما ارتفع المستوى»)، وتاريخ المراجعة مثبت في 1.2 ولا حاجة لتكراره في كل قسم.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح — القسم كله في نصف صفحة</span>
+      <div class="draft">
+        <p class="h-lvl1">4. التوافر حسب المستوى</p>
+        <p>تنخفض سهولة شراء برنامج جاهز كلما ارتفع المستوى القيادي. ولكل مستوى، بناءً على ذلك، قرارٌ مختلف:</p>
+        <p><strong>الوزراء — قرار بناء.</strong> لم يُرصد ضمن نطاق المراجعة برنامج مفتوح مصمم للوزراء فئةً أساسية. وكل تغطية وزارية موثقة جاءت مغلقة أو حكومية أو بترتيب خاص.<sup>[31][28][55]</sup> فالمطلوب هنا صيغة سعودية مملوكة محلياً، لا بحث أطول في كتالوجات المزوّدين.</p>
+        <p><strong>أصحاب المعالي — قرار تطوير مشترك.</strong> توجد برامج انتقائية تستقبل قيادات حكومية عليا، لكنها غير مصممة لهذه الفئة حصراً، وحالاتها وضوابطها التعاقدية تبقى ملكاً للمزوّد.<sup>[32][35][34]</sup> فقيمتها حقيقية وناقصة معاً: شريك دولي أو إقليمي موثوق، ومالك سعودي يضبط الحالات والسرية والقياس.</p>
+        <p><strong>الوكلاء — قرار شراء وتكييف.</strong> هذه أوسع طبقة مخصصة في السوق، وأكثرها نماذج موثقة.<sup>[18][22][43]</sup> ووجودها يغيّر طبيعة القرار السعودي: من بناء مكلف وطويل إلى تحقّق وتكييف. تُشترى نماذج أو مقاعد للتحقق من جودة التصميم، ثم يُكيَّف بحالات سعودية وإطار قياس موحد.</p>
+        <p><strong>الوكلاء المساعدون — قرار ترخيص.</strong> المحتوى وفير: مقررات إلكترونية، وخط أساس مجاني قابل للترخيص، ومحتوى وطني متراكم.<sup>[61][48][52]</sup> والتحدي ليس نقص المادة بل اختيارها وربطها بالتطبيق والالتزام. فوفرة المادة بلا ربط بالتقييم الوظيفي تنتج ساعات تعلّم لا تغييراً في الممارسة. ومساهمة «قدراتك» هنا تنظيمية أولاً: انتقاء، وترخيص، وتوطين، وربط الإتمام بمؤشرات الأداء.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>أربع بطاقات، كل بطاقة بعنوان القرار لا بعنوان المستوى:</strong> «بناء»، «تطوير مشترك»، «شراء وتكييف»، «ترخيص». القرار هو الرسالة، والمستوى هو العنوان الفرعي. بهذا القلب البسيط يصير القسم الرابع مضيفاً لا مكرِّراً، ويربط نفسه مباشرة بجدول المسارات في 5.1 الذي يستخدم الكلمات الأربع نفسها. <strong>المكسب: صفحة ونصف.</strong></p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p15">
+  <div class="pg-head">
+    <div class="pg-num"><b>15</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>4.5 جدول التوافر · قراءة الجدول · رأس القسم الخامس</h3><div class="where">القسم الرابع — نهاية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>جدول 4.5 مفيد، لكنه يحمل عمود سعر يعيد أرقام جدول 3.2 (صفحة 9) بالعملة نفسها والتحويل نفسه — <strong>ست صفحات بين موضعين لرقم واحد، وهذا مصدر تناقض مؤكد عند أول تحديث.</strong> والفقرة تحت الجدول تحتوي ثاني أهم استنتاج في الدراسة («الفجوة تقديمية لا معرفية») مدفوناً في نهايتها.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">عمود «السعر» من جدول 4.5 كاملاً</span> <span class="why">— <b>كل رقم فيه مطبوع في جدول 3.2.</b> يُستبدل بإحالة: «الأسعار في جدول 3.2». هذا يحرّر ثلث عرض الجدول ويمنع تعارضاً مستقبلياً بين رقمين للشيء نفسه.</span></li>
+        <li><span class="del">عمود «المدة»</span> <span class="why">— <b>مطبوع كذلك في جدول 3.2.</b> ما يميّز جدول 4.5 هو عمودا «هل يوجد برنامج مخصص؟» و«التقديم»؛ وما عداهما إعادة طباعة.</span></li>
+        <li><span class="del">وعلى هذه الخلاصة يبني القسم التالي النموذج المقترح للمملكة.</span> <span class="why">— <b>جسر.</b></span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="kicker">تحت الجدول — الاستنتاج مرفوعاً إلى صدارته</p>
+        <p><strong>الفجوة في المستويين الأول والثاني تقديمية أكثر منها معرفية.</strong> المحتوى المناسب لهذين المستويين موجود في السوق ويمكن الحصول عليه. الناقص أربعة أشياء لا تُشترى: سرية الجلسة، وضآلة الفوج، وحالات حكومية موثوقة، وارتباط المحتوى بقرار حقيقي على الطاولة.<sup>[62]</sup></p>
+        <p>ويؤكد هذا نمطٌ هيكلي لا مصادفة سوقية: مسميات «نائب وزير» و«محافظ» و«مساعد وزير» لا تظهر صراحة في الجمهور المعلن لأي برنامج موثق ضمن نطاق المراجعة، وتُغطّى هذه الفئات فعلياً بمكافئات وظيفية — الأمناء الدائمون في البرنامج البريطاني<sup>[30]</sup>، ووكلاء الوزارات في البرنامج الإماراتي<sup>[34]</sup>، ودرجتا GS-15 وSES في البرامج الأمريكية.<sup>[18]</sup></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>هنا موضع الرسم المركزي للدراسة.</strong> أربعة أعمدة تنخفض من الوزراء إلى الوكلاء المساعدين، بارتفاع يمثل «ما يمكن شراؤه جاهزاً»، وتحت كل عمود كلمة القرار (بناء / تطوير مشترك / شراء وتكييف / ترخيص). هذا الرسم هو خلاصة القسمين الثالث والرابع معاً، ويصلح أن يكون رسم الغلاف نفسه. <strong>وضعه هنا يقفل القسم الرابع بصورة بدل أن يقفله بجدول ثالث.</strong></p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p16">
+  <div class="pg-head">
+    <div class="pg-num"><b>16</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>5.1 المسارات الأربعة · 5.2 النواة المشتركة · 5.3 الحالات السعودية · 5.4 الشركاء</h3><div class="where">القسم الخامس — بداية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>جدول 5.1 أنظف عنصر في الدراسة كلها — أربعة صفوف، ثلاثة أعمدة، ولا كلمة زائدة. أما 5.2 فيرتكب التكرار الرابع والأخير: بعد أن يعرض النواة المشتركة (وهي جديدة ومفيدة)، يعود ليعدّد ما يركز عليه كل مسار — وهو ما قيل في 2.2–2.5، وفي جدول 2.6، وفي 4.1–4.4. أربع مرات للمعلومة نفسها في وثيقة واحدة.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">ثم يتفرع المحتوى بحسب المستوى: فينصبّ مسار الوزراء على تحديد التوجه الاستراتيجي… ومسار أصحاب المعالي على إدارة المحفظة… ومسار الوكلاء على تقييم الجاهزية… ومسار الوكلاء المساعدون على تحويل الضوابط…</span> <span class="why">— <b>التكرار الرابع.</b> جدول 2.6 يحمل هذا في عمود «القرار الرئيسي»، وجدول 5.1 يحمله في عمود «التنفيذ المقترح». يكفي: «ثم يتفرع المحتوى بحسب قرار كل مستوى كما في جدول 2.6». وفي الجملة المحذوفة خطأ نحوي أيضاً: «مسار الوكلاء المساعدون» ← «الوكلاء المساعدين».</span></li>
+        <li><span class="del">وتشترك المسارات الأربعة، رغم تباينها، في نواة معرفية واحدة هي موضوع الفقرة التالية.</span> <span class="why">— <b>جسر.</b></span></li>
+        <li><span class="del">والبرنامج يختلف بحسب نوع القرار، لا بزيادة الساعات أو تقليلها</span> <span class="why">— <b>المرة الرابعة</b> لهذه الجملة (2.1، ومطلع القسم 5، وهنا، والتوصية 01). تبقى في 2.1 بوصفها قاعدة التصميم، وتُحذف من الثلاثة الباقية.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl1">5. النموذج المقترح</p>
+        <p>ما يمكن شراؤه جاهزاً يتناقص كلما ارتفع المستوى. وعلى ذلك تُبنى أربعة مسارات مترابطة، لا نسخة واحدة بأربعة أطوال.<sup>[63]</sup></p>
+        <p class="kicker">[ جدول 5.1 — يبقى كما هو، وهو أنظف عناصر الدراسة ]</p>
+        <p>ويُرتَّب كل مسار على ما أثبتته خريطة التوافر: <strong>بناء</strong> حيث لا يعرض السوق صيغة قابلة للالتحاق، و<strong>تطوير مشترك</strong> حيث توجد برامج انتقائية ناقصة الملكية، و<strong>شراء وتكييف</strong> حيث تتوافر نماذج موثقة، و<strong>ترخيص وتوسيع</strong> حيث المحتوى واسع ورقمي. ويُقترح للمسار الوزاري فوج لا يتجاوز 12 مشاركاً التزاماً ببروتوكول الفئة — وهو ما يجعل اقتصاديات هذا المسار مختلفة جوهرياً عن أفواج المستويين الثالث والرابع.<sup>[63]</sup></p>
+        <p class="h-lvl2">5.2 النواة المشتركة</p>
+        <p>سبعة مكوّنات يحتاجها كل قائد حكومي أياً كان مستواه: قدرات الذكاء الاصطناعي وحدوده، والحوكمة، والمخاطر، والاستخدام المسؤول، والجوانب الاقتصادية، والقيمة العامة، والمساءلة. ووحدة النواة تمنع ازدواج الإنفاق على تطوير المحتوى، وتضمن معجماً واحداً يتحدث به الوزير والوكيل المساعد حين يتداولان الملف نفسه.<sup>[63]</sup> ثم يتفرع المحتوى بحسب قرار كل مستوى كما في جدول 2.6.</p>
+        <p class="h-lvl2">5.3 الحالات السعودية</p>
+        <p>تُطوَّر مكتبة حالات مرتبطة بقرارات حكومية فعلية، بعد موافقة الجهات المالكة ومعالجة متطلبات السرية. وهذه هي الطبقة الوحيدة التي لا يعرضها السوق أصلاً: لم يُرصد مزوّد واحد يعلن حالات حكومية سعودية معتمدة.<sup>[62]</sup> البدء بها مبكراً هو ما يحوّل البرنامج من محتوى مستعار إلى أصل وطني تتراكم قيمته مع كل فوج.</p>
+        <p class="h-lvl2">5.4 التنفيذ والشركاء</p>
+        <p>الشريك الدولي يقدّم المنهجية والخبرة وهيئة التدريس. و«قدراتك» يقود التشغيل والعلاقة مع الجهات، ويحتفظ بملكية البيانات والحالات وإطار القياس بنصّ العقد. هذا الفصل بين ما يُستأجر وما يُملك يبقى ثابتاً حتى في المسارات التي يُشترى فيها المقعد أو يُرخَّص المحتوى. ونمط قريب منه موثّق في معهد سنغافورة للحكومة الرقمية، حيث اجتمع التمويل الحكومي والشراكة الأكاديمية في كيان واحد.<sup>[29]</sup></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>النواة السبعة رسم لا فقرة:</strong> دائرة مركزية فيها المكوّنات السبعة، وأربعة أذرع تخرج منها بأسماء المسارات. هذه هي «صورة النموذج» التي تفتقدها الدراسة، وستُنسخ من العرض التقديمي إلى المذكرة إلى الاجتماع. <strong>ولوّن الأذرع بألوان المستويات الأربعة الثابتة</strong> — فيرى القارئ في لحظة أن الأربعة يشتركون في مركز واحد، وهي رسالة 5.2 كاملة.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p17">
+  <div class="pg-head">
+    <div class="pg-num"><b>17</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>5.5 القياس والحوكمة والسرية · 5.6 التكلفة الاسترشادية</h3><div class="where">القسم الخامس — الصفحة الأخطر رقمياً</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص · خلل حسابي يجب إصلاحه قبل النشر</span>
+      <p>جدول التكلفة يعرض عشرة بنود بنسب مئوية من «كلفة الفوج». وأول ما سيفعله أي قارئ مالي هو جمعها. والنتيجة:</p>
+      <div class="tbl-wrap" style="margin-top:6px">
+        <table>
+          <thead><tr><th>الجمع</th><th>الناتج</th><th>الحكم</th></tr></thead>
+          <tbody>
+            <tr><td>الحدود الدنيا + بند الحوكمة</td><td class="num">87٪</td><td>ناقص 13٪ — وبند بلا رقم أصلاً</td></tr>
+            <tr><td>الحدود العليا + بند الحوكمة</td><td class="num">131٪</td><td>زائد 31٪</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px">ثلاثة أعطاب متمايزة: <strong>(1)</strong> بند «التوطين العربي» بلا نسبة إطلاقاً، فالجدول لا يُغلق حسابياً في أي حال. <strong>(2)</strong> بند «الحوكمة والسرية 2–4٪» مذكور في الفقرة التالية للجدول لا داخله — وهو البند الذي يميّز الفوج الوزاري، أي أهم بند في الدراسة، ومكانه خارج الجدول. <strong>(3)</strong> بند «التجديد السنوي ومجتمع الخريجين، من السنة الثانية» مدرج ضمن «كلفة الفوج» وهو ليس من كلفة الفوج الأول — خلط بين كلفة فوج وكلفة برنامج.</p>
+      <p><strong>الأثر:</strong> القارئ الذي يكتشف أن النسب لا تُجمع يشكّك في التقدير كله (45–94 ألف ريال للمشارك)، وهو تقدير سليم في ذاته: 30 مشاركاً × النطاق = 1.35 إلى 2.82 مليون ريال، وهذا مطابق تماماً لما تذكره الدراسة. <strong>خلل العرض يُسقط رقماً صحيحاً.</strong></p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف ويُصحَّح</span>
+      <ul>
+        <li><span class="del">صف «التجديد السنوي ومجتمع الخريجين — من 5 إلى 8٪، من السنة الثانية»</span> <span class="why">— <b>يُخرَج من جدول كلفة الفوج</b> ويوضع سطراً منفصلاً تحته: «كلفة متكررة من السنة الثانية، خارج كلفة الفوج».</span></li>
+        <li><span class="del">صف «التوطين العربي — بند مستقل يُقدَّر عند تصميم المسار»</span> <span class="why">— <b>يُعطى نطاقاً</b> ولو تقديرياً، أو يُخرَج من الجدول كما التجديد السنوي. بند بلا رقم داخل جدول نسب مئوية يكسر الجدول بصرياً وحسابياً.</span></li>
+        <li><span class="del">ويُضاف إلى ما سبق بند حوكمة وسرية بحصة استرشادية من 2 إلى 4 بالمئة لتغليف الفوج الوزاري.</span> <span class="why">— <b>يُنقل إلى داخل الجدول صفاً.</b> إضافة بند تكلفة في فقرة بعد الجدول ممارسة تُفقد الثقة.</span></li>
+        <li><span class="del">ملاحظتان تحددان كيفية قراءة الجدول: أولاهما أن النسب نطاقات تخطيطية…</span> <span class="why">— <b>تُختصر إلى سطر واحد بارز فوق الجدول لا تحته:</b> «نطاقات تخطيطية مستقلة، لا تُجمع». هذا التنبيه إن جاء بعد الجدول فقد وصل متأخراً؛ القارئ جمع بالفعل.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">5.5 القياس والحوكمة والسرية</p>
+        <p>يبدأ القياس قبل البرنامج، ويتدرج في ست خطوات: الفهم الأساسي، ثم جودة الحكم على السيناريوهات، ثم جودة المخرج التطبيقي، ثم تطبيق المخرج بعد البرنامج، ثم أثره على قرارات الجهة، ثم أثره المؤسسي أو الخدمي عند توفر البيانات.<sup>[63]</sup></p>
+        <p>وفي الحوكمة يجب الفصل بين ستة عناصر يُخلط بينها عادة: السرية التعاقدية، وملكية البيانات، وقاعدة تشاثام هاوس، واستخدام أسماء المشاركين، وحفظ الحالات والمستندات، وصلاحيات الوصول. <strong>وقاعدة تشاثام هاوس وحدها لا تحمي معلومة حكومية</strong>، لأنها تنظّم ما يُروى عن الجلسة ولا تنظّم ملكية البيانات ولا حفظ الحالات ولا التسويق بأسماء المشاركين. تُوثَّق هذه الآليات بنداً بنداً في العقد، وتُشترى مستقلة عن المحتوى.<sup>[64]</sup></p>
+        <p class="h-lvl2">5.6 التكلفة الاسترشادية</p>
+        <p>لا تنشر مؤسسات التعليم التنفيذي أسعاراً ثابتة للبرامج المخصصة؛ تُسعَّر مشاريع بالتكلفة الاقتصادية الكاملة، ولا تستقيم اقتصادياتها دون فوج من 10 إلى 15 مشاركاً على الأقل.<sup>[39]</sup> والأرقام التالية تقديرات استرشادية لا عروضاً تعاقدية.<sup>[65]</sup></p>
+        <p><strong>لفوج من 30 مشاركاً في المستوى الثاني أو الثالث: من 45 ألفاً إلى 94 ألف ريال للمشارك — أي من 1.35 إلى 2.8 مليون ريال للفوج.</strong><sup>[65]</sup> ولا ينطبق هذا على المسار الوزاري (فوج أصغر، وتخصيص وسرية أعلى)، ولا على المستوى الرابع (ترخيص وتوسع رقمي).</p>
+        <p class="kicker" style="margin-top:4px">فوق الجدول مباشرة، بخط بارز:</p>
+        <p><strong>نطاقات تخطيطية مستقلة لكل بند — لا تُجمع، ولا تمثل ميزانية واحدة.</strong></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>استبدل جدول النسب بشريط أفقي واحد.</strong> عشرة صفوف من النسب المئوية تدعو إلى الجمع؛ والشريط المقسّم لا يدعو إليه لأنه مغلق بصرياً بطبيعته. وسيُظهر الشريط فوراً ما تحتاج الدراسة اليوم فقرة كاملة لقوله: <strong>هيئة التدريس تبتلع الربع إلى الثلث — فقرار «من يدرّس» أغلى قرارات التصميم وأولها بالتفاوض؛ والحالات السعودية والتقييم، وهما الأصلان الوحيدان اللذان يتراكمان محلياً، من أرخص البنود.</strong> هذه المفارقة هي رسالة الفرع، وهي مرئية في الشريط ومخفية في الجدول.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p18">
+  <div class="pg-head">
+    <div class="pg-num"><b>18</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>مرجعية المقاعد المفتوحة · 5.7 ما يُستورد وما يُملك · رأس القسم السادس</h3><div class="where">القسم الخامس — نهاية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>فقرة «مقاعد الشراء المفتوح» فكرة عملية ممتازة ومدفونة في ذيل فرع التكلفة: <strong>اشترِ أربعة مقاعد بستين ألف ريال قبل أن تتعاقد على بناء بمليونين.</strong> هذه أرخص خطوة تحقّق في الدراسة كلها، وهي مكتوبة كملاحظة محاسبية. و5.7 هو أنظف خاتمة ممكنة للقسم، لكن فقرته الأخيرة فيها خطأ لغوي يشوّه المعنى.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف ويُصحَّح</span>
+      <ul>
+        <li><span class="del">ومنطق التقسيم أن ما في القائمة الأولى يُسرّع الإطلاق ولا يتراكم بقاءه عند المالك</span> <span class="why">— <b>جملة مكسورة نحوياً</b> («لا يتراكم بقاءه») والمعنى المقصود لا يصل. تُعاد صياغتها.</span></li>
+        <li><span class="del">وبهذا يكتمل النموذج مساراتً ومحتوى وشركاء وقياساً وكلفة وملكية، وتتبقى ترجمته إلى توصيات محددة لبرنامج «قدراتك» في القسم التالي.</span> <span class="why">— <b>جسر + إعلان اكتمال + خطآن إملائيان</b> («مساراتً» و«وتتبقى»). يُحذف كاملاً.</span></li>
+        <li><span class="del">والتنبيه المحاسبي واجب هنا</span> <span class="why">— <b>تمهيد لتنبيه</b> يقوله التنبيه نفسه بعده بكلمات.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح</span>
+      <div class="draft">
+        <p class="kicker">يُرفع من ذيل 5.6 إلى إطار مستقل بعنوان: اختبار قبل الالتزام</p>
+        <p>قبل التعاقد على بناء مخصص، يمكن اختبار السوق بكلفة مهملة: أربعة مقاعد في برنامج مدرسة لي كوان يو — ثلاثة مدفوعة والرابع مجاني ضمن عرض المدرسة — بـ20,400 دولار سنغافوري، أي نحو 60 ألف ريال قبل الضريبة.<sup>[23][69]</sup> ومقعد دارن بسعر الحكومات 3,760 دولاراً، نحو 14,100 ريال.<sup>[21]</sup> <strong>ستون ألف ريال تشتري حكماً على جودة التصميم قبل الالتزام بمليونين.</strong></p>
+        <p>ورسوم المقعد المفتوح لا تُضرب في حجم الفوج: كلفة الفوج المخصص تحمل التصميم كاملاً على فوجها الأول، بينما يفتقر المقعد المفتوح إلى التخصيص والحالات المحلية.<sup>[69]</sup></p>
+        <p class="h-lvl2" style="margin-top:6px">5.7 ما يُستورد وما يُملك</p>
+        <p><strong>يُستفاد منه دولياً:</strong> المنهجية، وأعضاء هيئة التدريس، والخبرات المقارنة، والشهادات، والعلامة الأكاديمية عند الحاجة.</p>
+        <p><strong>يبقى مملوكاً محلياً:</strong> الحالات السعودية، وإطار المستويات الأربعة، وبيانات المشاركين، ونتائج القياس، ونموذج التشغيل، والمواد المحلية، والعلاقة مع الجهات الحكومية.</p>
+        <p>والفرق بين القائمتين فرق في الأثر لا في القيمة: ما في الأولى يُسرّع الإطلاق ثم يرحل مع الشريك، وما في الثانية يبقى ويتراكم مع كل فوج ولا يُشترى جاهزاً.<sup>[70]</sup> وتجربة كازاخستان تذكير عملي: تولّى أساتذة من ستانفورد وأكاديمية OpenAI تدريب كبار التنفيذيين فيها — نمطٌ يعطي سرعة الإطلاق ويحدّ من تراكم القدرة المحلية ما لم يقترن بنقل منهجي للمعرفة والملكية.<sup>[71]</sup></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>القائمتان تصيران عمودين متقابلين</strong> بينهما خط رأسي فاصل، أحدهما بلون باهت (يرحل) والآخر بلون ثابت (يبقى). التقابل البصري يقول ما تقوله الفقرة، وأسرع. <strong>و«اختبار قبل الالتزام» يوضع في إطار مميّز بلون مختلف عن بقية الأُطر</strong> لأنه الشيء الوحيد في القسم الخامس القابل للتنفيذ هذا الأسبوع — وينبغي أن يظهر كذلك.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p19">
+  <div class="pg-head">
+    <div class="pg-num"><b>19</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>6.1 النتائج الرئيسية · بداية 6.2 التوصيات</h3><div class="where">القسم السادس</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>النتائج الخمس صحيحة، لكنها مصاغة بقالب آلي مكرَّر خمس مرات متتالية: <em>نتيجة، ثم دليل، ثم «ومغزى ذلك أن…»</em>. هذا التكرار الشكلي المتتابع هو أوضح موضع في الدراسة يشعر فيه القارئ أنه يقرأ نصاً مولَّداً. الدلالة تُدمج في الجملة، ولا تُعلَّق عليها بأداة.</p>
+      <p>وفي النتيجة 03 خطأ نحوي في المتن: <strong>«الطلب القيادي العليا قائم»</strong> — الصفة لا تطابق الموصوف. والصواب: «الطلب قائم لدى القيادات العليا».</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">«ومغزى ذلك أن…» في النتائج الخمس كلها</span> <span class="why">— <b>صيغة آلية خمس مرات متتالية.</b> تُدمج الدلالة في جملة النتيجة نفسها.</span></li>
+        <li><span class="del">وتُقرأ المقارنة مع مراعاة اختلاف السياق بين دولة وأخرى</span> <span class="why">— <b>ثالث موضع</b> للتحفظ نفسه (1.2 و3.3 وهنا).</span></li>
+        <li><span class="del">في السوق التي روعيت (القسم 4)</span> <span class="why">— <b>إحالة داخلية</b> لا يحتاجها قارئ وصل إلى الصفحة 19، والصياغة ركيكة.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح — خمس نتائج بلا قالب</span>
+      <div class="draft">
+        <p class="h-lvl2">6.1 خمس نتائج</p>
+        <p><strong>1 · التوافر يتدرج عكسياً مع المستوى.</strong> كلما ارتفع المستوى قلّت البرامج القابلة للالتحاق، حتى يغيب العرض المخصص تماماً عند المستوى الوزاري. لذلك يتركز جهد البناء في المستويين الأول والثاني، ويُدار الثالث والرابع بقرارات شراء وتكييف وترخيص.</p>
+        <p><strong>2 · لا أحد في العالم يملك دليل أثر.</strong> أبرز ما رُصد تقييم مستقل واحد بمجموعة ضابطة لبرنامج التميز الرقمي البريطاني، وصفه مقيّموه بغير الحاسم.<sup>[40]</sup> فبناء قياس صارم منذ الفوج الأول يضع البرنامج السعودي في مقدمة السوق العالمي، لا في مؤخرته.</p>
+        <p><strong>3 · الطلب قائم لدى القيادات العليا داخل المملكة، وموثق.</strong> شارك وفد ضم وزراء وكبار مسؤولين في برنامج جامعة ستانفورد في نوفمبر 2025 — طلب فعلي مدفوع.<sup>[55]</sup> والخيار المحلي هو ما يعيد إلى الجهة السعودية ضبط الحالات واللغة والسرية والقياس.</p>
+        <p><strong>4 · نقطة البداية ليست الصفر.</strong> درّبت «سدايا» أكثر من 278 قائداً حكومياً حتى يونيو 2026<sup>[52]</sup>، ويملك «قدراتك» منصة وطنية وشراكات أكاديمية موثقة منذ 2021.<sup>[54]</sup> فالمطلوب طبقة تنظيم وملكية وقياس فوق الموجود، لا تأسيس منفصل.</p>
+        <p><strong>5 · الربط المؤسسي هو ما يوسّع التغطية.</strong> بلغ البرنامج البريطاني التطوعي نحو 2,500 من نحو 7,000 مستهدف<sup>[30]</sup>، بينما حققت الهند تغطية واسعة بربط التدريب بالتقييم السنوي.<sup>[41]</sup> والربط قرار تصميمي مبكر، لا إضافة لاحقة.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>النتائج الخمس صفحة واحدة بخمسة أرقام كبيرة</strong> على اليمين وسطرين إلى جانب كل رقم — لا أكثر. هذه أهم صفحة في الوثيقة للقارئ الذي لن يقرأ سواها، فيجب أن تُقرأ في تسعين ثانية. <strong>والترقيم هنا يحمل معنى فعلياً</strong> (النتائج مرتّبة من الأبنيوي إلى الأدائي)، بخلاف الترقيم الزخرفي في مواضع أخرى.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p20">
+  <div class="pg-head">
+    <div class="pg-num"><b>20</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>6.2 التوصيات الثماني · 6.3 الخطوات التالية</h3><div class="where">القسم السادس — نهاية الدراسة</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص · أهم ملاحظة في المراجعة كلها</span>
+      <p>هذه الصفحة هي سبب وجود الدراسة، وهي أضعف صفحاتها. ثماني توصيات، كل واحدة سطران، <strong>بلا ترتيب زمني، وبلا مالك لكل خطوة، وبلا ربط بالتكلفة التي حُسبت قبل ثلاث صفحات، وبلا بوابة قرار واحدة.</strong> عشرون صفحة من التأسيس المتين تنتهي إلى قائمة يمكن أن تُكتب دون قراءة ما قبلها.</p>
+      <p>والتوصيات الثماني كلها موجودة ومطلوبة — العطب ليس في مضمونها بل في أنها معروضة <em>متجاورة</em> وهي في الحقيقة <em>متسلسلة</em>. والدراسة نفسها تعرف التسلسل: الفرع 6.3 يقول إن التنفيذ يبدأ بالتصنيف، ثم مكتبة الحالات وإطار القياس <em>قبل</em> الفوج الأول، ثم تُراجَع قرارات الشراء. هذا ترتيب ثلاثي كامل، مذكور في فقرة واحدة في آخر صفحة، بينما التوصيات فوقه معروضة بلا ترتيب.</p>
+      <p><strong>وسؤال لا تجيب عنه الدراسة:</strong> لماذا «قدراتك» وليس «سدايا»؟ القسم 3.4 يُظهر أن «سدايا» درّبت 278 قائداً بأدلة منشورة، وأن مسار «قدراتك» يعالج القيادة الرقمية لا قرار الذكاء الاصطناعي. هذا أول ما سيُطرح في أول اجتماع مراجعة، ويحتاج فقرة صريحة في توزيع الأدوار.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">التوصية 01 «اعتماد التصنيف الرباعي… فيُحدَّد تصنيف المشاركين بنطاق الصلاحية ونوع القرار لا بالمسمى الوظيفي وحده»</span> <span class="why">— <b>ليست توصية بل تكرار.</b> قيلت في 2.1 وفي ملاحظة جدول 2.6 وفي ملاحظة جدول 4.5. تبقى بوصفها <b>شرط انطلاق</b> في الخطوة الأولى، لا بنداً في قائمة.</span></li>
+        <li><span class="del">صيغة «فالمستوى الوزاري لا يناسب البرامج المفتوحة أو الدورات التقليدية»</span> <span class="why">— <b>المرة الرابعة</b> (2.2، و3.1، و4.1، وهنا). في التوصية يُكتفى بالفعل المطلوب.</span></li>
+        <li><span class="del">وتظل قيمة هذا النموذج رهينة التحقق المستمر: فهو مقترح مبني على أدلة منشورة حتى تاريخ المراجعة، ويقوى أو يُعدَّل بما تسجله الأفواج الأولى</span> <span class="why">— <b>تُختصر إلى نصفها.</b> الفكرة صحيحة وخاتمة مناسبة، لكن «رهينة التحقق المستمر» تحفّظ يُضعف آخر ما يقرؤه المسؤول.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">النص المقترح — التوصيات الثماني نفسها، مرتّبة في ثلاث حركات</span>
+      <div class="draft">
+        <p class="h-lvl2">6.2 التوصية: ثلاث حركات، ثماني قرارات</p>
+        <p><strong>الحركة الأولى — تُثبَّت المرجعية قبل أي فوج.</strong></p>
+        <ul>
+          <li><strong>يُعتمد التصنيف الرباعي</strong> مرجعاً للتسجيل والتصميم معاً، مع إدراج المسميات المكافئة، وتصنيف المشارك بنطاق صلاحيته لا بمسماه.</li>
+          <li><strong>تُبنى مكتبة الحالات السعودية</strong> منذ اليوم الأول. هي الطبقة الوحيدة التي لا يبيعها أحد، والأكثر أثراً في الملاءمة، ومن أرخص بنود الكلفة. لا تُترك لمرحلة لاحقة ولا للمزوّد الدولي.</li>
+          <li><strong>يُبنى إطار القياس قبل الفوج الأول،</strong> بخطواته الست، مربوطاً بالقرارات والمخرجات لا برضا المشاركين ولا بالساعات. ولا أحد في السجل العالمي يملك هذا اليوم.</li>
+        </ul>
+        <p><strong>الحركة الثانية — يُطلَق مساران متباينان معاً، لا الأربعة دفعة واحدة.</strong></p>
+        <ul>
+          <li><strong>المسار الوزاري يُبنى محلياً:</strong> جلسات قصيرة مغلقة على قرارات فعلية، بفوج لا يتجاوز 12 مشاركاً، ومخرج موقّع لكل جلسة. ودرس غانا هنا حاسم: الوزير يُدرَّب حين يكون مؤشر الأداء باسمه.</li>
+          <li><strong>مسار الوكلاء يُشترى ويُكيَّف:</strong> هذه أوسع طبقة متاحة في السوق وأقلها كلفة للتحقق. ويسبقه اختبار بستين ألف ريال — أربعة مقاعد مفتوحة — قبل الالتزام بمليونين.</li>
+        </ul>
+        <p class="why" style="margin:2px 0">المسوّغ: المساران يقعان على طرفي خريطة التوافر، فيختبر البرنامج أصعب ما فيه وأسهل ما فيه في وقت واحد، ويتعلم من الاثنين قبل التوسع.</p>
+        <p><strong>الحركة الثالثة — يُوسَّع على ما ثبت.</strong></p>
+        <ul>
+          <li><strong>مسار أصحاب المعالي تطوير مشترك</strong> مع شريك دولي أو إقليمي، بأفواج انتقائية وخصوصية عالية ومحتوى في المحافظ والحوكمة والاستثمار.</li>
+          <li><strong>مسار الوكلاء المساعدين ترخيص وتوسيع</strong> عبر منصة «قدراتك»، مع ربط الإتمام بمؤشرات الأداء — فبلا ربط تنتج المادة ساعات تعلّم لا تغييراً في الممارسة.</li>
+          <li><strong>يُبنى على القدرات القائمة</strong> — برامج «سدايا»، ومنصة «قدراتك»، والشراكات الأكاديمية — لا منظومة منفصلة من الصفر.</li>
+          <li><strong>تبقى الملكية وطنية:</strong> الحالات والبيانات والقياس ونموذج التشغيل ضمن ملكية الجهة السعودية بنصّ العقد، مهما كان الشريك.</li>
+        </ul>
+        <p class="h-lvl2" style="margin-top:6px">6.3 الخطوات التالية</p>
+        <p>تبدأ الحركة الأولى قبل أي تعاقد: التصنيف، والحالات، والقياس. ثم يُطلق المساران الأول والثالث. ثم تُراجَع قرارات الشراء والشراكة والترخيص لكل مستوى على ضوء ما يتراكم من بيانات مع كل فوج — وهي البيانات التي افتُتح بها التصميم لا التي تُجمع في نهايته.</p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>هذه الصفحة تستحق صفحتين، لا صفحة.</strong> الدراسة تنفق ثلاث صفحات على إعادة سرد أمثلة القسم الرابع، وصفحة واحدة على جوابها. اقلب النسبة.</p>
+      <p style="margin-top:8px"><strong>وأضف عمودين إلى جانب كل قرار من القرارات الثمانية:</strong> <span class="chip">المالك</span> <span class="chip">متى</span>. كل المعلومات لذلك موجودة في الدراسة (المسارات في 5.1، والكلف في 5.6، وتوزيع الأدوار في 5.4) — والمطلوب جمعها في مكان واحد لا استحداثها. توصية بلا مالك وبلا توقيت لا تُنفَّذ، مهما كانت صحيحة.</p>
+      <p style="margin-top:8px"><strong>وثلاث حركات لا ثماني نقاط:</strong> الترقيم من 1 إلى 8 يوحي بأولوية متساوية، والواقع أن ثلاثة منها شروط انطلاق ولا يصح البدء بغيرها. الشكل هنا يقول شيئاً عن المضمون، أو يخفيه.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p21">
+  <div class="pg-head">
+    <div class="pg-num"><b>21</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>المراجع 1–20 — أعطاب إخراج تُفسد الصفحة</h3><div class="where">سجل المصادر — بداية</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص · أعطاب مطبعية مؤكدة</span>
+      <p>سجل المراجع هو ضمانة مصداقية الدراسة، وهو اليوم أسوأ صفحاتها إخراجاً. فحصتُ النسخة المنسّقة، وهذه أعطاب مؤكدة لا احتمالية:</p>
+      <ul style="margin-top:2px">
+        <li><strong>شفرة HTML مطبوعة داخل المتن.</strong> في المرجعين 4 و6 تظهر السلسلة <code>dir="ltr"&gt;</code> حرفياً داخل الرابط. هذه شفرة تسربت من التحرير إلى الطباعة.</li>
+        <li><strong>علامات اقتباس غير مغلقة.</strong> المرجعان 4 و6 يبدآن بـ«غارتنر«Gartner… — قوسان مفتوحان بلا إغلاق، فيلتصق اسم الجهة بالعنوان.</li>
+        <li><strong>حقول فارغة مطبوعة.</strong> عشرات المراجع تحمل النمط «— — 2025-03-12 —»: شرطتان متجاورتان لحقل رابط تُرك فارغاً، ثم يظهر الرابط في آخر السطر بعد وسم الدليل. أي أن ترتيب الحقول غير ثابت عبر السجل.</li>
+        <li><strong>انهيار الاتجاهين في النسخة الإنجليزية.</strong> المرجع 22 يُطبع «السعر المعروضdated الفحصUS$2,450» — كلمة إنجليزية اقتحمت جملة عربية. والمرجع 45 يُطبع الرابط في منتصف العنوان العربي. والمرجع 71 فقد عنوانه كاملاً ولم يبقَ منه إلا علامتا التنصيص.</li>
+        <li><strong>أسماء الجهات بالعربية داخل وثيقة إنجليزية.</strong> «ماكنزي»، «غارتنر»، «ديلويت إنسايتس» في النسخة الإنجليزية — وهي نسخة موجهة لقارئ لا يقرأ العربية.</li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف ويُصحَّح</span>
+      <ul>
+        <li><span class="del">الشرطات الفارغة «— —» في كل مرجع لا يحمل حقلاً</span> <span class="why">— <b>حقل فارغ لا يُطبع.</b> يُحذف الفاصل معه.</span></li>
+        <li><span class="del">تكرار «فُحص بتاريخ 2026-08-21» في 71 مرجعاً</span> <span class="why">— <b>التاريخ واحد في السجل كله.</b> يُذكر مرة في ترويسة الصفحة: «جميع الروابط فُحصت في 21 أغسطس 2026»، وتُحذف 71 مرة. يوفّر نحو ثُلث صفحة ويجعل السجل أنظف بصرياً.</span></li>
+        <li><span class="del">أسماء الجهات المعرَّبة في النسخة الإنجليزية</span> <span class="why">— <b>تُكتب بالإنجليزية</b> في النسخة الإنجليزية. سجل المصادر يُترجَم كما يُترجَم المتن.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">بنية الحقول المقترحة — ثابتة في المراجع الـ71</span>
+      <div class="draft">
+        <p class="kicker">ترويسة الصفحة</p>
+        <p>سجل المصادر — الجهة، العنوان، الرابط، تاريخ النشر، ووسم الدليل. جميع الروابط فُحصت في 21 أغسطس 2026.</p>
+        <p class="kicker" style="margin-top:6px">نموذج مدخل</p>
+        <p><strong>2</strong> · ماكنزي / كوانتم بلاك — «The state of AI: How organizations are rewiring to capture value» — 2025-03-12 — <span class="chip">S إحصاء</span><br><span class="why">mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai-how-organizations-are-rewiring-to-capture-value</span></p>
+        <p><strong>13</strong> · حكم تحليلي للدراسة — قاعدة التصميم: يختلف البرنامج بنوع القرار لا بطوله — <span class="chip">J حكم تحليلي</span></p>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>عمودان بحجم 8 نقاط بدل عمود واحد بحجم 9.</strong> يستعيد صفحة كاملة من أربع. <strong>والرابط يُطبع بلا بادئة</strong> <code>https://</code> وبلون رمادي وخط أحادي المسافة — فيقصر ويصير قابلاً للقراءة. <strong>ووسم الدليل يُلوَّن</strong> بالألوان الثمانية المعرَّفة في 1.3، فيمكن للقارئ أن يمسح السجل بصرياً ويرى فوراً أين تتركز الأدلة القوية (E) وأين تتركز إعلانات المزودين (P) — وهذه معلومة تحليلية حقيقية يقدمها اللون مجاناً.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p22">
+  <div class="pg-head">
+    <div class="pg-num"><b>22</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>المراجع 21–43 — أخطاء في وسم الأدلة</h3><div class="where">سجل المصادر</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>نظام وسم الأدلة هو أثمن ما في الدراسة، ولذلك فإن أي خطأ فيه أثقل وزناً من أي خطأ آخر. رصدتُ ثلاثة أوسمة لا تطابق طبيعة مصدرها:</p>
+      <div class="tbl-wrap" style="margin-top:6px">
+        <table>
+          <thead><tr><th>المرجع</th><th>الوسم الحالي</th><th>ما هو فعلاً</th><th>الوسم الصحيح</th></tr></thead>
+          <tbody>
+            <tr><td><strong>46</strong> — المادة 4 من قانون الذكاء الاصطناعي الأوروبي</td><td>R سجل رسمي</td><td>تعليقان قانونيان من مكتبَي محاماة (Lexara وTravers Smith)</td><td><strong>N</strong> — أو يُستبدل بنص القانون نفسه، وهو منشور رسمياً ومتاح</td></tr>
+            <tr><td><strong>58</strong> — أكاديمية القيادات بمعهد الإدارة العامة</td><td>R سجل رسمي</td><td>خبر من جامعة الأمير سطام عن شراكة معها</td><td><strong>N</strong> — أو يُستبدل بصفحة المعهد نفسه</td></tr>
+            <tr><td><strong>39</strong> — تسعير البرامج المخصصة</td><td>N مصدر صحفي</td><td>دليل تسويقي لشركة وساطة (Gradia)</td><td><strong>P</strong> — إعلان مزوّد</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:8px"><strong>لماذا هذا مهم:</strong> المرجع 46 يُستشهد به على «إلزام تشريعي نافذ» وهو أقوى ادعاء تنظيمي في الدراسة، ومسنود بتعليق مكتب محاماة موسوم سجلاً رسمياً. والمرجع 39 يسند الادعاء المحوري بأن الجامعات لا تنشر أسعاراً للبرامج المخصصة — وهو ادعاء تجاري مسنود بمصدر تجاري موسوم صحفياً. <strong>ثلاثة أوسمة خاطئة تكفي لتشكيك القارئ في الثمانية والستين الباقية.</strong></p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">التفاصيل التشغيلية داخل مدخل المرجع 22</span> <span class="why">— «10 أسابيع؛ السعر المعروض بتاريخ الفحص US$2,450 (سبق أن عرضت الصفحة نسخة أقصر…)» — <b>هذه بيانات متن لا بيانات مصدر،</b> وهي مطبوعة أصلاً في جدول 3.2 وفي ملاحظاته. سجل المراجع يحمل الجهة والعنوان والرابط والتاريخ والوسم، لا شيئاً غيرها.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>أضف عداداً صغيراً في رأس السجل:</strong> كم مرجعاً من كل نوع. مثلاً: <span class="chip">E · 1</span> <span class="chip">R · 21</span> <span class="chip">P · 24</span> <span class="chip">S · 9</span> <span class="chip">N · 10</span> <span class="chip">J · 5</span> <span class="chip">T · 3</span> <span class="chip">I · 2</span>. هذا العدّاد يقول بصدق ما تقوله الدراسة نصاً: <strong>دليل تقييم مستقل واحد في السجل كله.</strong> عرض هذا الرقم صراحةً يزيد مصداقية الدراسة ولا ينقصها — لأنه يثبت أن الكاتب يعرف حدود أدلته.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p23">
+  <div class="pg-head">
+    <div class="pg-num"><b>23</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>المراجع 44–66 — مصادر تحتاج استبدالاً</h3><div class="where">سجل المصادر</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <ul>
+        <li><strong>المرجع 66 — أخطر مصدر في السجل.</strong> أطروحة دكتوراه من جامعة ولاية بنسلفانيا صادرة عام <strong>2006</strong>، تُستخدم لإسناد نطاق كلفة الارتباطات المخصصة (من أقل من 100 ألف دولار إلى مليوني دولار) في تقدير لعام <strong>2026</strong>. عشرون عاماً بين المصدر والاستخدام، في سوق تغيّر تسعيره جذرياً. والدراسة تستخدم هذا النطاق لتأكيد اتساق تقديرها الخاص — أي أنها تتحقق من رقم 2026 برقم 2006.</li>
+        <li><strong>المرجع 61 — وسيط لا مصدر.</strong> موقع ExecutiveCourses.com يُستخدم لسعر برنامج أكسفورد سعيد (2,450 جنيهاً)، وهذا الرقم يظهر في جدول 4.5 بوصفه سقف كلفة المستوى الرابع. وصفحة أكسفورد سعيد الرسمية متاحة. <strong>لا يُسند سعر مزوّد بموقع وسيط ما دامت صفحة المزوّد قائمة.</strong></li>
+        <li><strong>المرجعان 52 و53 — سنتان مختلفتان لرقم واحد.</strong> يُستخدمان معاً لإثبات ارتفاع عدد القادة المدرَّبين من 80 إلى 278. الاستخدام سليم منهجياً، لكن يجب أن يُقال في المتن صراحةً أن الرقمين من إعلانين في تاريخين مختلفين (مايو 2025 ويونيو 2026)، لا من سلسلة زمنية واحدة منشورة.</li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف أو يُستبدل</span>
+      <ul>
+        <li><span class="del">المرجع 66 (أطروحة 2006) بوصفه سنداً لتقدير 2026</span> <span class="why">— <b>يُستبدل بمصدر حديث،</b> أو يُبقى مع تصريح في المتن: «نطاق منشور في مسح لعام 2006، يُقرأ استئناساً لا مطابقةً». الاستشهاد به بلا هذا التصريح هو الخلل الوحيد الذي يمكن أن يُسقط تقدير التكلفة كله في أول مراجعة مالية.</span></li>
+        <li><span class="del">المرجع 61 (موقع وسيط)</span> <span class="why">— <b>يُستبدل بصفحة أكسفورد سعيد الرسمية.</b></span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>ميّز المراجع الداخلية غير المنشورة بصرياً.</strong> المرجعان 1 و11 مصدران داخليان لدى الجهة الطالبة بلا رابط عام، وهما يُطبعان اليوم بالشكل نفسه الذي تُطبع به مصادر يمكن للقارئ فتحها. سطر رمادي أو أيقونة قفل صغيرة يفصل بين «يمكنك التحقق منه» و«لا يمكنك» — وهذا فرق جوهري في سجل مصادر، لا فرق شكلي.</p>
+    </div>
+  </div>
+</article>
+
+<article class="pg" id="p24">
+  <div class="pg-head">
+    <div class="pg-num"><b>24</b><span>صفحة</span></div>
+    <div class="pg-title"><h3>المراجع 67–71 — الأحكام التحليلية والتقديرات</h3><div class="where">سجل المصادر — نهاية الوثيقة</div></div>
+  </div>
+  <div class="pg-body">
+    <div class="blk">
+      <span class="tag t-diag">التشخيص</span>
+      <p>ثمانية مراجع في السجل ليست مصادر خارجية بل أحكام الدراسة نفسها: 13، 51، 62، 63، 70 أحكام تحليلية [J]، و65 و69 تقديرات استرشادية [T]. <strong>وهذه ممارسة ممتازة</strong> — الدراسة تفصل صراحةً بين ما نقلته وما استنتجته، وقليل من الدراسات يفعل. لكنها مبعثرة في السجل بين المصادر الخارجية، فتضيع قيمتها.</p>
+      <p>وفي المرجع 69 تفصيل يستحق التنبيه: «حساب اختبار المقاعد الأربعة» موسوم تقديراً استرشادياً [T]، وهو في الحقيقة عملية حسابية مباشرة على سعر منشور — أقرب إلى [R] محسوباً منه إلى تقدير مبني على افتراضات. الوسم أشد تحفظاً مما يستحق، والدقة تقتضي التصحيح في الاتجاهين.</p>
+    </div>
+    <div class="blk">
+      <span class="tag t-cut">يُحذف</span>
+      <ul>
+        <li><span class="del">تكرار «لا ينطبق رابط خارجي» في المراجع الثمانية</span> <span class="why">— <b>وسم [J] و[T] يقول ذلك بطبيعته.</b> يُحذف السطر ثماني مرات.</span></li>
+      </ul>
+    </div>
+    <div class="blk">
+      <span class="tag t-text">المقترح</span>
+      <div class="draft">
+        <p class="h-lvl2">أحكام الدراسة وتقديراتها</p>
+        <p>ثمانية مواضع في هذه الدراسة ليست نقلاً عن مصدر خارجي، بل حكماً أو تقديراً من الدراسة نفسها. تُجمع هنا في صندوق واحد ليعرف القارئ حدود ما هو منقول وما هو مستنتج:</p>
+        <ul>
+          <li><strong>أحكام تحليلية [J]</strong> — قاعدة التصميم <span class="why">[13]</span> · غياب أدلة الأثر <span class="why">[51]</span> · طبيعة الفجوة التقديمية <span class="why">[62]</span> · بنية المسارات والقياس وحجم الفوج الوزاري <span class="why">[63]</span> · تقسيم ما يُستورد وما يُملك <span class="why">[70]</span></li>
+          <li><strong>تقديرات استرشادية [T]</strong> — هيكل كلفة الفوج المخصص وسيناريو الثلاثين مشاركاً <span class="why">[65]</span> · حساب اختبار المقاعد الأربعة <span class="why">[69]</span></li>
+          <li><strong>مدخلات الجهة الطالبة [I]</strong> — طلب التكليف <span class="why">[1]</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="blk">
+      <span class="tag t-design">الشكل</span>
+      <p><strong>اجمع الأحكام والتقديرات في صندوق واحد في نهاية السجل</strong> بدل بعثرتها بين المصادر الخارجية. هذا الصندوق هو أصدق ما في الوثيقة، وهو أقوى ردّ مسبق على السؤال الذي سيُطرح حتماً: «ما الذي بنيتموه على دليل وما الذي بنيتموه على رأي؟» عرضه صراحةً في مكان واحد يحوّل نقطة ضعف محتملة إلى إظهار انضباط.</p>
+    </div>
+  </div>
+</article>
+
+    </div>
+  </div>
+</section>
+<hr class="rule">
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="eyebrow">ثالثاً</div>
+      <h2>حصيلة التعديل</h2>
+      <p class="lede">أثر التعديلات المقترحة على حجم الوثيقة وتوزيع صفحاتها — بلا حذف مادة واحدة من المضمون.</p>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>الموضع</th><th>اليوم</th><th>بعد التعديل</th><th>ما الذي تغيّر</th></tr></thead>
+        <tbody>
+          <tr><td>الجسور والحشو العابر للوثيقة</td><td class="num">≈ 1.5 صفحة</td><td class="num">صفر</td><td>حذف 15 جسراً و5 صيغ «ومغزى ذلك» و4 تحفظات مكررة</td></tr>
+          <tr><td>القسم 2 — المستويات الأربعة</td><td class="num">3 صفحات</td><td class="num">1 صفحة</td><td>لوحة بأربعة أعمدة بدل أربع كتل نصية متطابقة البنية</td></tr>
+          <tr><td>القسم 3.3 — سياقات الدول</td><td class="num">2 صفحة</td><td class="num">0.75 صفحة</td><td>إبقاء 4 حالات تحمل درساً، وحذف 4 تعيد خلايا الجدول</td></tr>
+          <tr><td>القسم 4 — التوافر</td><td class="num">2 صفحة</td><td class="num">0.75 صفحة</td><td>حذف إعادة سرد أمثلة القسم 3؛ إبقاء الأحكام الأربعة والجدول</td></tr>
+          <tr><td>القسم 6 — التوصية</td><td class="num">2 صفحة</td><td class="num">3 صفحات</td><td><strong>يكبر:</strong> ثلاث حركات مرتّبة، بمالك وتوقيت لكل قرار</td></tr>
+          <tr><td>المراجع</td><td class="num">4 صفحات</td><td class="num">3 صفحات</td><td>عمودان، وحذف تاريخ الفحص المكرر 71 مرة، وتصحيح الأوسمة</td></tr>
+          <tr><td><strong>الإجمالي</strong></td><td class="num"><strong>24 صفحة</strong></td><td class="num"><strong>17 – 18 صفحة</strong></td><td><strong>بلا فقدان معلومة واحدة</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="margin-top:22px">
+      <h4>الفكرة الحاكمة للتعديل كله</h4>
+      <p>لم أقترح حذف مادة. اقترحتُ حذف <strong>تكرار</strong> المادة. كل ما حُذف موجود في موضع آخر من الوثيقة، وغالباً بصياغة أدق. والوثيقة بعد التعديل تحمل المعلومات نفسها في ثلاثة أرباع الحجم، ومع ذلك يكبر فيها القسم الوحيد الذي يستحق أن يكبر: الجواب.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="wrap narrow">
+    <div class="sec-head">
+      <div class="eyebrow">رابعاً · الهدف النهائي</div>
+      <h2>كيف يُبنى البرنامج للفئات الأربع</h2>
+      <p class="lede">هذه هي التوصية التي يجب أن تنتهي إليها الدراسة — مبنية بالكامل على ما فيها، مرتّبة لا مضافاً إليها.</p>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <span class="n">الحركة الأولى · قبل أي فوج</span>
+        <h3>تُثبَّت المرجعية</h3>
+        <p><strong>التصنيف الرباعي</strong> مرجعاً للتسجيل والتصميم معاً — بنطاق الصلاحية لا بالمسمى. <strong>ومكتبة الحالات السعودية</strong> تبدأ اليوم، لأنها الطبقة الوحيدة التي لا يبيعها السوق، وهي من أرخص بنود الكلفة وأشدها أثراً في الملاءمة. <strong>وإطار القياس السداسي</strong> يُبنى قبل الفوج الأول لا بعده — وبه وحده يسبق البرنامج السعودي سوقاً لا يملك فيه أحدٌ دليل أثر مستقلاً.</p>
+      </div>
+      <div class="card">
+        <span class="n">الحركة الثانية · مساران معاً</span>
+        <h3>يُختبر الطرفان قبل التوسع</h3>
+        <p><strong>الوزراء — بناء محلي.</strong> جلسات قصيرة مغلقة على قرارات فعلية، فوج لا يتجاوز 12، مخرج موقّع لكل جلسة، وسرية تعاقدية موثقة بنداً بنداً لا بقاعدة تشاثام هاوس وحدها. ودرس غانا شرطٌ لا تفصيل: الوزير يُدرَّب حين يكون المؤشر باسمه.</p>
+        <p><strong>الوكلاء — شراء وتكييف.</strong> أوسع طبقة متاحة في السوق وأقلها كلفةً للتحقق. ويسبقها اختبار بستين ألف ريال — أربعة مقاعد مفتوحة — قبل الالتزام بمليونين. المساران على طرفي خريطة التوافر، فيتعلم البرنامج من أصعب ما فيه وأسهله في وقت واحد.</p>
+      </div>
+      <div class="card">
+        <span class="n">الحركة الثالثة · على ما ثبت</span>
+        <h3>يُوسَّع</h3>
+        <p><strong>أصحاب المعالي — تطوير مشترك</strong> مع شريك دولي أو إقليمي: أفواج انتقائية، خصوصية عالية، ومحتوى في المحافظ والحوكمة والاستثمار. <strong>والوكلاء المساعدون — ترخيص وتوسيع</strong> رقمي عبر «قدراتك»، مربوطاً بمؤشرات الأداء لا بساعات التعلّم. ويُبنى الاثنان على القدرات القائمة — «سدايا» والمنصة والشراكات — لا على تأسيس منفصل. <strong>وتبقى الحالات والبيانات والقياس ونموذج التشغيل ملكاً سعودياً بنص العقد،</strong> مهما كان الشريك: هذا هو الفرق بين برنامج يُشترى وقدرة تتراكم.</p>
+      </div>
+
+      <div class="callout warn">
+        <h4>سؤال واحد يجب أن تجيب عنه الدراسة قبل النشر</h4>
+        <p><strong>لماذا «قدراتك» وليس «سدايا»؟</strong> الدراسة نفسها توثّق أن «سدايا» درّبت 278 قائداً حكومياً بأدلة منشورة، وأن مسار «قدراتك» يعالج القيادة الرقمية لا قرار الذكاء الاصطناعي. هذا ليس اعتراضاً على التوصية، بل فجوة منطقية سيلتقطها أول قارئ. فقرة واحدة في 5.4 توزّع الأدوار بين الجهتين تُغلق الفجوة وتحوّل التوتر إلى تكامل.</p>
+      </div>
+
+      <blockquote class="pull">
+        الدراسة تملك جوابها بالفعل. ما ينقصها أن تقوله مرة واحدة، بوضوح، في المكان الصحيح — بدل أن تقوله أربع مرات في أربعة أمكنة.
+        <cite>خلاصة المراجعة</cite>
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap narrow">
+    <p>مراجعة تحريرية للإصدار 3.1 (النسختان العربية والإنجليزية) · أربع وعشرون صفحة · أغسطس 2026</p>
+  </div>
+</footer>
+
+</div>
