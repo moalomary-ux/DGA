@@ -1,0 +1,558 @@
+[
+ {
+  "n": 1,
+  "text": "لجنة الذكاء الاصطناعي (مسار التدريب) — طلب إجراء دراسة مقارنة معيارية حول تدريب القيادات الحكومية العليا على الذكاء الاصطناعي، موجّه إلى برنامج «قدراتك» في هيئة الحكومة الرقمية — مصدر داخلي غير منشور (لا رابط عام) — دون تاريخ نشر — فُحص بتاريخ 2026-08-21 — [I إدخال الجهة الطالبة].",
+  "urls": [],
+  "tag": "I"
+ },
+ {
+  "n": 2,
+  "text": "«ماكنزي»/«كوانتم بلاك» — «The state of AI: How organizations are rewiring to capture value» — — 2025-03-12 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai-how-organizations-are-rewiring-to-capture-value"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 3,
+  "text": "«ماكنزي»/«كوانتم بلاك» — «The state of AI in 2025: Agents, innovation, and transformation» — — 2025-11-05 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 4,
+  "text": "«غارتنر» (غرفة الأخبار) — «Gartner Survey Reveals That CEOs Believe Their Executive Teams Lack AI Savviness» — — 2025-05-06 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.gartner.com/en/newsroom/press-releases/2025-05-06-gartner-survey-reveals-that-ceos-believe-their-executive-teams-lack-ai-savviness"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 5,
+  "text": "«غارتنر» — «How CEOs Are Navigating 2025's Perfect Storm of Uncertainty» — — 2025-08-06 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.gartner.com/en/articles/2025-ceo-challenges"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 6,
+  "text": "«غارتنر» (غرفة الأخبار) — «Gartner Survey Reveals 80% of CEOs Say AI Will Force Operational Capability Overhauls» — — 2026-04-23 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.gartner.com/en/newsroom/press-releases/2026-04-23-gartner-survey-reveals-80-percent-of-ceos-say-artificial-intelligence-will-force-operational-capability-overhauls"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 7,
+  "text": "«ديلويت إنسايتس» — «Scaling gen AI in US state and local governments» — — 2025-05-16 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.deloitte.com/us/en/insights/industry/public-sector/use-of-ai-in-government.html"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 8,
+  "text": "«أكسنتشر» — تقرير «Reimagining Public Services in the Age of AI» — (وملخصه لدى «Global Government Forum»:) — 2026-02-12 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.accenture.com/sg-en/insights/public-service/experience-new-lens",
+   "https://www.globalgovernmentforum.com/reinventing-public-service-experience-as-the-engine-of-transformation/"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 9,
+  "text": "وكالة الأنباء السعودية (واس) / مؤشر «تورتوس» العالمي للذكاء الاصطناعي 2024 — «Saudi Arabia Surges to 14th Position in Global AI Index, 1st in Arab World» (الخبر N2174231) — وصفحة المؤشر — 2024-09-19 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي] / [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://www.spa.gov.sa/en/N2174231",
+   "https://www.tortoisemedia.com/data/global-ai"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 10,
+  "text": "وكالة الأنباء السعودية (واس) / مؤشر «أكسفورد إنسايتس» لجاهزية الحكومات للذكاء الاصطناعي 2025 — «Saudi Arabia Tops MENA in Oxford Insights Government AI Readiness Index 2025» (الخبر N2472986) — — 2025-12-21 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي] / [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://www.spa.gov.sa/en/N2472986"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 11,
+  "text": "«غارتنر» — ملف مرفق لدى الجهة الطالبة حول تصميم برنامج إلمام القيادات العليا بالذكاء الاصطناعي (إفادة داخلية غير منشورة، لا رابط عام) — دون تاريخ نشر معلن — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [],
+  "tag": "P"
+ },
+ {
+  "n": 12,
+  "text": "منظمة التعاون الاقتصادي والتنمية (OECD) — Building an AI-Ready Public Workforce — — 2026 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.oecd.org/en/publications/building-an-ai-ready-public-workforce_b89244c7-en/full-report.html"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 13,
+  "text": "حكم تحليلي للدراسة — تدرج المسارات الأربعة بتدرج الأقدمية ونوع القرار، وقاعدة التصميم «يختلف البرنامج بحسب نوع القرار لا طوله» — لا ينطبق رابط خارجي — فُحص بتاريخ 2026-08-21 — [J حكم تحليلي].",
+  "urls": [],
+  "tag": "J"
+ },
+ {
+  "n": 14,
+  "text": "منظمة التعاون الاقتصادي والتنمية (OECD) — Digital Government Outlook 2026: Adopting and Governing AI in Government — — 2026-06 — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://www.oecd.org/en/publications/2026/06/digital-government-outlook_4585678e/full-report/adopting-and-governing-ai-in-government_7ef312a9.html"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 15,
+  "text": "كلية كيلوغ للإدارة (جامعة نورثويسترن) — Senior Management Program in AI and Digital Transformation — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://online.em.kellogg.northwestern.edu/c-suite-program-in-digital-transformation-and-ai"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 16,
+  "text": "MIT xPRO — AI for Senior Executives Program — و — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://executive-ed.xpro.mit.edu/ai-for-senior-executives-program",
+   "https://xpro.mit.edu/courses/course-v1%3AxPRO%2BAISE%2BR1/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 17,
+  "text": "كلية كامبريدج جادج للأعمال — Cambridge AI Leadership Programme — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.jbs.cam.ac.uk/executive-education/artificial-intelligence-ai/cambridge-ai-leadership-programme/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 18,
+  "text": "بارتنرشيب فور بابليك سيرفس / مركز الذكاء الاصطناعي للحكومة — AI Government Leadership Program — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://aicenterforgovernment.org/ai-government-leadership-program/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 19,
+  "text": "إدارة الخدمات العامة الأمريكية (GSA) — Empowering Responsible AI: The AI Training Series for Government Employees — وتفاصيل المسارات: — 2024-09-23 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.gsa.gov/blog/2024/09/23/empowering-responsible-ai-the-ai-training-series-for-government-employees",
+   "https://coe.gsa.gov/communities/AITraining.html"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 20,
+  "text": "معهد الإدارة العامة (أيرلندا) — Artificial Intelligence Masterclass for Senior Public Service Leaders — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.ipa.ie/courses/all-courses/artificial-intelligence-masterclass/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 21,
+  "text": "كلية دارن للأعمال، جامعة فرجينيا — AI Essentials for Government Leaders — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.darden.virginia.edu/executive-education/ai-essentials-government-leaders"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 22,
+  "text": "جامعة جونز هوبكنز، التعليم التنفيذي والمهني للهندسة — AI for Federal Government Senior Leaders — 10 أسابيع؛ السعر المعروض بتاريخ الفحص US$2,450 (سبق أن عرضت الصفحة نسخة أقصر من 4 أسابيع بسعر أدنى — يُعاد التأكد قبل أي التحاق) — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://engineering.jhu.edu/ExecEd/course/ai-for-senior-leaders-online/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 23,
+  "text": "مدرسة لي كوان يو للسياسة العامة، جامعة سنغافورة الوطنية — AI and Digital Transformation for Public Policy Leaders — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://lkyspp.nus.edu.sg/executive-education/programmes/ai-and-digital-transformation-for-public-policy-leaders/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 24,
+  "text": "GovExec — Partnership for Public Service Plans AI Training Center for Federal Employees (منحة Google.org بقيمة US$10 ملايين) — — 2024-10-17 — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://www.govexec.com/technology/2024/10/partnership-public-service-plans-ai-training-center-federal-employees-2025/400342/"
+  ],
+  "tag": "N"
+ },
+ {
+  "n": 25,
+  "text": "أبوليتيكال — «Apolitical receives $5 million grant from Google.org to train one million civil servants in AI» — — يونيو 2024 — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://apolitical.co/pages/apolitical-receives-5-million-grant-from-googleorg-to-train-one-million-civil-servants-in-ai"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 26,
+  "text": "صحيفة الخليج تايمز — UAE Approves Project to Train 80,000 Employees in Agentic AI — — 2026-05-18 — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://www.khaleejtimes.com/uae/approves-project-to-train-80000-employees-in-agentic-ai"
+  ],
+  "tag": "N"
+ },
+ {
+  "n": 27,
+  "text": "الهيئة الاتحادية للموارد البشرية الحكومية (الإمارات) — الإعلان عن شراكة معرفية استراتيجية مع جامعة محمد بن زايد للذكاء الاصطناعي — — 2026-05-21 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.fahr.gov.ae/en/news/uae-government-announces-strategic-knowledge-partnership-with-mbzuai/"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 28,
+  "text": "المكتب الإعلامي لحكومة دبي — محمد بن راشد يحضر الملتقى الوطني لاستعراض مشاريع الذكاء الاصطناعي التوجيهي — — 2026-05-20 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://mediaoffice.ae/en/news/2026/may/20-05/mohammed-bin-rashid-attends-national-retreat-showcasing-projects"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 29,
+  "text": "وزارة التنمية الرقمية والإعلام (سنغافورة) — Launch of Institute of Digital Government (صحيفة وقائع الإطلاق) — — 2026-03-02 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.mddi.gov.sg/newsroom/launch-of-institute-of-digital-government/"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 30,
+  "text": "مدونة الخدمة المدنية الحديثة (مكتب مجلس الوزراء البريطاني) — Upskilling Senior Civil Servants with the Digital Excellence Programme — — 2024-09-02 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://moderncivilservice.blog.gov.uk/2024/09/02/upskilling-senior-civil-servants-with-the-digital-excellence-programme/"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 31,
+  "text": "برنامج الأمم المتحدة الإنمائي (غانا) — Government of Ghana and UNDP Kick Off Ministerial AI Bootcamp — — 2025-07-25 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.undp.org/ghana/press-releases/government-ghana-and-undp-kicks-ministerial-bootcamp-strengthen-ai-capacity-and-advance-ai-enabled-public-services"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 32,
+  "text": "الأكاديمية في جامعة محمد بن زايد للذكاء الاصطناعي — نشرة برنامج القيادة العالمي في الذكاء الاصطناعي (GAILP)، نسخة أبريل 2027 — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://academy.mbzuai.ac.ae/wp-content/uploads/2026/04/GAILP-Prospectus-April-2027.pdf"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 33,
+  "text": "جامعة محمد بن زايد للذكاء الاصطناعي — عودة برنامج القيادة العالمي في الذكاء الاصطناعي بنسخة ثانية موسعة — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://mbzuai.ac.ae/news/mbzuais-global-ai-leadership-program-returns-with-expanded-second-edition/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 34,
+  "text": "جامعة محمد بن زايد للذكاء الاصطناعي — صفحة البرنامج التنفيذي (MEP) وخبر تخريج الفوج السادس — و — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://mbzuai.ac.ae/innovate/training-programs/mbzuai-executive-program/",
+   "https://mbzuai.ac.ae/news/42-uae-leaders-graduate-from-mbzuais-executive-program-to-drive-ai-adoption/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 35,
+  "text": "كلية بلافاتنك للحكومة، جامعة أكسفورد — Leading AI through Co-Creation — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.bsg.ox.ac.uk/course/leading-ai-through-co-creation"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 36,
+  "text": "كلية هارفارد كينيدي — Leading in Artificial Intelligence: Exploring Technology and Policy — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.hks.harvard.edu/educational-programs/executive-education/leading-artificial-intelligence"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 37,
+  "text": "إمبريال كوليدج لندن، منتدى السياسات — AI Policy Fellowship — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.imperial.ac.uk/research-and-innovation/the-forum/courses-for-policymakers/fellowships/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 38,
+  "text": "مدونة إمبريال كوليدج لندن — From Theory to Practice: How 20 Civil Servants Are Building AI Capability Across Government — — 2025-10-21 — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://blogs.imperial.ac.uk/the-forum/2025/10/21/from-theory-to-practice-how-20-civil-servants-are-building-ai-capability-across-government/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 39,
+  "text": "Gradia — Open-Enrollment vs Custom Executive Education (دليل سوق: غياب بطاقات الأسعار المنشورة للبرامج المخصصة والحد الأدنى للفوج) — — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://www.gogradia.com/guides/open-enrollment-vs-custom-executive-education"
+  ],
+  "tag": "N"
+ },
+ {
+  "n": 40,
+  "text": "ICF (المُقيّم المكلف من مكتب مجلس الوزراء البريطاني) — Helping the UK Civil Service Evaluate Its Digital Excellence Programme — — بلا تاريخ نشر معلن — فُحص بتاريخ 2026-08-21 — [E تقييم مستقل].",
+  "urls": [
+   "https://www.icf.com/clients/workforce/uk-civil-service-digital-excellence-programme-evaluation"
+  ],
+  "tag": "E"
+ },
+ {
+  "n": 41,
+  "text": "المكتب الصحفي للحكومة الهندية (PIB) — إجابة مكتوبة أمام لوك سابها: «رسالة كارمايوغي وبناء القدرات الرقمية عبر منصة iGOT» — — 2026-08-05 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2294777&reg=22&lang=1"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 42,
+  "text": "وكالة كابار (عن وزارة الذكاء الاصطناعي والتنمية الرقمية الكازاخية) — «كازاخستان تبدأ تدريب الفوج الأول من مسؤولي الذكاء الاصطناعي للقطاع العام» — — 2026-01-20 — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://en.kabar.kg/news/kazakhstan-starts-training-1st-cohort-of-ai-officers-for-public-sector/"
+  ],
+  "tag": "N"
+ },
+ {
+  "n": 43,
+  "text": "EgyptInnovate (المنصة الرسمية لوزارة الاتصالات وتقنية المعلومات المصرية) — «إطلاق المبادرة الوطنية للذكاء الاصطناعي لقادة الجهات الحكومية بالشراكة مع الأكاديمية الوطنية للتدريب» — — 2026-06-18 — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://egyptinnovate.com/en/news/mcit-nta-co-launch-ai-for-government-organization-leaders-national-initiative"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 44,
+  "text": "وكالة التحول الرقمي الأسترالية (digital.gov.au) — «توجيه تدريب الموظفين على الذكاء الاصطناعي (الإصدار 2.0)» — — 2025-08-25 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.digital.gov.au/ai/ai-in-government-policy/staff-training"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 45,
+  "text": "الإدارة العامة للتحول الرقمي (DINUM، فرنسا) — «الدولة تطلق منظومة Pix للوظيفة العامة» — — 2025 — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://numerique.gouv.fr/sinformer/espace-presse/formation-des-agents-publics-au-num%C3%A9rique--l%C3%A9tat-lance-le-dispositif-pix-pour-la-fonction-publique-d%C3%A9tat/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 46,
+  "text": "شروح قانونية للمادة 4 من قانون الذكاء الاصطناعي الأوروبي — «Lexara Advisory: Article 4 AI Literacy — In Force Since Feb 2025» — (محدث 2026-05-08) و«Travers Smith: The EU AI Act's AI Literacy Requirement» — (2025-07-29) — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://lexaraadvisory.com/article-4-ai-literacy-obligation.html",
+   "https://www.traverssmith.com/knowledge/knowledge-container/the-eu-ai-acts-ai-literacy-requirement-key-considerations/"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 47,
+  "text": "Global Government Forum — «الإمارات تطلق برنامج تدريب مسؤولي الذكاء الاصطناعي الرئيسيين» — — 2025-06-09 — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://www.globalgovernmentforum.com/united-arab-emirates-launches-training-programme-for-chief-ai-officers/"
+  ],
+  "tag": "N"
+ },
+ {
+  "n": 48,
+  "text": "Apolitical — «تقرير الحرم الحكومي للذكاء الاصطناعي قيد العمل» (قرار الإمارات إلزام مقرر لعموم موظفيها الاتحاديين) — — 2025-07-07 — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://apolitical.co/en/pages/apolitical-releases-new-learnings-report-from-training-public-servants-for-ai-governance"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 49,
+  "text": "مدونة الخدمة المدنية الحديثة — «شيء واحد كبير: الذكاء الاصطناعي للجميع» — — 2025-10-14 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://moderncivilservice.blog.gov.uk/2025/10/14/one-big-thing-ai-for-all-is-live/"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 50,
+  "text": "Ecofin Agency — «رواندا تلزم جميع موظفي الخدمة المدنية بالتدريب على الذكاء الاصطناعي» — — 2026-01-13 — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://www.ecofinagency.com/news-digital/1301-51886-rwanda-rolls-out-mandatory-ai-training-for-all-civil-servants"
+  ],
+  "tag": "N"
+ },
+ {
+  "n": 51,
+  "text": "حكم تحليلي للدراسة — غياب أدلة الأثر المنشورة على جودة القرار والأداء المؤسسي، وعدم إثبات فاعلية نموذج واحد للمستويات الأربعة (تركيب أدلة أقسام 3.2 إلى 3.4) — لا ينطبق رابط خارجي — فُحص بتاريخ 2026-08-21 — [J حكم تحليلي].",
+  "urls": [],
+  "tag": "J"
+ },
+ {
+  "n": 52,
+  "text": "وكالة الأنباء السعودية (واس) — «سدايا تقود حراك التطوير لتمكين القدرات الوطنية في البيانات والذكاء الاصطناعي» — — 2026-06-15 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.spa.gov.sa/en/N2612574"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 53,
+  "text": "وكالة الأنباء السعودية (واس) — «سدايا تدرب أكثر من 779 ألف مواطن وتؤهل 260 خبيراً وتمكّن 80 قائداً حكومياً في البيانات والذكاء الاصطناعي» — — 2025-05-05 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.spa.gov.sa/en/N2311819"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 54,
+  "text": "سعوديبيديا — «برنامج تنمية القدرات الحكومية الرقمية (قدراتك)» — — انطلق في 10 أكتوبر 2021 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://saudipedia.com/en/digital-government-capacity-development-program"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 55,
+  "text": "وكالة الأنباء السعودية (واس) — «سدايا تشارك في برنامج بجامعة ستانفورد لتعزيز القيادة العالمية في الذكاء الاصطناعي» — — 2025-11-19 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.spa.gov.sa/en/N2447957"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 56,
+  "text": "شركة رناد المجد التجارية — «ختام برنامج الذكاء الاصطناعي للقيادات وصناع القرار (نسخة استضافة جامعة الملك سعود)» — — 2026-04-16 — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.rmg-sa.com/en/conclusion-of-ai-for-leaders-and-decision-makers/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 57,
+  "text": "شركة رناد المجد التجارية — «ختام النسخة الأولى من البرنامج التدريبي» — — 2025-05-06 — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://www.rmg-sa.com/en/concludes-the-first-of-its-kind-training-program/"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 58,
+  "text": "جامعة الأمير سلطان — «إطلاق مسار واعد لتطوير القيادات بالشراكة مع أكاديمية تطوير القيادات بمعهد الإدارة العامة» — — 2024-11-27 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.psau.edu.sa/dhr/en/news/waed-track-program-leadership-development-has-been-launched-partnership-leadership-development"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 59,
+  "text": "هارفارد للتعلم المهني ومدى الحياة — AI in Action: Organizational Strategy for the Responsible Adoption of AI — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://pll.harvard.edu/course/ai-action-organizational-strategy-responsible-adoption-ai"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 60,
+  "text": "المكتب الإعلامي لحكومة الإمارات — مدرسة محمد بن راشد للحكومة تطلق برنامج القيادة الحكومية «على درب محمد بن راشد» — — 2026-04-01 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://www.mediaoffice.ae/en/news/2026/april/01-04/mbrsg-launches-government-leadership-programme-on-the-path-of-mohammed-bin-rashid"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 61,
+  "text": "ExecutiveCourses.com — قائمة التعليم التنفيذي بكلية أكسفورد سعيد (برنامج أكسفورد للذكاء الاصطناعي: 2,450 جنيهاً إسترلينياً) — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://executivecourses.com/schools/uk-ireland/uk/university-of-oxford-said-business-school-executive-education"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 62,
+  "text": "حكم تحليلي للدراسة — حكم الفرضيات حول التوافر المتدرج وطبيعة الفجوة التقديمية (تركيب أدلة المقارنة الدولية وتجارب الدول) — لا ينطبق رابط خارجي — فُحص بتاريخ 2026-08-21 — [J حكم تحليلي].",
+  "urls": [],
+  "tag": "J"
+ },
+ {
+  "n": 63,
+  "text": "حكم تحليلي للدراسة — تدرج المسارات الأربعة، ومنطق النواة المشتركة، وإطار القياس من ست خطوات، وحجم الفوج الوزاري المقترح — لا ينطبق رابط خارجي — فُحص بتاريخ 2026-08-21 — [J حكم تحليلي].",
+  "urls": [],
+  "tag": "J"
+ },
+ {
+  "n": 64,
+  "text": "Windsor Leadership — «نظرة عامة على البرامج» (قاعدة تشاثام هاوس؛ مشارك واحد من كل جهة؛ متابعة حتى ستة أشهر) — — فُحص بتاريخ 2026-08-21 — [P إعلان مزوّد/جهة].",
+  "urls": [
+   "https://windsorleadership.org.uk/programmes-overview"
+  ],
+  "tag": "P"
+ },
+ {
+  "n": 65,
+  "text": "تقدير استرشادي للدراسة — هيكل كلفة البرنامج المخصص وحصص مكوناته وسيناريو فوج الثلاثين (من 45 ألفاً إلى 94 ألف ريال للمشارك؛ من 1.35 إلى 2.8 مليون ريال للفوج) وبند الحوكمة والسرية — لا ينطبق رابط خارجي — فُحص بتاريخ 2026-08-21 — [T تقدير استرشادي].",
+  "urls": [],
+  "tag": "T"
+ },
+ {
+  "n": 66,
+  "text": "جامعة ولاية بنسلفانيا — أطروحة دكتوراه (سبيرلي، 2006) تتضمن مسحاً لاستثمارات التعليم التنفيذي المخصص (من أقل من 100 ألف دولار إلى مليوني دولار للارتباط) — — فُحص بتاريخ 2026-08-21 — [S إحصاء/مسح].",
+  "urls": [
+   "https://etda.libraries.psu.edu/files/final_submissions/2804"
+  ],
+  "tag": "S"
+ },
+ {
+  "n": 67,
+  "text": "XED Institute / Global Horizons — نشرة اكتتاب (DRHP): متوسط نطاق البرامج التنفيذية الجامعية العليا من 2,000 إلى 50,000 دولار للمشارك — — 2025-08 — فُحص بتاريخ 2026-08-21 — [R سجل مؤسسي رسمي].",
+  "urls": [
+   "https://xedinstitute.org/wp-content/uploads/2025/08/DRHP-Aug-Final-12.08.25.pdf"
+  ],
+  "tag": "R"
+ },
+ {
+  "n": 68,
+  "text": "Poets&Quants For Execs — «IMD يعيد تصور الوضع الطبيعي الجديد» (البرنامج نفسه بـ10,900 فرنك سويسري حضورياً و4,900 افتراضياً) — — 2022-06-11 — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://poetsandquantsforexecs.com/exec-ed/imd-reimagines-a-new-normal-in-executive-education/"
+  ],
+  "tag": "N"
+ },
+ {
+  "n": 69,
+  "text": "تقدير استرشادي للدراسة — حساب اختبار المقاعد الأربعة (20,400 دولار سنغافوري، ما يعادل تقريباً 60 ألف ريال قبل الضريبة) والتنبيه المحاسبي بعدم ضرب رسوم المقعد في حجم الفوج — لا ينطبق رابط خارجي — فُحص بتاريخ 2026-08-21 — [T تقدير استرشادي].",
+  "urls": [],
+  "tag": "T"
+ },
+ {
+  "n": 70,
+  "text": "حكم تحليلي للدراسة — تقسيم ما يُستفاد منه دولياً وما يبقى مملوكاً محلياً — لا ينطبق رابط خارجي — فُحص بتاريخ 2026-08-21 — [J حكم تحليلي].",
+  "urls": [],
+  "tag": "J"
+ },
+ {
+  "n": 71,
+  "text": "قازإنفورم — «كبار التنفيذيين الكازاخ يتدربون مع أساتذة من ستانفورد وأكاديمية OpenAI» — — 2026-04-09 — فُحص بتاريخ 2026-08-21 — [N تغطية صحفية معتبرة].",
+  "urls": [
+   "https://qazinform.com/news/top-kazakhstani-executives-to-undergo-ai-training-with-professors-from-stanford-openai-academy-bf9f94"
+  ],
+  "tag": "N"
+ }
+]
