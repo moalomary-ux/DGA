@@ -29,8 +29,8 @@ Dependencies: `pip install python-pptx markitdown[pptx] defusedxml lxml Pillow`;
 
 ## Approved conventions (user decisions, keep them)
 
-- **No classification footer.** The user asked to delete the "Restricted - مقيد" text everywhere. `remove_footers(prs)` strips the footer placeholder from every slide and the orphan footer dash from the content layout. Do not reintroduce it, and do not mention the classification in speaker notes.
-- **Page number lives in the header.** On content slides and sub-dividers, the slide-number placeholder sits at the left end of the title row (`header_page_number`), navy, semibold, vertically centred with the title. Not in the bottom-left corner.
+- **No classification footer.** The user asked to delete the "Restricted - مقيد" text everywhere. `remove_footers(prs)` strips the footer placeholder from every slide. Do not reintroduce it, and do not mention the classification in speaker notes.
+- **DNA footer, restyled.** On content slides and sub-dividers, `footer(slide)` keeps the page number bottom-left under the layout's small green dash (navy, 10.5pt semibold) and adds the deck title bottom-right next to the DGA watermark (9pt regular, muted gray, `DECK_TITLE` env var). The user explicitly rejected putting the page number in the header.
 - **Keep the deck's DNA.** Never redraw the cover, agenda background, section dividers (photo + big green number), sub-dividers (green badge + section title) or the closing slide. Edit their text only. Content slides are rebuilt on the `2_Title` layout, which supplies the bottom curve and the small DGA watermark.
 - **Title row:** `content_frame(slide, '1.1', 'Title', lead)` renders the number in dark purple, the title in navy 24pt bold, the gradient teal→purple rule under it, and an optional teal 13pt lead line.
 - **Agenda:** three semi-transparent cards (01/02/03) with green gradient badges, section title 17pt bold white, items 12pt with the code in mint. Executive summary is unnumbered and comes right after the agenda.

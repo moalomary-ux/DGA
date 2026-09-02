@@ -116,7 +116,7 @@ def sub_divider(s, num_badge, section_title, sub_title, key_msg, key_y=4.3):
     nb = find(s, 's1-num'); set_shape_text(nb, num_badge)
     nb.left = Inches(11.06); nb.width = Inches(0.66); nb.text_frame.word_wrap = False
     t = find(s, 'Title 12'); set_shape_text(t, sub_title)
-    header_page_number(s, 0.44, 0.7)
+    footer(s)
     text(s, 1.28, key_y, 10.12, 0.5, key_msg, size=16, font=F_SEMI, color=TEAL, anchor='t')
 
 sub_divider(S[4], '01', 'البرامج التدريبية', '1.1 المنجزات', '1,273 مستفيداً حتى أغسطس 2026 (71% من المستهدف)، منهم 507 خلال الربع')

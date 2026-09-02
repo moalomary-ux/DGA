@@ -21,6 +21,7 @@ SRC = os.environ.get('DECK_SRC', 'base.pptx')
 OUT = os.environ.get('DECK_OUT', 'out.pptx')
 MEDIA = os.environ.get('DECK_MEDIA', 'work/ppt/media/')
 ASSETS = os.environ.get('DECK_ASSETS', '.')
+DECK_TITLE = os.environ.get('DECK_TITLE', 'برنامج القدرات الرقمية «قدراتك»   |   تقرير سير الأعمال الربعي – يونيو – أغسطس 2026')
 
 # ---- brand ---------------------------------------------------------------
 NAVY = '2A206A'; PURPLE = '7C32C9'; PURPLE_DK = '5D2597'; TEAL = '00ABAF'; GREEN = '1CC182'
@@ -318,19 +319,37 @@ def header_page_number(slide, y=0.17, h=0.6, size=12, color=NAVY):
 
 
 def remove_footers(prs):
-    """Drop the classification footer placeholder from every slide, and the orphan footer dash from the content layout."""
+    """Drop the classification footer placeholder ("Restricted - مقيد") from every slide."""
     for slide in prs.slides:
         for shp in list(slide.shapes):
             if shp.is_placeholder and ph_type(shp) == 'ftr':
                 _rm(shp._element)
-    seen = set(); layouts = []
-    for sl in prs.slides:
-        if id(sl.slide_layout._element) not in seen:
-            seen.add(id(sl.slide_layout._element)); layouts.append(sl.slide_layout)
-    for layout in layouts:
-        for shp in list(layout.shapes):
-            if shp.name == 'Straight Connector 12':
-                _rm(shp._element)
+
+
+def footer(slide, title=None):
+    """DNA footer on content slides: page number bottom-left (under the layout's small green dash),
+    deck title bottom-right next to the DGA watermark. The classification label is intentionally absent."""
+    for shp in slide.shapes:
+        if shp.is_placeholder and ph_type(shp) == 'sldNum':
+            shp.left = Inches(0.42); shp.top = Inches(7.06); shp.width = Inches(0.8); shp.height = Inches(0.26)
+            txBody = shp._element.txBody
+            bodyPr = txBody.find(qn('a:bodyPr')); bodyPr.set('anchor', 'ctr'); bodyPr.set('lIns', '0'); bodyPr.set('tIns', '0'); bodyPr.set('bIns', '0')
+            for para in txBody.findall(qn('a:p')):
+                pPr = para.find(qn('a:pPr'))
+                if pPr is None:
+                    pPr = etree.Element(qn('a:pPr')); para.insert(0, pPr)
+                pPr.set('algn', 'l')
+                for fld in para.findall(qn('a:fld')):
+                    rPr = fld.find(qn('a:rPr'))
+                    if rPr is None:
+                        rPr = etree.Element(qn('a:rPr')); fld.insert(0, rPr)
+                    for ch in list(rPr):
+                        rPr.remove(ch)
+                    rPr.set('lang', 'en-US'); rPr.set('sz', '1050'); rPr.set('b', '1')
+                    sf = etree.SubElement(rPr, qn('a:solidFill')); c = etree.SubElement(sf, qn('a:srgbClr')); c.set('val', NAVY)
+                    for t in ('a:latin', 'a:cs'):
+                        e = etree.SubElement(rPr, qn(t)); e.set('typeface', F_SEMI)
+    text(slide, 7.2, 6.84, 12.8 - 7.2, 0.26, title or DECK_TITLE, size=9, font=F_REG, color=MUTED, anchor='m')
 
 
 # ---- composite blocks ----------------------------------------------------
@@ -341,8 +360,8 @@ def content_frame(slide, num, title, lead=None):
     if num:
         runs.append((num + '  ', {'color': PURPLE_DK}))
     runs.append((title, {}))
-    text(slide, XL + 0.9, 0.17, CW - 0.9, 0.6, [runs], size=24, font=F_BOLD, color=NAVY, anchor='m')
-    header_page_number(slide, 0.17, 0.6)
+    text(slide, XL, 0.17, CW, 0.6, [runs], size=24, font=F_BOLD, color=NAVY, anchor='m')
+    footer(slide)
     line_h(slide, XL, XR + 0.04, 0.87, grad=(TEAL, PURPLE), w=2.25)
     if lead:
         text(slide, XL, 1.0, CW, 0.36, lead, size=13, font=F_SEMI, color=TEAL, anchor='m')
