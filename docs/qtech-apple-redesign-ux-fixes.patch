@@ -1,8 +1,8 @@
 From e0272172b20d61c6f5b78eda5118ea63ad8a2831 Mon Sep 17 00:00:00 2001
 From: moalomary-ux <mo.alomary@gmail.com>
 Date: Fri, 4 Sep 2026 05:48:11 +0000
-Subject: [PATCH] Fix rendering, theme, motion and Arabic-copy defects in the
- design sandbox
+Subject: [PATCH 1/2] Fix rendering, theme, motion and Arabic-copy defects in
+ the design sandbox
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -636,6 +636,570 @@ index 77f813b..424f515 100644
  /* ─── Reduced motion respect ─── */
  @media (prefers-reduced-motion: reduce) {
    *, *::before, *::after {
+-- 
+2.43.0
+
+
+From 7f64baa5ad4343d79cd020f16c1191ec0fd8a657 Mon Sep 17 00:00:00 2001
+From: moalomary-ux <mo.alomary@gmail.com>
+Date: Fri, 4 Sep 2026 06:04:05 +0000
+Subject: [PATCH 2/2] Add a validated colour system and fix mobile density and
+ dark-mode contrast
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+اللون كان أضيق ما يكون على الجوال: أربعة مؤشّرات بأيقونة واحدة،
+وستّ وجهات بدائرة بنفسجية واحدة، وخمس درجات إلحاح بنقطة واحدة.
+والتخطيط كان يفرد كل شيء في عمود واحد فيصير الملخّص شريطاً طويلاً.
+
+لوحة الفئات:
+- سبع درجات بترتيب ثابت مشتقّة من هوية قدراتك، مع نسخة داكنة
+  مُختارة لا انعكاساً آلياً.
+- مُتحقَّق منها آلياً في الوضعين: نطاق الإضاءة، أرضية التشبّع،
+  فصل عمى الألوان (ΔE 12.3 فاتح / 13.6 داكن)، أرضية الرؤية
+  الطبيعية (19.9 / 21.0)، والتباين ≥ 3:1.
+- لون مستقلّ لكل مؤشّر وكل وجهة سريعة، وشريط علوي يربط الرقم بلونه.
+- ألوان حالة محجوزة للإلحاح، يرافقها نصّ صريح وتسمية مخفيّة
+  وشريط جانبي للبند الحرج — لا معنى باللون وحده.
+- أعمدة الرسوم: تعبئة مسطّحة من اللوحة بدل تدرّج لوني.
+
+الجوال:
+- المؤشّرات عمودان بدل عمود، والوجهات ثلاثة أعمدة بدل عمود.
+- طول صفحة «لوحتي» 2,666 ← 1,595 بكسل.
+- التمرير الأفقي 172 بكسل في صفحة الجهة و5 في لوحتي ← صفر.
+- زرّ إخفاء شريط وضع التصميم صار يعمل ويتذكّر الإخفاء.
+
+التباين:
+- ink-on-brand ينقلب مع الثيم، وهذا صحيح فوق سطح يتغيّر لونه، لكنه
+  فوق تدرّج الهيرو الثابت كان يهبط بالنص إلى 1.22:1 في الوضع
+  الداكن — نصّ غير مقروء عملياً. أُضيف حبران لا ينقلبان وطُبِّقا
+  على الأسطح ثابتة اللون. الهيرو الآن 13.8:1 في الوضعين.
+- شارة BETA كانت أبيض على برتقالي 2.1:1 ← 8.2:1.
+- الرقاقة النشطة أبيض على فيروزي 2.4:1 ← 5.8:1.
+- رقاقة الحساب كانت ترث أزرق المتصفّح الافتراضي.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019r8vsVxa6ZUBGq51h6Fr7h
+---
+ gov360-id/page.css | 45 ++++++++++++++++-----
+ home/index.html    | 22 +++++------
+ home/page.css      | 99 ++++++++++++++++++++++++++++++++++++++++------
+ login/page.css     |  3 +-
+ shared.js          | 16 ++++++++
+ tokens-apple.css   | 69 ++++++++++++++++++++++++++++++++
+ 6 files changed, 219 insertions(+), 35 deletions(-)
+
+diff --git a/gov360-id/page.css b/gov360-id/page.css
+index aeb37aa..8c84287 100644
+--- a/gov360-id/page.css
++++ b/gov360-id/page.css
+@@ -122,7 +122,7 @@ html, body {
+   inset-block-start: 6px;
+   inset-inline-end: 6px;
+   background: var(--brand-red);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   font-size: 9px;
+   font-weight: var(--w-bold);
+   inline-size: 18px;
+@@ -140,6 +140,9 @@ html, body {
+   background: var(--surface-2);
+   border-radius: var(--radius-pill);
+   cursor: pointer;
++  /* رابط بلا لون معلن كان يرث أزرق المتصفّح الافتراضي #0000EE */
++  color: var(--ink-1);
++  text-decoration: none;
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+ .user-chip:hover { background: var(--surface-3); }
+@@ -147,7 +150,7 @@ html, body {
+   inline-size: 28px;
+   block-size: 28px;
+   background: linear-gradient(135deg, var(--brand-violet), var(--brand-deep));
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   border-radius: var(--radius-pill);
+   display: grid;
+   place-items: center;
+@@ -253,7 +256,7 @@ html, body {
+   align-items: center;
+   gap: var(--space-8);
+   background: linear-gradient(135deg, var(--brand-deep) 0%, #2d2360 50%, var(--brand-violet) 100%);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   padding: var(--space-10) var(--space-12);
+   border-radius: var(--radius-xl);
+   box-shadow: var(--shadow-elevated);
+@@ -313,14 +316,14 @@ html, body {
+ }
+ .btn--ghost {
+   background: rgba(255, 255, 255, 0.1);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   border: var(--border-hairline) solid rgba(255, 255, 255, 0.2);
+   backdrop-filter: blur(8px);
+ }
+ .btn--ghost:hover { background: rgba(255, 255, 255, 0.18); transform: translateY(-1px); }
+ .btn--primary {
+   background: linear-gradient(135deg, var(--brand-violet), #6b21b3);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   box-shadow: 0 2px 8px rgba(133, 44, 208, 0.25);
+ }
+ .btn--primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(133, 44, 208, 0.35); }
+@@ -590,13 +593,17 @@ html, body {
+   position: relative;
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+-.bar--violet { background: linear-gradient(180deg, var(--brand-violet), #6b21b3); }
+-.bar--teal { background: linear-gradient(180deg, var(--brand-turquoise), #009598); }
++/* تعبئة مسطّحة من لوحة الفئات المُتحقَّق منها بدل تدرّج لوني:
++   التدرّج يوهم بأن أعلى العمود يختلف عن أسفله بينما القيمة واحدة،
++   ويكسر مطابقة التباين لأن كل بكسل لون مختلف. */
++.bar--violet { background: var(--cat-3); }
++.bar--teal { background: var(--cat-1); }
+ .bar__num {
+   font-family: var(--font-mono);
++  font-variant-numeric: tabular-nums;
+   font-size: var(--text-lg);
+   font-weight: var(--w-bold);
+-  color: white;
++  color: var(--ink-on-brand);
+ }
+ .bar__year {
+   font-size: var(--text-xs);
+@@ -814,7 +821,7 @@ html, body {
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+ .chip-mini:hover { background: rgba(255,255,255,0.1); }
+-.chip-mini.is-active { background: var(--brand-turquoise); color: var(--ink-on-brand); border-color: var(--brand-turquoise); }
++.chip-mini.is-active { background: var(--brand-turquoise); color: var(--ink-on-light); border-color: var(--brand-turquoise); }
+ 
+ /* ═══════ الجوال ═══════ */
+ @media (max-width: 1024px) {
+@@ -869,6 +876,24 @@ html, body {
+   .kpis { grid-template-columns: 1fr 1fr; }
+ }
+ @media (max-width: 480px) {
+-  .kpis { grid-template-columns: 1fr; }
++  /* عمود واحد يفرد ثلاثة أرقام على مئات البكسلات بلا داعٍ */
++  .kpis { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
++  .kpi { padding: var(--space-4); min-block-size: 0; gap: var(--space-1); }
++  .kpi__icon { inline-size: 32px; block-size: 32px; margin-block-end: var(--space-1); }
++  .kpi__icon svg { inline-size: 16px; block-size: 16px; }
++  .kpi__num { font-size: 26px; }
+   .hero__title { font-size: 24px; }
+ }
++
++/* الشريط الجانبي المنزلق خارج الشاشة كان يخلق تمريراً أفقياً بـ 172 بكسل */
++html, body { overflow-x: clip; }
++
++@media (max-width: 768px) {
++  .design-bar {
++    inset-block-end: var(--space-3);
++    inset-inline-start: var(--space-3);
++    inset-inline-end: auto;
++    max-inline-size: calc(100vw - var(--space-6));
++  }
++  .design-bar[hidden] { display: none; }
++}
+diff --git a/home/index.html b/home/index.html
+index 1828538..c9a90f2 100644
+--- a/home/index.html
++++ b/home/index.html
+@@ -146,7 +146,7 @@
+         <div class="hero__greeting">
+           <span class="hero__date" data-date-hijri>&nbsp;</span>
+           <h1 class="hero__title">أهلاً بعودتك، <span class="hero__name">محمد</span></h1>
+-          <p class="hero__sub">5 بنود تنتظر قرارك · عاجل منها 2</p>
++          <p class="hero__sub">5 بنود تنتظر قرارك · عاجل منها 3</p>
+         </div>
+         <div class="hero__clock">
+           <div class="hero__time" id="liveClock" aria-label="الوقت الحالي">--:--</div>
+@@ -245,50 +245,50 @@
+           </header>
+           <div class="card__body">
+             <ul class="attention" role="list">
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="critical">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">بريد وارد بلا إسناد</div>
++                  <div class="attention__title"><span class="sr-only">حرج — </span>بريد وارد بلا إسناد</div>
+                   <div class="attention__meta">3,308 رسالة تنتظر الفرز ولم تُسنَد لأحد — أقدمها منذ 941 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="serious">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">رسالة تجاوزت مهلة الرد</div>
++                  <div class="attention__title"><span class="sr-only">متأخّر — </span>رسالة تجاوزت مهلة الرد</div>
+                   <div class="attention__meta">ملاحظة على التقرير — 7d93 — منذ 77 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="serious">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">رسالة تجاوزت مهلة الرد</div>
++                  <div class="attention__title"><span class="sr-only">متأخّر — </span>رسالة تجاوزت مهلة الرد</div>
+                   <div class="attention__meta">ملاحظة على التقرير — 52df — منذ 65 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="warning">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">برامج متوقّفة في الإدارة</div>
++                  <div class="attention__title"><span class="sr-only">تنبيه — </span>برامج متوقّفة في الإدارة</div>
+                   <div class="attention__meta">7 برامج بلا حركة منذ 10 أيام — أقدمها منذ 52 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item attention__item--last">
++              <li class="attention__item attention__item--last" data-severity="warning">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">برنامج تملكه متوقّف</div>
++                  <div class="attention__title"><span class="sr-only">تنبيه — </span>برنامج تملكه متوقّف</div>
+                   <div class="attention__meta">WS-2026-1642 — Cloud Essentials — في المرحلة 1، بلا حركة منذ 49 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+diff --git a/home/page.css b/home/page.css
+index d452a46..ef20466 100644
+--- a/home/page.css
++++ b/home/page.css
+@@ -137,7 +137,7 @@ html, body {
+   inset-block-start: 6px;
+   inset-inline-end: 6px;
+   background: var(--brand-red);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   font-size: 9px;
+   font-weight: var(--w-bold);
+   inline-size: 18px;
+@@ -155,6 +155,9 @@ html, body {
+   background: var(--surface-2);
+   border-radius: var(--radius-pill);
+   cursor: pointer;
++  /* رابط بلا لون معلن كان يرث أزرق المتصفّح الافتراضي #0000EE */
++  color: var(--ink-1);
++  text-decoration: none;
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+ .user-chip:hover { background: var(--surface-3); }
+@@ -162,7 +165,7 @@ html, body {
+   inline-size: 28px;
+   block-size: 28px;
+   background: linear-gradient(135deg, var(--brand-violet), var(--brand-deep));
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   border-radius: var(--radius-pill);
+   display: grid;
+   place-items: center;
+@@ -239,7 +242,7 @@ html, body {
+   font-size: 9px;
+   font-weight: var(--w-bold);
+   background: var(--brand-warning);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-light);
+   padding: 2px 7px;
+   border-radius: var(--radius-sm);
+ }
+@@ -290,7 +293,7 @@ html, body {
+   align-items: center;
+   gap: var(--space-8);
+   background: linear-gradient(135deg, var(--brand-deep) 0%, #2d2360 50%, var(--brand-violet) 100%);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   padding: var(--space-10) var(--space-12);
+   border-radius: var(--radius-xl);
+   box-shadow: var(--shadow-elevated);
+@@ -388,9 +391,26 @@ html, body {
+   color: var(--ink-3);
+   margin-block-end: var(--space-2);
+ }
+-.kpi__icon--teal { background: rgba(0, 171, 175, 0.1); color: var(--brand-turquoise); }
+-.kpi__icon--violet { background: rgba(133, 44, 208, 0.1); color: var(--brand-violet); }
+-.kpi__icon--green { background: rgba(28, 193, 130, 0.1); color: var(--brand-green); }
++/* لون مستقلّ لكل مؤشّر: أربع أيقونات بلون واحد لا تفرّق بينها العين.
++   الترتيب هو ترتيب لوحة الفئات نفسه ولا يُدوَّر. */
++.kpis > .kpi:nth-of-type(1) .kpi__icon { background: color-mix(in srgb, var(--cat-1) 12%, transparent); color: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) .kpi__icon { background: color-mix(in srgb, var(--cat-2) 12%, transparent); color: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) .kpi__icon { background: color-mix(in srgb, var(--cat-3) 12%, transparent); color: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) .kpi__icon { background: color-mix(in srgb, var(--cat-4) 12%, transparent); color: var(--cat-4); }
++/* شريط لوني رفيع أعلى البطاقة — يربط الرقم بلونه دون صبغ النص */
++.kpi { position: relative; overflow: hidden; }
++.kpi::before {
++  content: "";
++  position: absolute;
++  inset-block-start: 0;
++  inset-inline: 0;
++  block-size: 3px;
++  background: var(--kpi-accent, transparent);
++}
++.kpis > .kpi:nth-of-type(1) { --kpi-accent: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) { --kpi-accent: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) { --kpi-accent: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) { --kpi-accent: var(--cat-4); }
+ .kpi__label {
+   font-size: var(--text-sm);
+   color: var(--ink-3);
+@@ -489,9 +509,20 @@ html, body {
+   block-size: 40px;
+   display: grid;
+   place-items: center;
+-  background: linear-gradient(135deg, var(--brand-deep), var(--brand-violet));
++  /* كانت الستّ كلها دائرة بنفسجية واحدة: لا شيء يميّز وجهة عن أخرى */
++  background: var(--quick-accent, var(--brand-violet));
+   border-radius: var(--radius-lg);
+ }
++.quick > .quick__item:nth-of-type(1) { --quick-accent: var(--cat-1); }
++.quick > .quick__item:nth-of-type(2) { --quick-accent: var(--cat-2); }
++.quick > .quick__item:nth-of-type(3) { --quick-accent: var(--cat-3); }
++.quick > .quick__item:nth-of-type(4) { --quick-accent: var(--cat-4); }
++.quick > .quick__item:nth-of-type(5) { --quick-accent: var(--cat-5); }
++.quick > .quick__item:nth-of-type(6) { --quick-accent: var(--cat-6); }
++.quick > .quick__item:hover {
++  border-color: var(--quick-accent);
++  background: color-mix(in srgb, var(--quick-accent) 7%, transparent);
++}
+ .quick__label {
+   display: -webkit-box;
+   -webkit-line-clamp: 1;
+@@ -518,13 +549,25 @@ html, body {
+   border-block-end: var(--border-hairline) solid var(--line);
+ }
+ .attention__item--last { border-block-end: none; }
++/* كانت كل البنود بنقطة برتقالية واحدة: خمس درجات إلحاح بلون واحد.
++   ألوان الحالة محجوزة ولا تُستعمل للفئات، ويرافقها دائماً نصّ صريح
++   في وصف البند وفي تسمية مخفيّة لقارئ الشاشة — لا معنى باللون وحده. */
+ .attention__dot {
+   inline-size: 8px;
+   block-size: 8px;
+   border-radius: var(--radius-pill);
+-  background: var(--brand-warning);
++  background: var(--status-warning);
+   flex-shrink: 0;
+ }
++.attention__item[data-severity="critical"] .attention__dot { background: var(--status-critical); }
++.attention__item[data-severity="serious"]  .attention__dot { background: var(--status-serious); }
++.attention__item[data-severity="warning"]  .attention__dot { background: var(--status-warning); }
++/* البند الحرج يحمل أيضاً شريطاً جانبياً: تمييز لا يعتمد على اللون فقط */
++.attention__item[data-severity="critical"] {
++  border-inline-start: 3px solid var(--status-critical);
++  padding-inline-start: var(--space-3);
++  margin-inline-start: calc(var(--space-3) * -1);
++}
+ .attention__body {
+   display: flex;
+   flex-direction: column;
+@@ -584,7 +627,7 @@ html, body {
+ }
+ .btn--primary {
+   background: linear-gradient(135deg, var(--brand-violet), #6b21b3);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   box-shadow: 0 2px 8px rgba(133, 44, 208, 0.25);
+ }
+ .btn--primary:hover {
+@@ -665,7 +708,7 @@ html, body {
+ .chip-mini:hover { background: rgba(255, 255, 255, 0.1); }
+ .chip-mini.is-active {
+   background: var(--brand-turquoise);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-light);
+   border-color: var(--brand-turquoise);
+ }
+ 
+@@ -725,7 +768,37 @@ html, body {
+   .design-bar { max-inline-size: calc(100vw - var(--space-6)); }
+ }
+ @media (max-width: 480px) {
+-  .kpis { grid-template-columns: 1fr; }
+-  .quick { grid-template-columns: 1fr; }
++  /* عمود واحد كان يجعل أربعة أرقام تستهلك 764 بكسل من التمرير،
++     وستّ روابط 654 بكسل. البطاقة تُضغط بدل أن تُفرد. */
++  .kpis { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
++  .kpi { padding: var(--space-4); min-block-size: 0; gap: var(--space-1); }
++  .kpi__icon {
++    inline-size: 32px;
++    block-size: 32px;
++    margin-block-end: var(--space-1);
++    border-radius: var(--radius-md);
++  }
++  .kpi__icon svg { inline-size: 16px; block-size: 16px; }
++  .kpi__num { font-size: 26px; }
++
++  .quick { grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
++  .quick__item { padding: var(--space-3) var(--space-2); min-block-size: 0; gap: var(--space-2); }
++  .quick__icon { inline-size: 34px; block-size: 34px; }
++  .quick__label { -webkit-line-clamp: 2; font-size: 10.5px; }
++
+   .hero__title { font-size: 28px; }
+ }
++
++/* الشريط الجانبي المنزلق خارج الشاشة كان يخلق تمريراً أفقياً */
++html, body { overflow-x: clip; }
++
++/* شريط وضع التصميم كان يغطّي المحتوى على الجوال */
++@media (max-width: 768px) {
++  .design-bar {
++    inset-block-end: var(--space-3);
++    inset-inline-start: var(--space-3);
++    inset-inline-end: auto;
++    max-inline-size: calc(100vw - var(--space-6));
++  }
++  .design-bar[hidden] { display: none; }
++}
+diff --git a/login/page.css b/login/page.css
+index 53aaf18..6a8ceac 100644
+--- a/login/page.css
++++ b/login/page.css
+@@ -362,7 +362,8 @@ html, body {
+ .chip-mini:hover { background: var(--surface-hover); }
+ .chip-mini.is-active {
+   background: var(--brand-turquoise);
+-  color: var(--ink-on-brand);
++  /* الفيروزي ثابت في الوضعين: الأبيض عليه 2.4:1 فقط */
++  color: var(--ink-on-light);
+   border-color: var(--brand-turquoise);
+ }
+ 
+diff --git a/shared.js b/shared.js
+index 2407c8c..0e421f9 100644
+--- a/shared.js
++++ b/shared.js
+@@ -355,6 +355,21 @@
+     }
+   }
+ 
++  /* ═══════════════════════════════════════════════════════════════
++     06e  شريط وضع التصميم — زرّ الإخفاء لم يكن موصولاً بشيء
++     ═══════════════════════════════════════════════════════════════ */
++  function initDesignBar() {
++    const bar = document.querySelector('.design-bar');
++    if (!bar) return;
++    const close = bar.querySelector('.design-bar__head button');
++    if (!close) return;
++    close.addEventListener('click', () => {
++      bar.hidden = true;
++      try { sessionStorage.setItem('qd-designbar', 'hidden'); } catch (e) {}
++    });
++    try { if (sessionStorage.getItem('qd-designbar') === 'hidden') bar.hidden = true; } catch (e) {}
++  }
++
+   /* ═══════════════════════════════════════════════════════════════
+      06d  نماذج الصندوق التصميمي — الإرسال معطّل
+      كان الضغط على الزر يعيد تحميل الصفحة بصمت ويبدو كعطل
+@@ -455,6 +470,7 @@
+     initDates();
+     initTabs();
+     initSandboxForms();
++    initDesignBar();
+     initCardTilt();
+ 
+     // Bind theme toggle buttons
+diff --git a/tokens-apple.css b/tokens-apple.css
+index 424f515..76036d2 100644
+--- a/tokens-apple.css
++++ b/tokens-apple.css
+@@ -64,6 +64,65 @@
+ }
+ 
+ 
++/* ═══════════ 02b  لوحة الفئات — للتمييز بين الكيانات ═══════════
++   سبع درجات بترتيب ثابت مشتقّة من هوية قدراتك. الترتيب نفسه هو آلية
++   الأمان لعمى الألوان، فلا يُغيَّر ولا يُدوَّر: الكيان الثامن يُدمج في
++   «أخرى» أو يُفصل في رسم مستقل.
++
++   مُتحقَّق منها آلياً (لا بالنظر) في الوضعين:
++     فاتح على #fcfcfb — نطاق الإضاءة ✓ · أرضية التشبّع ✓ ·
++       فصل عمى الألوان: أسوأ زوج متجاور ΔE 12.3 (deutan) ·
++       أرضية الرؤية الطبيعية ΔE 19.9 · التباين ≥ 3:1 ✓
++     داكن على #1c1c1e — النطاق ✓ · التشبّع ✓ ·
++       ΔE 13.6 (deutan) · الرؤية الطبيعية ΔE 21.0 · التباين ≥ 3:1 ✓
++
++   الدرجات الداكنة ليست انعكاساً آلياً للفاتحة، بل مُختارة ومُتحقَّق
++   منها مقابل السطح الداكن. */
++:root {
++  --cat-1: #0A9296;  /* فيروزي — لون الهوية، دائماً الأول */
++  --cat-2: #C2560B;  /* برتقالي */
++  --cat-3: #7C32C9;  /* بنفسجي */
++  --cat-4: #0F8A5F;  /* أخضر */
++  --cat-5: #1170C7;  /* أزرق */
++  --cat-6: #8A6D00;  /* ذهبي */
++  --cat-7: #B0106A;  /* أرجواني */
++}
++[data-theme="dark"] {
++  --cat-1: #12A0A3;
++  --cat-2: #CF6A31;
++  --cat-3: #9A62D6;
++  --cat-4: #1FAE73;
++  --cat-5: #3D8FE0;
++  --cat-6: #B08F1E;
++  --cat-7: #D34C8B;
++}
++
++/* خلفية رقيقة من اللون نفسه — للأيقونات والرقاقات */
++.tint-1 { background: color-mix(in srgb, var(--cat-1) 12%, transparent); color: var(--cat-1); }
++.tint-2 { background: color-mix(in srgb, var(--cat-2) 12%, transparent); color: var(--cat-2); }
++.tint-3 { background: color-mix(in srgb, var(--cat-3) 12%, transparent); color: var(--cat-3); }
++.tint-4 { background: color-mix(in srgb, var(--cat-4) 12%, transparent); color: var(--cat-4); }
++.tint-5 { background: color-mix(in srgb, var(--cat-5) 12%, transparent); color: var(--cat-5); }
++.tint-6 { background: color-mix(in srgb, var(--cat-6) 12%, transparent); color: var(--cat-6); }
++.tint-7 { background: color-mix(in srgb, var(--cat-7) 12%, transparent); color: var(--cat-7); }
++
++
++/* ═══════════ 02c  ألوان الحالة — محجوزة، لا تُستعمل للفئات ═══════════
++   ترافقها دائماً أيقونة أو نص: لا يُحمَّل اللون وحده أي معنى. */
++:root {
++  --status-critical: #C40000;
++  --status-serious:  #B34A00;
++  --status-warning:  #856200;
++  --status-good:     #0F7A4E;
++}
++[data-theme="dark"] {
++  --status-critical: #FF6B60;
++  --status-serious:  #FF9F0A;
++  --status-warning:  #E0B93A;
++  --status-good:     #35D68F;
++}
++
++
+ /* ═══════════ 03  الأسطح — Apple-inspired ═══════════
+    أبيض نقي، رمادي دافئ جداً، لا تدرّجات على الخلفيات */
+ :root {
+@@ -103,6 +162,16 @@
+   --ink-on-inverse: #f5f5f7;
+   --ink-disabled: #c4c4c7;
+ }
++
++/* حبران لا ينقلبان مع الثيم.
++   ink-on-brand ينقلب، وهذا صحيح فوق سطح يتغيّر لونه بتغيّر الثيم
++   (أعمدة الرسوم مثلاً). لكن فوق سطح لونه ثابت — تدرّج الهيرو،
++   شارة الإشعارات الحمراء، الزر البنفسجي — كان الانقلاب يهبط
++   بالتباين إلى 1.22:1 في الوضع الداكن، أي نصّ غير مقروء عملياً. */
++:root {
++  --ink-on-dark: #ffffff;   /* فوق سطح داكن دائماً */
++  --ink-on-light: #14212b;  /* فوق سطح فاتح/مشبع دائماً */
++}
+ [data-theme="dark"] {
+   --ink-1:    #f5f5f7;
+   --ink-2:    #e5e5e7;
 -- 
 2.43.0
 
