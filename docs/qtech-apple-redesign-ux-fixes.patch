@@ -1,7 +1,7 @@
 From e0272172b20d61c6f5b78eda5118ea63ad8a2831 Mon Sep 17 00:00:00 2001
 From: moalomary-ux <mo.alomary@gmail.com>
 Date: Fri, 4 Sep 2026 05:48:11 +0000
-Subject: [PATCH 1/2] Fix rendering, theme, motion and Arabic-copy defects in
+Subject: [PATCH 1/3] Fix rendering, theme, motion and Arabic-copy defects in
  the design sandbox
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -643,7 +643,7 @@ index 77f813b..424f515 100644
 From 7f64baa5ad4343d79cd020f16c1191ec0fd8a657 Mon Sep 17 00:00:00 2001
 From: moalomary-ux <mo.alomary@gmail.com>
 Date: Fri, 4 Sep 2026 06:04:05 +0000
-Subject: [PATCH 2/2] Add a validated colour system and fix mobile density and
+Subject: [PATCH 2/3] Add a validated colour system and fix mobile density and
  dark-mode contrast
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1200,6 +1200,145 @@ index 424f515..76036d2 100644
  [data-theme="dark"] {
    --ink-1:    #f5f5f7;
    --ink-2:    #e5e5e7;
+-- 
+2.43.0
+
+
+From 1c7e1ed36b33992004939fc9117cc9b4df866d57 Mon Sep 17 00:00:00 2001
+From: moalomary-ux <mo.alomary@gmail.com>
+Date: Fri, 4 Sep 2026 06:29:34 +0000
+Subject: [PATCH 3/3] Finish the colour pass on the entity page and unbury the
+ login links
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+بقيت صفحتان نصف معالَجتين بعد الجولة الثانية.
+
+صفحة الجهة:
+- مؤشّراتها لم تأخذ لوحة الفئات، وأولها كان بلا لون أصلاً فيبدو
+  معطّلاً بجانب إخوته. الآن أربعة ألوان مستقلّة وشريط علوي لكل
+  بطاقة، بنفس ترتيب «لوحتي».
+
+صفحة الدخول:
+- شريط وضع التصميم كان يغطّي «العودة للوحة التحكم» و«أنشئ حساباً
+  جديداً» على الجوال — أي أنه يدفن أقصر مسار للمستخدم الجديد.
+- الارتفاع يُقاس في shared.js ويُنشر كمتغيّر بدل رقم مكتوب يدوياً،
+  لأنه يتغيّر بعرض الشاشة والتفاف الرقاقات. اختصار padding في
+  استعلام ≤480px كان يمسح الحجز فأُعيد صراحة.
+
+فحص جديد يثبت أن لا رابط ولا زر محجوب بالشريط في الصفحات الثلاث
+على 390 و1280 بكسل.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019r8vsVxa6ZUBGq51h6Fr7h
+---
+ gov360-id/page.css | 22 +++++++++++++++++++---
+ login/page.css     | 10 +++++++++-
+ shared.js          | 28 ++++++++++++++++++++++------
+ 3 files changed, 50 insertions(+), 10 deletions(-)
+
+diff --git a/gov360-id/page.css b/gov360-id/page.css
+index 8c84287..cf9ecc5 100644
+--- a/gov360-id/page.css
++++ b/gov360-id/page.css
+@@ -466,9 +466,25 @@ html, body {
+   color: var(--ink-3);
+   margin-block-end: var(--space-2);
+ }
+-.kpi__icon--teal { background: rgba(0, 171, 175, 0.1); color: var(--brand-turquoise); }
+-.kpi__icon--violet { background: rgba(133, 44, 208, 0.1); color: var(--brand-violet); }
+-.kpi__icon--green { background: rgba(28, 193, 130, 0.1); color: var(--brand-green); }
++/* لون مستقلّ لكل مؤشّر، بنفس ترتيب لوحة الفئات في «لوحتي».
++   المؤشّر الأول كان بلا لون أصلاً فيبدو معطّلاً بجانب إخوته. */
++.kpis > .kpi:nth-of-type(1) .kpi__icon { background: color-mix(in srgb, var(--cat-1) 12%, transparent); color: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) .kpi__icon { background: color-mix(in srgb, var(--cat-2) 12%, transparent); color: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) .kpi__icon { background: color-mix(in srgb, var(--cat-3) 12%, transparent); color: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) .kpi__icon { background: color-mix(in srgb, var(--cat-4) 12%, transparent); color: var(--cat-4); }
++.kpi { position: relative; overflow: hidden; }
++.kpi::before {
++  content: "";
++  position: absolute;
++  inset-block-start: 0;
++  inset-inline: 0;
++  block-size: 3px;
++  background: var(--kpi-accent, transparent);
++}
++.kpis > .kpi:nth-of-type(1) { --kpi-accent: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) { --kpi-accent: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) { --kpi-accent: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) { --kpi-accent: var(--cat-4); }
+ .kpi__label { font-size: var(--text-sm); color: var(--ink-3); font-weight: var(--w-medium); }
+ .kpi__num {
+   font-family: var(--font-mono);
+diff --git a/login/page.css b/login/page.css
+index 6a8ceac..01bc73f 100644
+--- a/login/page.css
++++ b/login/page.css
+@@ -83,6 +83,10 @@ html, body {
+   min-block-size: 100vh;
+   padding: var(--space-12) var(--space-6);
+   padding-block-start: calc(var(--space-12) + 24px);
++  /* شريط وضع التصميم ثابت أسفل الشاشة وكان يغطّي رابط «أنشئ حساباً
++     جديداً» — أقصر مسافة بين المستخدم الجديد وأول خطوة له.
++     الارتفاع يُقاس في shared.js لأنه يتغيّر بعرض الشاشة. */
++  padding-block-end: calc(var(--space-12) + var(--design-bar-h, 0px) + var(--space-6));
+   gap: var(--space-6);
+ }
+ 
+@@ -386,6 +390,10 @@ html, body {
+ 
+ @media (max-width: 480px) {
+   .auth__card { padding: var(--space-8) var(--space-5); }
+-  .auth { padding: var(--space-8) var(--space-4); }
++  /* الاختصار كان يمسح حجز مساحة شريط التصميم فيعود الرابط مدفوناً */
++  .auth {
++    padding: var(--space-8) var(--space-4);
++    padding-block-end: calc(var(--space-8) + var(--design-bar-h, 0px) + var(--space-6));
++  }
+   .design-bar { max-inline-size: calc(100vw - var(--space-6)); }
+ }
+\ No newline at end of file
+diff --git a/shared.js b/shared.js
+index 0e421f9..e5fb67d 100644
+--- a/shared.js
++++ b/shared.js
+@@ -361,13 +361,29 @@
+   function initDesignBar() {
+     const bar = document.querySelector('.design-bar');
+     if (!bar) return;
++
++    // الشريط ثابت أسفل الشاشة: تُنشر أبعاده كمتغيّر ليحجز المحتوى
++    // مساحته بدل أن يُدفن تحته. القياس أدقّ من رقم مكتوب يدوياً لأن
++    // ارتفاعه يتغيّر بعرض الشاشة والتفاف الرقاقات.
++    const publishHeight = () => {
++      const h = bar.hidden ? 0 : Math.ceil(bar.getBoundingClientRect().height);
++      document.documentElement.style.setProperty('--design-bar-h', h + 'px');
++    };
++    publishHeight();
++    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(publishHeight).observe(bar);
++    window.addEventListener('resize', publishHeight);
++
+     const close = bar.querySelector('.design-bar__head button');
+-    if (!close) return;
+-    close.addEventListener('click', () => {
+-      bar.hidden = true;
+-      try { sessionStorage.setItem('qd-designbar', 'hidden'); } catch (e) {}
+-    });
+-    try { if (sessionStorage.getItem('qd-designbar') === 'hidden') bar.hidden = true; } catch (e) {}
++    if (close) {
++      close.addEventListener('click', () => {
++        bar.hidden = true;
++        publishHeight();
++        try { sessionStorage.setItem('qd-designbar', 'hidden'); } catch (e) {}
++      });
++    }
++    try {
++      if (sessionStorage.getItem('qd-designbar') === 'hidden') { bar.hidden = true; publishHeight(); }
++    } catch (e) {}
+   }
+ 
+   /* ═══════════════════════════════════════════════════════════════
 -- 
 2.43.0
 
