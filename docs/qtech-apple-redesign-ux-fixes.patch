@@ -1,0 +1,1436 @@
+From e0272172b20d61c6f5b78eda5118ea63ad8a2831 Mon Sep 17 00:00:00 2001
+From: moalomary-ux <mo.alomary@gmail.com>
+Date: Fri, 4 Sep 2026 05:48:11 +0000
+Subject: [PATCH 1/4] Fix rendering, theme, motion and Arabic-copy defects in
+ the design sandbox
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+الصندوق كما وصل كان يعرض أيقونات مكسورة (لا توجد ملفات شعار في
+المستودع)، ويومض بالثيم الخطأ عند كل فتح، ويترك عناصر مخفية إن لم
+يعمل IntersectionObserver، ويحمل نصوصاً عربية مكسورة وأرقاماً
+متناقضة بين الشاشات.
+
+عرض وسلوك:
+- تطبيق الثيم المحفوظ قبل أول رسم في الصفحات الثلاث بدل فرض
+  data-theme ثابتاً على كل صفحة (لوحتي فاتح، الدخول داكن).
+- بديل SVG مضمّن لأي صورة تسقط، فلا تظهر أيقونة مكسورة.
+- حركة الدخول: تُتخطّى مع prefers-reduced-motion أو غياب
+  IntersectionObserver، مع شبكتَي أمان تمنعان بقاء الصفحة مخفيّة.
+- تراكب الانتقال: يُصفَّر عند العودة من bfcache، ويستثني روابط
+  التنزيل والفتح في تبويب جديد والنطاقات الخارجية.
+- أيقونة الوضع الفاتح كانت ناقصة في الدخول وملف الجهة فلا يتبدّل
+  شكل الزر.
+- إزالة مستمع الإغلاق المزدوج للقائمة الجانبية.
+- تعطيل ميلان البطاقات على أجهزة اللمس ومع تقليل الحركة.
+- الساعة كل 15 ثانية بدل كل ثانية، وتتوقف مع إخفاء التبويب.
+- التاريخ الهجري والميلادي يُحسبان لحظياً بأرقام غربية بدل نص ثابت.
+- التبويبات صارت تعمل: اختيار، tabindex متنقّل، وأسهم لوحة المفاتيح.
+- نماذج الصندوق لم تعد تعيد تحميل الصفحة بصمت عند الإرسال.
+
+محتوى وإتاحة:
+- تصحيح «كل ما ينتظري»، «ولم يُسند للأحد»، «أفرزوا دروس»،
+  «أضف ملاحظات أوفك» وجملة ملاحظات القائد المتناقضة.
+- توحيد الأعداد: 5 بنود في الترويسة والبطاقة وجرس الإشعارات في
+  الصفحتين بدل 12/7/5/3.
+- اسم للبحث، وتوضيح أن رقاقة الحساب تسجّل الخروج بدل سهم يوحي
+  بقائمة منسدلة.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019r8vsVxa6ZUBGq51h6Fr7h
+---
+ gov360-id/index.html |  29 ++++--
+ home/index.html      |  53 +++++++----
+ index.html           |   9 +-
+ login/index.html     |  18 +++-
+ shared.js            | 206 ++++++++++++++++++++++++++++++++++++-------
+ tokens-apple.css     |  21 +++++
+ 6 files changed, 276 insertions(+), 60 deletions(-)
+
+diff --git a/gov360-id/index.html b/gov360-id/index.html
+index 87a8b0e..b68dd8d 100644
+--- a/gov360-id/index.html
++++ b/gov360-id/index.html
+@@ -1,9 +1,23 @@
+ <!DOCTYPE html>
+-<html lang="ar" dir="rtl" data-theme="light">
++<html lang="ar" dir="rtl">
+ <head>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <title>ملف الجهة — قدراتك</title>
++  <!-- يُطبَّق الثيم قبل أول رسم: بدونه تومض الصفحة بالثيم الخطأ عند كل فتح -->
++  <script>
++    (function () {
++      try {
++        var t = localStorage.getItem('qd-theme');
++        if (t !== 'dark' && t !== 'light') {
++          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
++        }
++        document.documentElement.setAttribute('data-theme', t);
++      } catch (e) {
++        document.documentElement.setAttribute('data-theme', 'light');
++      }
++    })();
++  </script>
+   <link rel="stylesheet" href="../tokens-apple.css" />
+   <link rel="stylesheet" href="./page.css" />
+   <script src="../shared.js" defer></script>
+@@ -39,15 +53,18 @@
+       <div class="appbar__actions">
+         <button class="theme-toggle" aria-label="التبديل للوضع الداكن" title="التبديل للوضع الداكن">
+           <svg class="theme-icon-dark" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2C10 2 12 4 12 7C12 10 10 12 10 12C10 12 14 11 16 8C18 5 16 2 16 2C16 2 14 4 10 2Z" fill="currentColor"/><path d="M10 1V3M10 17V19M1 10H3M17 10H19M3.34 3.34L4.76 4.76M15.24 15.24L16.66 16.66M3.34 16.66L4.76 15.24M15.24 4.76L16.66 3.34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
++          <!-- كانت أيقونة الوضع الفاتح ناقصة، وتبديل الأيقونات يشترط وجود الاثنتين معاً -->
++          <svg class="theme-icon-light" width="20" height="20" viewBox="0 0 20 20" fill="none" style="display:none"><path d="M10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z" stroke="currentColor" stroke-width="1.5"/><path d="M10 1V3M10 17V19M1 10H3M17 10H19M3.34 3.34L4.76 4.76M15.24 15.24L16.66 16.66M3.34 16.66L4.76 15.24M15.24 4.76L16.66 3.34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+         </button>
+         <button class="icon-btn" aria-label="الإشعارات">
+           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+             <path d="M10 3C7.23858 3 5 5.23858 5 8V12L3 14H17L15 12V8C15 5.23858 12.7614 3 10 3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+             <path d="M8 16C8 17.1046 8.89543 18 10 18C11.1046 18 12 17.1046 12 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+           </svg>
+-          <span class="badge" aria-hidden="true">3</span>
++          <!-- كان 3 هنا و5 في لوحتي: عدّاد واحد لا يتغيّر بتغيّر الصفحة -->
++          <span class="badge" aria-hidden="true">5</span>
+         </button>
+-        <a href="../login/" class="user-chip" title="تسجيل الخروج">
++        <a href="../login/" class="user-chip" title="تسجيل الخروج" aria-label="تسجيل الخروج — حساب التصميم">
+           <span class="user-chip__avatar" aria-hidden="true">م</span>
+           <span class="user-chip__name">حساب التصميم</span>
+         </a>
+@@ -328,7 +345,7 @@
+         <div class="card__body">
+           <p class="card__hint">
+             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 7V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="5" r="0.75" fill="currentColor"/></svg>
+-            ميزة <strong>تعريف المعلومات</strong> (ED) · تُحدَّث جهات الاتصال الموثوقة.
++            جهات الاتصال الموثوقة في هذه الجهة · تُحدَّث من سجلّ التواصل.
+           </p>
+           <div class="contact-row">
+             <div class="contact__avatar" aria-hidden="true">ش</div>
+@@ -363,7 +380,7 @@
+         </header>
+         <div class="card__body">
+           <p class="card__hint">
+-            ملاحظات الاستراتيجية الداخلية من الهيئة العليا للتعامل. التحديات، قرارات الفصول والنسبة — داخلية وغير قابلة للقراءة وغير قابلة للمستخدمين.
++            ملاحظات داخلية عن التعامل مع الجهة: التحدّيات، وقرارات الفصول والحصص. تظهر لفريق الإدارة فقط ولا تُشارَك مع الجهة.
+           </p>
+           <form class="notes-form">
+             <div class="notes-form__row">
+@@ -389,7 +406,7 @@
+           <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M24 8L28.5 18H40L30.5 25.5L34 36L24 28.5L14 36L17.5 25.5L8 18H19.5L24 8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+         </div>
+         <h2>لا توجد ملاحظات بعد</h2>
+-        <p>أضف ملاحظات أوفك: تجربتها، حدودها، توصياتك.</p>
++        <p>أضف ملاحظتك عن الجهة: تجربتك معها، حدودها، وتوصياتك.</p>
+       </section>
+     </main>
+   </div>
+diff --git a/home/index.html b/home/index.html
+index 1814bee..1828538 100644
+--- a/home/index.html
++++ b/home/index.html
+@@ -1,9 +1,23 @@
+ <!DOCTYPE html>
+-<html lang="ar" dir="rtl" data-theme="light">
++<html lang="ar" dir="rtl">
+ <head>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <title>لوحتي — قدراتك</title>
++  <!-- يُطبَّق الثيم قبل أول رسم: بدونه تومض الصفحة بالثيم الخطأ عند كل فتح -->
++  <script>
++    (function () {
++      try {
++        var t = localStorage.getItem('qd-theme');
++        if (t !== 'dark' && t !== 'light') {
++          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
++        }
++        document.documentElement.setAttribute('data-theme', t);
++      } catch (e) {
++        document.documentElement.setAttribute('data-theme', 'light');
++      }
++    })();
++  </script>
+   <link rel="stylesheet" href="../tokens-apple.css" />
+   <link rel="stylesheet" href="./page.css" />
+   <script src="../shared.js" defer></script>
+@@ -37,7 +51,8 @@
+           <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+           <path d="M11.5 11.5L15 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+         </svg>
+-        <input type="search" placeholder="ابحث بالمعنى: جهات، برامج، بريد…" />
++        <label class="sr-only" for="global-search">البحث في المنصّة</label>
++        <input id="global-search" type="search" placeholder="ابحث بالمعنى: جهات، برامج، بريد…" />
+       </div>
+       <div class="appbar__actions">
+         <button class="theme-toggle" aria-label="التبديل للوضع الداكن" title="التبديل للوضع الداكن">
+@@ -51,11 +66,13 @@
+           </svg>
+           <span class="badge" aria-hidden="true">5</span>
+         </button>
+-        <a href="../login/" class="user-chip" title="تسجيل الخروج">
++        <!-- سهم القائمة كان يوحي بقائمة منسدلة بينما الرابط يسجّل الخروج فوراً -->
++        <a href="../login/" class="user-chip" title="تسجيل الخروج" aria-label="تسجيل الخروج — حساب التصميم">
+           <span class="user-chip__avatar" aria-hidden="true">م</span>
+           <span class="user-chip__name">حساب التصميم</span>
+-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="opacity:.4">
+-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
++          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="opacity:.5" aria-hidden="true">
++            <path d="M8.5 2H3.5C2.94772 2 2.5 2.44772 2.5 3V11C2.5 11.5523 2.94772 12 3.5 12H8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
++            <path d="M10 5L12 7L10 9M12 7H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+           </svg>
+         </a>
+       </div>
+@@ -127,13 +144,13 @@
+       <!-- Hero -->
+       <section class="hero" aria-label="تحية اليوم">
+         <div class="hero__greeting">
+-          <span class="hero__date">الخميس · 21 ربيع الأول 1448 هـ</span>
+-          <h1 class="hero__title">ليلة هادئة، <span class="hero__name">حساب</span></h1>
+-          <p class="hero__sub">12 بنداً ينتظر قرارك · عاجل منها 7</p>
++          <span class="hero__date" data-date-hijri>&nbsp;</span>
++          <h1 class="hero__title">أهلاً بعودتك، <span class="hero__name">محمد</span></h1>
++          <p class="hero__sub">5 بنود تنتظر قرارك · عاجل منها 2</p>
+         </div>
+-        <div class="hero__clock" aria-label="الوقت الحالي">
+-          <div class="hero__time" id="liveClock">12:43</div>
+-          <div class="hero__date-sm">3 سبتمبر 2026</div>
++        <div class="hero__clock">
++          <div class="hero__time" id="liveClock" aria-label="الوقت الحالي">--:--</div>
++          <div class="hero__date-sm" data-date-gregorian>&nbsp;</div>
+         </div>
+       </section>
+ 
+@@ -167,9 +184,9 @@
+           <div class="kpi__icon kpi__icon--green" aria-hidden="true">
+             <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M3 17C3 13.6863 5.68629 11 9 11H11C14.3137 11 17 13.6863 17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+           </div>
+-          <div class="kpi__label">متدرب</div>
++          <div class="kpi__label">متدرّب</div>
+           <div class="kpi__num">5,678</div>
+-          <div class="kpi__sub">أفرزوا دروس</div>
++          <div class="kpi__sub">أتمّوا برامجهم</div>
+         </a>
+       </section>
+ 
+@@ -231,8 +248,8 @@
+               <li class="attention__item">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">بريد وارد بـ 5 آلاف</div>
+-                  <div class="attention__meta">3308 خطوة ينتظر زوايا ولم يُسند للأحد — أقدمها منذ 941 يوماً</div>
++                  <div class="attention__title">بريد وارد بلا إسناد</div>
++                  <div class="attention__meta">3,308 رسالة تنتظر الفرز ولم تُسنَد لأحد — أقدمها منذ 941 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+@@ -261,8 +278,8 @@
+               <li class="attention__item">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">برامج متنوّعة في الإدارة</div>
+-                  <div class="attention__meta">7 برامج بدأ حركة منذ 10 أيام — أقدمها منذ 52 يوماً</div>
++                  <div class="attention__title">برامج متوقّفة في الإدارة</div>
++                  <div class="attention__meta">7 برامج بلا حركة منذ 10 أيام — أقدمها منذ 52 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+@@ -280,7 +297,7 @@
+               </li>
+             </ul>
+             <a href="#" class="btn btn--primary btn--block">
+-              كل ما ينتظري
++              كل ما ينتظرني
+               <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M5 3L10 8L5 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+             </a>
+           </div>
+diff --git a/index.html b/index.html
+index e12d281..244c25a 100644
+--- a/index.html
++++ b/index.html
+@@ -18,7 +18,8 @@
+     .loading {
+       text-align: center;
+     }
+-    .loading img {
++    .loading img,
++    .loading svg {
+       width: 64px;
+       height: 64px;
+       margin-bottom: 16px;
+@@ -32,7 +33,11 @@
+ </head>
+ <body>
+   <div class="loading">
+-    <img src="./logo-qudratok-icon.png" alt="قدراتك">
++    <!-- شعار مضمّن: ملفات PNG غير موجودة في المستودع، وكانت الصفحة تعرض أيقونة مكسورة -->
++    <svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="قدراتك">
++      <rect width="64" height="64" rx="14" fill="#00ABAF"/>
++      <path d="M32 15a17 17 0 1 0 10.5 30.4l4.6 4.6 4.2-4.2-4.6-4.6A17 17 0 0 0 32 15Zm0 6a11 11 0 1 1 0 22 11 11 0 0 1 0-22Z" fill="#fff"/>
++    </svg>
+     <p>جارِ التحميل…</p>
+   </div>
+   <p style="position:fixed;bottom:20px;right:20px;font-size:12px;opacity:0.4;">
+diff --git a/login/index.html b/login/index.html
+index db4de65..42f6247 100644
+--- a/login/index.html
++++ b/login/index.html
+@@ -1,9 +1,23 @@
+ <!DOCTYPE html>
+-<html lang="ar" dir="rtl" data-theme="dark">
++<html lang="ar" dir="rtl">
+ <head>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1" />
+   <title>تسجيل الدخول — قدراتك</title>
++  <!-- الثيم قبل أول رسم — كانت هذه الصفحة تفرض الداكن وتتجاهل اختيار المستخدم -->
++  <script>
++    (function () {
++      try {
++        var t = localStorage.getItem('qd-theme');
++        if (t !== 'dark' && t !== 'light') {
++          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
++        }
++        document.documentElement.setAttribute('data-theme', t);
++      } catch (e) {
++        document.documentElement.setAttribute('data-theme', 'light');
++      }
++    })();
++  </script>
+   <link rel="stylesheet" href="../tokens-apple.css" />
+   <link rel="stylesheet" href="./page.css" />
+   <script src="../shared.js" defer></script>
+@@ -98,6 +112,8 @@
+   <!-- Theme toggle floating -->
+   <button class="theme-toggle theme-toggle--floating" aria-label="التبديل للوضع الفاتح" title="التبديل للوضع الفاتح">
+     <svg class="theme-icon-dark" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2C10 2 12 4 12 7C12 10 10 12 10 12C10 12 14 11 16 8C18 5 16 2 16 2C16 2 14 4 10 2Z" fill="currentColor"/><path d="M10 1V3M10 17V19M1 10H3M17 10H19M3.34 3.34L4.76 4.76M15.24 15.24L16.66 16.66M3.34 16.66L4.76 15.24M15.24 4.76L16.66 3.34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
++    <!-- كانت أيقونة الوضع الفاتح ناقصة، وتبديل الأيقونات يشترط وجود الاثنتين معاً -->
++    <svg class="theme-icon-light" width="20" height="20" viewBox="0 0 20 20" fill="none" style="display:none"><path d="M10 14C12.2091 14 14 12.2091 14 10C14 7.79086 12.2091 6 10 6C7.79086 6 6 7.79086 6 10C6 12.2091 7.79086 14 10 14Z" stroke="currentColor" stroke-width="1.5"/><path d="M10 1V3M10 17V19M1 10H3M17 10H19M3.34 3.34L4.76 4.76M15.24 15.24L16.66 16.66M3.34 16.66L4.76 15.24M15.24 4.76L16.66 3.34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+   </button>
+ 
+   <div class="design-bar" role="region" aria-label="شريط التصميم">
+diff --git a/shared.js b/shared.js
+index 2881ec4..2407c8c 100644
+--- a/shared.js
++++ b/shared.js
+@@ -11,6 +11,9 @@
+      ═══════════════════════════════════════════════════════════════ */
+   const THEME_KEY = 'qd-theme';
+   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
++  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
++  // أجهزة اللمس لا تملك مؤشراً دقيقاً: كل تأثير يعتمد على hover يُعطَّل عليها
++  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+ 
+   function getSavedTheme() {
+     try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; }
+@@ -68,6 +71,9 @@
+      02  Page Transitions
+      ═══════════════════════════════════════════════════════════════ */
+   function initPageTransitions() {
++    // مع تقليل الحركة: لا تراكب ولا تأخير — التنقّل يبقى فورياً
++    if (prefersReducedMotion.matches) return;
++
+     // Create transition overlay if not exists
+     let overlay = document.querySelector('.page-transition');
+     if (!overlay) {
+@@ -77,21 +83,53 @@
+       document.body.appendChild(overlay);
+     }
+ 
++    // عودة المتصفح من الـ bfcache تعيد الصفحة بالتراكب ظاهراً فتبدو مجمّدة
++    window.addEventListener('pageshow', () => overlay.classList.remove('is-active'));
++
+     // Intercept internal link clicks
+-    document.querySelectorAll('a[href]').forEach(link => {
+-      const href = link.getAttribute('href');
+-      // Only intercept relative links that aren't anchors
+-      if (href && !href.startsWith('#') && !href.startsWith('http') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+-        link.addEventListener('click', function (e) {
+-          // Skip if modifier keys pressed
+-          if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
+-          e.preventDefault();
+-          overlay.classList.add('is-active');
+-          setTimeout(() => {
+-            window.location.href = href;
+-          }, 250);
+-        });
+-      }
++    document.addEventListener('click', function (e) {
++      if (e.defaultPrevented) return;
++      // Skip if modifier keys pressed or non-primary button
++      if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
++
++      const link = e.target.closest && e.target.closest('a[href]');
++      if (!link) return;
++      // روابط التنزيل أو الفتح في تبويب جديد تُترك للمتصفح
++      if (link.hasAttribute('download')) return;
++      const target = (link.getAttribute('target') || '').toLowerCase();
++      if (target && target !== '_self') return;
++
++      let url;
++      try { url = new URL(link.href, location.href); } catch (err) { return; }
++      if (url.origin !== location.origin) return;
++      // مرساة داخل نفس الصفحة: يتكفّل بها التمرير السلس
++      if (url.pathname === location.pathname && url.search === location.search && url.hash) return;
++
++      e.preventDefault();
++      overlay.classList.add('is-active');
++      setTimeout(() => { window.location.href = link.href; }, 250);
++    });
++  }
++
++  /* ═══════════════════════════════════════════════════════════════
++     02b  Logo fallback — الشعارات غير موجودة في المستودع بعد
++     ═══════════════════════════════════════════════════════════════ */
++  const LOGO_FALLBACK =
++    'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
++      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="قدراتك">' +
++      '<rect width="64" height="64" rx="14" fill="#00ABAF"/>' +
++      '<path d="M32 15a17 17 0 1 0 10.5 30.4l4.6 4.6 4.2-4.2-4.6-4.6A17 17 0 0 0 32 15Zm0 6a11 11 0 1 1 0 22 11 11 0 0 1 0-22Z" fill="#fff"/>' +
++      '</svg>'
++    );
++
++  function initLogoFallback() {
++    document.querySelectorAll('img').forEach(img => {
++      img.addEventListener('error', function onError() {
++        img.removeEventListener('error', onError);
++        // امنع محاولة تبديل الشعار حسب الثيم بعد سقوط الملف
++        delete img.dataset.logoTheme;
++        img.src = LOGO_FALLBACK;
++      });
+     });
+   }
+ 
+@@ -99,18 +137,29 @@
+      03  Page Load Animations
+      ═══════════════════════════════════════════════════════════════ */
+   function initPageAnimations() {
++    // لا تُخفِ شيئاً إن كان المستخدم يطلب تقليل الحركة أو كان المتصفح
++    // بلا IntersectionObserver — وإلا بقيت الصفحة بيضاء بلا سبب ظاهر
++    if (prefersReducedMotion.matches || typeof IntersectionObserver === 'undefined') return;
++
+     // Fade in body
+     document.body.style.opacity = '0';
+     document.body.style.transition = 'opacity 500ms cubic-bezier(0.32, 0.72, 0, 1)';
+     requestAnimationFrame(() => {
+       document.body.style.opacity = '1';
+     });
++    // شبكة أمان: مهما حدث، لا تبقَ الصفحة مخفيّة
++    setTimeout(() => { document.body.style.opacity = '1'; }, 1200);
+ 
+     // Staggered entrance for cards and sections
+     const animatedElements = document.querySelectorAll(
+-      '.hero, .kpi, .card, .quick__item, .attention__item, .decision, .bar, .contact__row'
++      '.hero, .kpi, .card, .quick__item, .attention__item, .decision, .bar, .contact-row'
+     );
+ 
++    // Add is-visible styles before hiding anything, so the reveal rule always exists
++    const style = document.createElement('style');
++    style.textContent = '.is-visible { opacity: 1 !important; transform: none !important; }';
++    document.head.appendChild(style);
++
+     const observer = new IntersectionObserver((entries) => {
+       entries.forEach(entry => {
+         if (entry.isIntersecting) {
+@@ -123,16 +172,16 @@
+     animatedElements.forEach((el, i) => {
+       el.style.opacity = '0';
+       el.style.transform = 'translateY(24px)';
+-      el.style.transition = `opacity 600ms cubic-bezier(0.32, 0.72, 0, 1) ${i * 60}ms, transform 600ms cubic-bezier(0.32, 0.72, 0, 1) ${i * 60}ms`;
++      // السقف 480ms: بدونه يتأخّر آخر عنصر ثوانيَ على الصفحات الطويلة
++      const delay = Math.min(i * 60, 480);
++      el.style.transition = `opacity 600ms cubic-bezier(0.32, 0.72, 0, 1) ${delay}ms, transform 600ms cubic-bezier(0.32, 0.72, 0, 1) ${delay}ms`;
+       observer.observe(el);
+     });
+ 
+-    // Add is-visible styles dynamically
+-    const style = document.createElement('style');
+-    style.textContent = `
+-      .is-visible { opacity: 1 !important; transform: translateY(0) !important; }
+-    `;
+-    document.head.appendChild(style);
++    // شبكة أمان ثانية: أظهر أي عنصر لم يصله المراقب
++    setTimeout(() => {
++      animatedElements.forEach(el => el.classList.add('is-visible'));
++    }, 2500);
+   }
+ 
+   /* ═══════════════════════════════════════════════════════════════
+@@ -211,16 +260,8 @@
+       btn.addEventListener('click', toggleSidebar);
+     });
+ 
+-    // Close sidebar when clicking outside on mobile
+-    document.addEventListener('click', (e) => {
+-      const sidebar = document.querySelector('.sidebar');
+-      const toggle = document.querySelector('.mobile-menu-toggle');
+-      if (sidebar && sidebar.classList.contains('is-open')) {
+-        if (!sidebar.contains(e.target) && (!toggle || !toggle.contains(e.target))) {
+-          closeSidebar();
+-        }
+-      }
+-    });
++    // الإغلاق بالنقر خارج القائمة يتكفّل به الحاجب (scrim) وحده؛
++    // مستمع مستقلّ على المستند كان يستدعي الإغلاق مرّتين فيحذف حاجباً جديداً
+ 
+     // Close sidebar on Escape key
+     document.addEventListener('keydown', (e) => {
+@@ -280,16 +321,111 @@
+       clock.textContent = h + ':' + m;
+     }
+     update();
+-    setInterval(update, 1000);
++    // الساعة تعرض دقائق فقط: مؤقّت كل ثانية كان يوقظ الصفحة 60 مرّة بلا داعٍ
++    let timer = setInterval(update, 15000);
++    document.addEventListener('visibilitychange', () => {
++      clearInterval(timer);
++      if (!document.hidden) { update(); timer = setInterval(update, 15000); }
++    });
++  }
++
++  /* ═══════════════════════════════════════════════════════════════
++     06b  التاريخ — يُحسب لحظياً بدل نصّ ثابت يتقادم في اليوم التالي
++     ═══════════════════════════════════════════════════════════════ */
++  function initDates() {
++    const now = new Date();
++    // الأرقام غربية في كل الواجهات — قاعدة هوية مُلزِمة
++    const fmt = (locale, opts) => {
++      try { return new Intl.DateTimeFormat(locale, opts).format(now); }
++      catch (err) { return ''; }
++    };
++
++    const hijri = document.querySelector('[data-date-hijri]');
++    if (hijri) {
++      const text = fmt('ar-SA-u-ca-islamic-umalqura-nu-latn', {
++        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
++      });
++      if (text) hijri.textContent = text;
++    }
++
++    const gregorian = document.querySelector('[data-date-gregorian]');
++    if (gregorian) {
++      const text = fmt('ar-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
++      if (text) gregorian.textContent = text;
++    }
++  }
++
++  /* ═══════════════════════════════════════════════════════════════
++     06d  نماذج الصندوق التصميمي — الإرسال معطّل
++     كان الضغط على الزر يعيد تحميل الصفحة بصمت ويبدو كعطل
++     ═══════════════════════════════════════════════════════════════ */
++  function initSandboxForms() {
++    document.querySelectorAll('form:not([action])').forEach(form => {
++      form.addEventListener('submit', e => {
++        e.preventDefault();
++        let note = form.querySelector('.sandbox-note');
++        if (!note) {
++          note = document.createElement('p');
++          note.className = 'sandbox-note';
++          note.setAttribute('role', 'status');
++          note.textContent = 'صندوق تصميم — الإرسال معطّل في هذه النسخة.';
++          form.appendChild(note);
++        }
++        note.hidden = false;
++      });
++    });
++  }
++
++  /* ═══════════════════════════════════════════════════════════════
++     06c  التبويبات — كانت جامدة: لا اختيار ولا تنقّل بلوحة المفاتيح
++     ═══════════════════════════════════════════════════════════════ */
++  function initTabs() {
++    document.querySelectorAll('[role="tablist"]').forEach(list => {
++      const tabs = Array.from(list.querySelectorAll('[role="tab"]'));
++      if (!tabs.length) return;
++
++      function select(tab) {
++        tabs.forEach(t => {
++          const on = t === tab;
++          t.classList.toggle('is-active', on);
++          t.setAttribute('aria-selected', on ? 'true' : 'false');
++          // tabindex متنقّل: التبويبة المختارة وحدها في ترتيب الـ Tab
++          t.setAttribute('tabindex', on ? '0' : '-1');
++        });
++        tab.focus();
++      }
++
++      tabs.forEach(tab => {
++        if (!tab.hasAttribute('aria-selected')) tab.setAttribute('aria-selected', 'false');
++        tab.setAttribute('tabindex', tab.classList.contains('is-active') ? '0' : '-1');
++        tab.addEventListener('click', () => select(tab));
++      });
++
++      list.addEventListener('keydown', e => {
++        const i = tabs.indexOf(document.activeElement);
++        if (i < 0) return;
++        // الواجهة RTL: السهم الأيسر يتقدّم والأيمن يتراجع
++        let next = null;
++        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = tabs[(i + 1) % tabs.length];
++        else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = tabs[(i - 1 + tabs.length) % tabs.length];
++        else if (e.key === 'Home') next = tabs[0];
++        else if (e.key === 'End') next = tabs[tabs.length - 1];
++        if (next) { e.preventDefault(); select(next); }
++      });
++    });
+   }
+ 
+   /* ═══════════════════════════════════════════════════════════════
+      07  Hover 3D tilt effect for cards (subtle)
+      ═══════════════════════════════════════════════════════════════ */
+   function initCardTilt() {
++    // على اللمس لا يوجد hover: التأثير يعلق بعد أول نقرة ويصادر
++    // الـ transform الخاص بحركة الدخول فتقفز البطاقة
++    if (isCoarsePointer || prefersReducedMotion.matches) return;
+     const cards = document.querySelectorAll('.kpi, .quick__item');
+     cards.forEach(card => {
+       card.addEventListener('mousemove', (e) => {
++        if (!card.classList.contains('is-visible')) return;
+         const rect = card.getBoundingClientRect();
+         const x = e.clientX - rect.left;
+         const y = e.clientY - rect.top;
+@@ -310,11 +446,15 @@
+      ═══════════════════════════════════════════════════════════════ */
+   function init() {
+     initTheme();
++    initLogoFallback();
+     initPageTransitions();
+     initPageAnimations();
+     initMobileMenu();
+     initSmoothScroll();
+     initClock();
++    initDates();
++    initTabs();
++    initSandboxForms();
+     initCardTilt();
+ 
+     // Bind theme toggle buttons
+diff --git a/tokens-apple.css b/tokens-apple.css
+index 77f813b..424f515 100644
+--- a/tokens-apple.css
++++ b/tokens-apple.css
+@@ -363,6 +363,27 @@ html {
+   scroll-behavior: smooth;
+ }
+ 
++/* ─── تنبيه نماذج الصندوق التصميمي ─── */
++.sandbox-note {
++  margin: 12px 0 0;
++  font-size: 13px;
++  line-height: 1.6;
++  color: var(--ink-3, #86868b);
++}
++
++/* ─── نص لقارئ الشاشة فقط ─── */
++.sr-only {
++  position: absolute;
++  inline-size: 1px;
++  block-size: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip-path: inset(50%);
++  white-space: nowrap;
++  border: 0;
++}
++
+ /* ─── Reduced motion respect ─── */
+ @media (prefers-reduced-motion: reduce) {
+   *, *::before, *::after {
+-- 
+2.43.0
+
+
+From 7f64baa5ad4343d79cd020f16c1191ec0fd8a657 Mon Sep 17 00:00:00 2001
+From: moalomary-ux <mo.alomary@gmail.com>
+Date: Fri, 4 Sep 2026 06:04:05 +0000
+Subject: [PATCH 2/4] Add a validated colour system and fix mobile density and
+ dark-mode contrast
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+اللون كان أضيق ما يكون على الجوال: أربعة مؤشّرات بأيقونة واحدة،
+وستّ وجهات بدائرة بنفسجية واحدة، وخمس درجات إلحاح بنقطة واحدة.
+والتخطيط كان يفرد كل شيء في عمود واحد فيصير الملخّص شريطاً طويلاً.
+
+لوحة الفئات:
+- سبع درجات بترتيب ثابت مشتقّة من هوية قدراتك، مع نسخة داكنة
+  مُختارة لا انعكاساً آلياً.
+- مُتحقَّق منها آلياً في الوضعين: نطاق الإضاءة، أرضية التشبّع،
+  فصل عمى الألوان (ΔE 12.3 فاتح / 13.6 داكن)، أرضية الرؤية
+  الطبيعية (19.9 / 21.0)، والتباين ≥ 3:1.
+- لون مستقلّ لكل مؤشّر وكل وجهة سريعة، وشريط علوي يربط الرقم بلونه.
+- ألوان حالة محجوزة للإلحاح، يرافقها نصّ صريح وتسمية مخفيّة
+  وشريط جانبي للبند الحرج — لا معنى باللون وحده.
+- أعمدة الرسوم: تعبئة مسطّحة من اللوحة بدل تدرّج لوني.
+
+الجوال:
+- المؤشّرات عمودان بدل عمود، والوجهات ثلاثة أعمدة بدل عمود.
+- طول صفحة «لوحتي» 2,666 ← 1,595 بكسل.
+- التمرير الأفقي 172 بكسل في صفحة الجهة و5 في لوحتي ← صفر.
+- زرّ إخفاء شريط وضع التصميم صار يعمل ويتذكّر الإخفاء.
+
+التباين:
+- ink-on-brand ينقلب مع الثيم، وهذا صحيح فوق سطح يتغيّر لونه، لكنه
+  فوق تدرّج الهيرو الثابت كان يهبط بالنص إلى 1.22:1 في الوضع
+  الداكن — نصّ غير مقروء عملياً. أُضيف حبران لا ينقلبان وطُبِّقا
+  على الأسطح ثابتة اللون. الهيرو الآن 13.8:1 في الوضعين.
+- شارة BETA كانت أبيض على برتقالي 2.1:1 ← 8.2:1.
+- الرقاقة النشطة أبيض على فيروزي 2.4:1 ← 5.8:1.
+- رقاقة الحساب كانت ترث أزرق المتصفّح الافتراضي.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019r8vsVxa6ZUBGq51h6Fr7h
+---
+ gov360-id/page.css | 45 ++++++++++++++++-----
+ home/index.html    | 22 +++++------
+ home/page.css      | 99 ++++++++++++++++++++++++++++++++++++++++------
+ login/page.css     |  3 +-
+ shared.js          | 16 ++++++++
+ tokens-apple.css   | 69 ++++++++++++++++++++++++++++++++
+ 6 files changed, 219 insertions(+), 35 deletions(-)
+
+diff --git a/gov360-id/page.css b/gov360-id/page.css
+index aeb37aa..8c84287 100644
+--- a/gov360-id/page.css
++++ b/gov360-id/page.css
+@@ -122,7 +122,7 @@ html, body {
+   inset-block-start: 6px;
+   inset-inline-end: 6px;
+   background: var(--brand-red);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   font-size: 9px;
+   font-weight: var(--w-bold);
+   inline-size: 18px;
+@@ -140,6 +140,9 @@ html, body {
+   background: var(--surface-2);
+   border-radius: var(--radius-pill);
+   cursor: pointer;
++  /* رابط بلا لون معلن كان يرث أزرق المتصفّح الافتراضي #0000EE */
++  color: var(--ink-1);
++  text-decoration: none;
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+ .user-chip:hover { background: var(--surface-3); }
+@@ -147,7 +150,7 @@ html, body {
+   inline-size: 28px;
+   block-size: 28px;
+   background: linear-gradient(135deg, var(--brand-violet), var(--brand-deep));
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   border-radius: var(--radius-pill);
+   display: grid;
+   place-items: center;
+@@ -253,7 +256,7 @@ html, body {
+   align-items: center;
+   gap: var(--space-8);
+   background: linear-gradient(135deg, var(--brand-deep) 0%, #2d2360 50%, var(--brand-violet) 100%);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   padding: var(--space-10) var(--space-12);
+   border-radius: var(--radius-xl);
+   box-shadow: var(--shadow-elevated);
+@@ -313,14 +316,14 @@ html, body {
+ }
+ .btn--ghost {
+   background: rgba(255, 255, 255, 0.1);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   border: var(--border-hairline) solid rgba(255, 255, 255, 0.2);
+   backdrop-filter: blur(8px);
+ }
+ .btn--ghost:hover { background: rgba(255, 255, 255, 0.18); transform: translateY(-1px); }
+ .btn--primary {
+   background: linear-gradient(135deg, var(--brand-violet), #6b21b3);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   box-shadow: 0 2px 8px rgba(133, 44, 208, 0.25);
+ }
+ .btn--primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(133, 44, 208, 0.35); }
+@@ -590,13 +593,17 @@ html, body {
+   position: relative;
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+-.bar--violet { background: linear-gradient(180deg, var(--brand-violet), #6b21b3); }
+-.bar--teal { background: linear-gradient(180deg, var(--brand-turquoise), #009598); }
++/* تعبئة مسطّحة من لوحة الفئات المُتحقَّق منها بدل تدرّج لوني:
++   التدرّج يوهم بأن أعلى العمود يختلف عن أسفله بينما القيمة واحدة،
++   ويكسر مطابقة التباين لأن كل بكسل لون مختلف. */
++.bar--violet { background: var(--cat-3); }
++.bar--teal { background: var(--cat-1); }
+ .bar__num {
+   font-family: var(--font-mono);
++  font-variant-numeric: tabular-nums;
+   font-size: var(--text-lg);
+   font-weight: var(--w-bold);
+-  color: white;
++  color: var(--ink-on-brand);
+ }
+ .bar__year {
+   font-size: var(--text-xs);
+@@ -814,7 +821,7 @@ html, body {
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+ .chip-mini:hover { background: rgba(255,255,255,0.1); }
+-.chip-mini.is-active { background: var(--brand-turquoise); color: var(--ink-on-brand); border-color: var(--brand-turquoise); }
++.chip-mini.is-active { background: var(--brand-turquoise); color: var(--ink-on-light); border-color: var(--brand-turquoise); }
+ 
+ /* ═══════ الجوال ═══════ */
+ @media (max-width: 1024px) {
+@@ -869,6 +876,24 @@ html, body {
+   .kpis { grid-template-columns: 1fr 1fr; }
+ }
+ @media (max-width: 480px) {
+-  .kpis { grid-template-columns: 1fr; }
++  /* عمود واحد يفرد ثلاثة أرقام على مئات البكسلات بلا داعٍ */
++  .kpis { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
++  .kpi { padding: var(--space-4); min-block-size: 0; gap: var(--space-1); }
++  .kpi__icon { inline-size: 32px; block-size: 32px; margin-block-end: var(--space-1); }
++  .kpi__icon svg { inline-size: 16px; block-size: 16px; }
++  .kpi__num { font-size: 26px; }
+   .hero__title { font-size: 24px; }
+ }
++
++/* الشريط الجانبي المنزلق خارج الشاشة كان يخلق تمريراً أفقياً بـ 172 بكسل */
++html, body { overflow-x: clip; }
++
++@media (max-width: 768px) {
++  .design-bar {
++    inset-block-end: var(--space-3);
++    inset-inline-start: var(--space-3);
++    inset-inline-end: auto;
++    max-inline-size: calc(100vw - var(--space-6));
++  }
++  .design-bar[hidden] { display: none; }
++}
+diff --git a/home/index.html b/home/index.html
+index 1828538..c9a90f2 100644
+--- a/home/index.html
++++ b/home/index.html
+@@ -146,7 +146,7 @@
+         <div class="hero__greeting">
+           <span class="hero__date" data-date-hijri>&nbsp;</span>
+           <h1 class="hero__title">أهلاً بعودتك، <span class="hero__name">محمد</span></h1>
+-          <p class="hero__sub">5 بنود تنتظر قرارك · عاجل منها 2</p>
++          <p class="hero__sub">5 بنود تنتظر قرارك · عاجل منها 3</p>
+         </div>
+         <div class="hero__clock">
+           <div class="hero__time" id="liveClock" aria-label="الوقت الحالي">--:--</div>
+@@ -245,50 +245,50 @@
+           </header>
+           <div class="card__body">
+             <ul class="attention" role="list">
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="critical">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">بريد وارد بلا إسناد</div>
++                  <div class="attention__title"><span class="sr-only">حرج — </span>بريد وارد بلا إسناد</div>
+                   <div class="attention__meta">3,308 رسالة تنتظر الفرز ولم تُسنَد لأحد — أقدمها منذ 941 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="serious">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">رسالة تجاوزت مهلة الرد</div>
++                  <div class="attention__title"><span class="sr-only">متأخّر — </span>رسالة تجاوزت مهلة الرد</div>
+                   <div class="attention__meta">ملاحظة على التقرير — 7d93 — منذ 77 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="serious">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">رسالة تجاوزت مهلة الرد</div>
++                  <div class="attention__title"><span class="sr-only">متأخّر — </span>رسالة تجاوزت مهلة الرد</div>
+                   <div class="attention__meta">ملاحظة على التقرير — 52df — منذ 65 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item">
++              <li class="attention__item" data-severity="warning">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">برامج متوقّفة في الإدارة</div>
++                  <div class="attention__title"><span class="sr-only">تنبيه — </span>برامج متوقّفة في الإدارة</div>
+                   <div class="attention__meta">7 برامج بلا حركة منذ 10 أيام — أقدمها منذ 52 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3L11 8L6 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                 </a>
+               </li>
+-              <li class="attention__item attention__item--last">
++              <li class="attention__item attention__item--last" data-severity="warning">
+                 <div class="attention__dot" aria-hidden="true"></div>
+                 <div class="attention__body">
+-                  <div class="attention__title">برنامج تملكه متوقّف</div>
++                  <div class="attention__title"><span class="sr-only">تنبيه — </span>برنامج تملكه متوقّف</div>
+                   <div class="attention__meta">WS-2026-1642 — Cloud Essentials — في المرحلة 1، بلا حركة منذ 49 يوماً</div>
+                 </div>
+                 <a class="attention__action" href="#" aria-label="فتح">
+diff --git a/home/page.css b/home/page.css
+index d452a46..ef20466 100644
+--- a/home/page.css
++++ b/home/page.css
+@@ -137,7 +137,7 @@ html, body {
+   inset-block-start: 6px;
+   inset-inline-end: 6px;
+   background: var(--brand-red);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   font-size: 9px;
+   font-weight: var(--w-bold);
+   inline-size: 18px;
+@@ -155,6 +155,9 @@ html, body {
+   background: var(--surface-2);
+   border-radius: var(--radius-pill);
+   cursor: pointer;
++  /* رابط بلا لون معلن كان يرث أزرق المتصفّح الافتراضي #0000EE */
++  color: var(--ink-1);
++  text-decoration: none;
+   transition: background-color var(--duration-fast) var(--ease);
+ }
+ .user-chip:hover { background: var(--surface-3); }
+@@ -162,7 +165,7 @@ html, body {
+   inline-size: 28px;
+   block-size: 28px;
+   background: linear-gradient(135deg, var(--brand-violet), var(--brand-deep));
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   border-radius: var(--radius-pill);
+   display: grid;
+   place-items: center;
+@@ -239,7 +242,7 @@ html, body {
+   font-size: 9px;
+   font-weight: var(--w-bold);
+   background: var(--brand-warning);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-light);
+   padding: 2px 7px;
+   border-radius: var(--radius-sm);
+ }
+@@ -290,7 +293,7 @@ html, body {
+   align-items: center;
+   gap: var(--space-8);
+   background: linear-gradient(135deg, var(--brand-deep) 0%, #2d2360 50%, var(--brand-violet) 100%);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   padding: var(--space-10) var(--space-12);
+   border-radius: var(--radius-xl);
+   box-shadow: var(--shadow-elevated);
+@@ -388,9 +391,26 @@ html, body {
+   color: var(--ink-3);
+   margin-block-end: var(--space-2);
+ }
+-.kpi__icon--teal { background: rgba(0, 171, 175, 0.1); color: var(--brand-turquoise); }
+-.kpi__icon--violet { background: rgba(133, 44, 208, 0.1); color: var(--brand-violet); }
+-.kpi__icon--green { background: rgba(28, 193, 130, 0.1); color: var(--brand-green); }
++/* لون مستقلّ لكل مؤشّر: أربع أيقونات بلون واحد لا تفرّق بينها العين.
++   الترتيب هو ترتيب لوحة الفئات نفسه ولا يُدوَّر. */
++.kpis > .kpi:nth-of-type(1) .kpi__icon { background: color-mix(in srgb, var(--cat-1) 12%, transparent); color: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) .kpi__icon { background: color-mix(in srgb, var(--cat-2) 12%, transparent); color: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) .kpi__icon { background: color-mix(in srgb, var(--cat-3) 12%, transparent); color: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) .kpi__icon { background: color-mix(in srgb, var(--cat-4) 12%, transparent); color: var(--cat-4); }
++/* شريط لوني رفيع أعلى البطاقة — يربط الرقم بلونه دون صبغ النص */
++.kpi { position: relative; overflow: hidden; }
++.kpi::before {
++  content: "";
++  position: absolute;
++  inset-block-start: 0;
++  inset-inline: 0;
++  block-size: 3px;
++  background: var(--kpi-accent, transparent);
++}
++.kpis > .kpi:nth-of-type(1) { --kpi-accent: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) { --kpi-accent: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) { --kpi-accent: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) { --kpi-accent: var(--cat-4); }
+ .kpi__label {
+   font-size: var(--text-sm);
+   color: var(--ink-3);
+@@ -489,9 +509,20 @@ html, body {
+   block-size: 40px;
+   display: grid;
+   place-items: center;
+-  background: linear-gradient(135deg, var(--brand-deep), var(--brand-violet));
++  /* كانت الستّ كلها دائرة بنفسجية واحدة: لا شيء يميّز وجهة عن أخرى */
++  background: var(--quick-accent, var(--brand-violet));
+   border-radius: var(--radius-lg);
+ }
++.quick > .quick__item:nth-of-type(1) { --quick-accent: var(--cat-1); }
++.quick > .quick__item:nth-of-type(2) { --quick-accent: var(--cat-2); }
++.quick > .quick__item:nth-of-type(3) { --quick-accent: var(--cat-3); }
++.quick > .quick__item:nth-of-type(4) { --quick-accent: var(--cat-4); }
++.quick > .quick__item:nth-of-type(5) { --quick-accent: var(--cat-5); }
++.quick > .quick__item:nth-of-type(6) { --quick-accent: var(--cat-6); }
++.quick > .quick__item:hover {
++  border-color: var(--quick-accent);
++  background: color-mix(in srgb, var(--quick-accent) 7%, transparent);
++}
+ .quick__label {
+   display: -webkit-box;
+   -webkit-line-clamp: 1;
+@@ -518,13 +549,25 @@ html, body {
+   border-block-end: var(--border-hairline) solid var(--line);
+ }
+ .attention__item--last { border-block-end: none; }
++/* كانت كل البنود بنقطة برتقالية واحدة: خمس درجات إلحاح بلون واحد.
++   ألوان الحالة محجوزة ولا تُستعمل للفئات، ويرافقها دائماً نصّ صريح
++   في وصف البند وفي تسمية مخفيّة لقارئ الشاشة — لا معنى باللون وحده. */
+ .attention__dot {
+   inline-size: 8px;
+   block-size: 8px;
+   border-radius: var(--radius-pill);
+-  background: var(--brand-warning);
++  background: var(--status-warning);
+   flex-shrink: 0;
+ }
++.attention__item[data-severity="critical"] .attention__dot { background: var(--status-critical); }
++.attention__item[data-severity="serious"]  .attention__dot { background: var(--status-serious); }
++.attention__item[data-severity="warning"]  .attention__dot { background: var(--status-warning); }
++/* البند الحرج يحمل أيضاً شريطاً جانبياً: تمييز لا يعتمد على اللون فقط */
++.attention__item[data-severity="critical"] {
++  border-inline-start: 3px solid var(--status-critical);
++  padding-inline-start: var(--space-3);
++  margin-inline-start: calc(var(--space-3) * -1);
++}
+ .attention__body {
+   display: flex;
+   flex-direction: column;
+@@ -584,7 +627,7 @@ html, body {
+ }
+ .btn--primary {
+   background: linear-gradient(135deg, var(--brand-violet), #6b21b3);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-dark);
+   box-shadow: 0 2px 8px rgba(133, 44, 208, 0.25);
+ }
+ .btn--primary:hover {
+@@ -665,7 +708,7 @@ html, body {
+ .chip-mini:hover { background: rgba(255, 255, 255, 0.1); }
+ .chip-mini.is-active {
+   background: var(--brand-turquoise);
+-  color: var(--ink-on-brand);
++  color: var(--ink-on-light);
+   border-color: var(--brand-turquoise);
+ }
+ 
+@@ -725,7 +768,37 @@ html, body {
+   .design-bar { max-inline-size: calc(100vw - var(--space-6)); }
+ }
+ @media (max-width: 480px) {
+-  .kpis { grid-template-columns: 1fr; }
+-  .quick { grid-template-columns: 1fr; }
++  /* عمود واحد كان يجعل أربعة أرقام تستهلك 764 بكسل من التمرير،
++     وستّ روابط 654 بكسل. البطاقة تُضغط بدل أن تُفرد. */
++  .kpis { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
++  .kpi { padding: var(--space-4); min-block-size: 0; gap: var(--space-1); }
++  .kpi__icon {
++    inline-size: 32px;
++    block-size: 32px;
++    margin-block-end: var(--space-1);
++    border-radius: var(--radius-md);
++  }
++  .kpi__icon svg { inline-size: 16px; block-size: 16px; }
++  .kpi__num { font-size: 26px; }
++
++  .quick { grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
++  .quick__item { padding: var(--space-3) var(--space-2); min-block-size: 0; gap: var(--space-2); }
++  .quick__icon { inline-size: 34px; block-size: 34px; }
++  .quick__label { -webkit-line-clamp: 2; font-size: 10.5px; }
++
+   .hero__title { font-size: 28px; }
+ }
++
++/* الشريط الجانبي المنزلق خارج الشاشة كان يخلق تمريراً أفقياً */
++html, body { overflow-x: clip; }
++
++/* شريط وضع التصميم كان يغطّي المحتوى على الجوال */
++@media (max-width: 768px) {
++  .design-bar {
++    inset-block-end: var(--space-3);
++    inset-inline-start: var(--space-3);
++    inset-inline-end: auto;
++    max-inline-size: calc(100vw - var(--space-6));
++  }
++  .design-bar[hidden] { display: none; }
++}
+diff --git a/login/page.css b/login/page.css
+index 53aaf18..6a8ceac 100644
+--- a/login/page.css
++++ b/login/page.css
+@@ -362,7 +362,8 @@ html, body {
+ .chip-mini:hover { background: var(--surface-hover); }
+ .chip-mini.is-active {
+   background: var(--brand-turquoise);
+-  color: var(--ink-on-brand);
++  /* الفيروزي ثابت في الوضعين: الأبيض عليه 2.4:1 فقط */
++  color: var(--ink-on-light);
+   border-color: var(--brand-turquoise);
+ }
+ 
+diff --git a/shared.js b/shared.js
+index 2407c8c..0e421f9 100644
+--- a/shared.js
++++ b/shared.js
+@@ -355,6 +355,21 @@
+     }
+   }
+ 
++  /* ═══════════════════════════════════════════════════════════════
++     06e  شريط وضع التصميم — زرّ الإخفاء لم يكن موصولاً بشيء
++     ═══════════════════════════════════════════════════════════════ */
++  function initDesignBar() {
++    const bar = document.querySelector('.design-bar');
++    if (!bar) return;
++    const close = bar.querySelector('.design-bar__head button');
++    if (!close) return;
++    close.addEventListener('click', () => {
++      bar.hidden = true;
++      try { sessionStorage.setItem('qd-designbar', 'hidden'); } catch (e) {}
++    });
++    try { if (sessionStorage.getItem('qd-designbar') === 'hidden') bar.hidden = true; } catch (e) {}
++  }
++
+   /* ═══════════════════════════════════════════════════════════════
+      06d  نماذج الصندوق التصميمي — الإرسال معطّل
+      كان الضغط على الزر يعيد تحميل الصفحة بصمت ويبدو كعطل
+@@ -455,6 +470,7 @@
+     initDates();
+     initTabs();
+     initSandboxForms();
++    initDesignBar();
+     initCardTilt();
+ 
+     // Bind theme toggle buttons
+diff --git a/tokens-apple.css b/tokens-apple.css
+index 424f515..76036d2 100644
+--- a/tokens-apple.css
++++ b/tokens-apple.css
+@@ -64,6 +64,65 @@
+ }
+ 
+ 
++/* ═══════════ 02b  لوحة الفئات — للتمييز بين الكيانات ═══════════
++   سبع درجات بترتيب ثابت مشتقّة من هوية قدراتك. الترتيب نفسه هو آلية
++   الأمان لعمى الألوان، فلا يُغيَّر ولا يُدوَّر: الكيان الثامن يُدمج في
++   «أخرى» أو يُفصل في رسم مستقل.
++
++   مُتحقَّق منها آلياً (لا بالنظر) في الوضعين:
++     فاتح على #fcfcfb — نطاق الإضاءة ✓ · أرضية التشبّع ✓ ·
++       فصل عمى الألوان: أسوأ زوج متجاور ΔE 12.3 (deutan) ·
++       أرضية الرؤية الطبيعية ΔE 19.9 · التباين ≥ 3:1 ✓
++     داكن على #1c1c1e — النطاق ✓ · التشبّع ✓ ·
++       ΔE 13.6 (deutan) · الرؤية الطبيعية ΔE 21.0 · التباين ≥ 3:1 ✓
++
++   الدرجات الداكنة ليست انعكاساً آلياً للفاتحة، بل مُختارة ومُتحقَّق
++   منها مقابل السطح الداكن. */
++:root {
++  --cat-1: #0A9296;  /* فيروزي — لون الهوية، دائماً الأول */
++  --cat-2: #C2560B;  /* برتقالي */
++  --cat-3: #7C32C9;  /* بنفسجي */
++  --cat-4: #0F8A5F;  /* أخضر */
++  --cat-5: #1170C7;  /* أزرق */
++  --cat-6: #8A6D00;  /* ذهبي */
++  --cat-7: #B0106A;  /* أرجواني */
++}
++[data-theme="dark"] {
++  --cat-1: #12A0A3;
++  --cat-2: #CF6A31;
++  --cat-3: #9A62D6;
++  --cat-4: #1FAE73;
++  --cat-5: #3D8FE0;
++  --cat-6: #B08F1E;
++  --cat-7: #D34C8B;
++}
++
++/* خلفية رقيقة من اللون نفسه — للأيقونات والرقاقات */
++.tint-1 { background: color-mix(in srgb, var(--cat-1) 12%, transparent); color: var(--cat-1); }
++.tint-2 { background: color-mix(in srgb, var(--cat-2) 12%, transparent); color: var(--cat-2); }
++.tint-3 { background: color-mix(in srgb, var(--cat-3) 12%, transparent); color: var(--cat-3); }
++.tint-4 { background: color-mix(in srgb, var(--cat-4) 12%, transparent); color: var(--cat-4); }
++.tint-5 { background: color-mix(in srgb, var(--cat-5) 12%, transparent); color: var(--cat-5); }
++.tint-6 { background: color-mix(in srgb, var(--cat-6) 12%, transparent); color: var(--cat-6); }
++.tint-7 { background: color-mix(in srgb, var(--cat-7) 12%, transparent); color: var(--cat-7); }
++
++
++/* ═══════════ 02c  ألوان الحالة — محجوزة، لا تُستعمل للفئات ═══════════
++   ترافقها دائماً أيقونة أو نص: لا يُحمَّل اللون وحده أي معنى. */
++:root {
++  --status-critical: #C40000;
++  --status-serious:  #B34A00;
++  --status-warning:  #856200;
++  --status-good:     #0F7A4E;
++}
++[data-theme="dark"] {
++  --status-critical: #FF6B60;
++  --status-serious:  #FF9F0A;
++  --status-warning:  #E0B93A;
++  --status-good:     #35D68F;
++}
++
++
+ /* ═══════════ 03  الأسطح — Apple-inspired ═══════════
+    أبيض نقي، رمادي دافئ جداً، لا تدرّجات على الخلفيات */
+ :root {
+@@ -103,6 +162,16 @@
+   --ink-on-inverse: #f5f5f7;
+   --ink-disabled: #c4c4c7;
+ }
++
++/* حبران لا ينقلبان مع الثيم.
++   ink-on-brand ينقلب، وهذا صحيح فوق سطح يتغيّر لونه بتغيّر الثيم
++   (أعمدة الرسوم مثلاً). لكن فوق سطح لونه ثابت — تدرّج الهيرو،
++   شارة الإشعارات الحمراء، الزر البنفسجي — كان الانقلاب يهبط
++   بالتباين إلى 1.22:1 في الوضع الداكن، أي نصّ غير مقروء عملياً. */
++:root {
++  --ink-on-dark: #ffffff;   /* فوق سطح داكن دائماً */
++  --ink-on-light: #14212b;  /* فوق سطح فاتح/مشبع دائماً */
++}
+ [data-theme="dark"] {
+   --ink-1:    #f5f5f7;
+   --ink-2:    #e5e5e7;
+-- 
+2.43.0
+
+
+From 1c7e1ed36b33992004939fc9117cc9b4df866d57 Mon Sep 17 00:00:00 2001
+From: moalomary-ux <mo.alomary@gmail.com>
+Date: Fri, 4 Sep 2026 06:29:34 +0000
+Subject: [PATCH 3/4] Finish the colour pass on the entity page and unbury the
+ login links
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+بقيت صفحتان نصف معالَجتين بعد الجولة الثانية.
+
+صفحة الجهة:
+- مؤشّراتها لم تأخذ لوحة الفئات، وأولها كان بلا لون أصلاً فيبدو
+  معطّلاً بجانب إخوته. الآن أربعة ألوان مستقلّة وشريط علوي لكل
+  بطاقة، بنفس ترتيب «لوحتي».
+
+صفحة الدخول:
+- شريط وضع التصميم كان يغطّي «العودة للوحة التحكم» و«أنشئ حساباً
+  جديداً» على الجوال — أي أنه يدفن أقصر مسار للمستخدم الجديد.
+- الارتفاع يُقاس في shared.js ويُنشر كمتغيّر بدل رقم مكتوب يدوياً،
+  لأنه يتغيّر بعرض الشاشة والتفاف الرقاقات. اختصار padding في
+  استعلام ≤480px كان يمسح الحجز فأُعيد صراحة.
+
+فحص جديد يثبت أن لا رابط ولا زر محجوب بالشريط في الصفحات الثلاث
+على 390 و1280 بكسل.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019r8vsVxa6ZUBGq51h6Fr7h
+---
+ gov360-id/page.css | 22 +++++++++++++++++++---
+ login/page.css     | 10 +++++++++-
+ shared.js          | 28 ++++++++++++++++++++++------
+ 3 files changed, 50 insertions(+), 10 deletions(-)
+
+diff --git a/gov360-id/page.css b/gov360-id/page.css
+index 8c84287..cf9ecc5 100644
+--- a/gov360-id/page.css
++++ b/gov360-id/page.css
+@@ -466,9 +466,25 @@ html, body {
+   color: var(--ink-3);
+   margin-block-end: var(--space-2);
+ }
+-.kpi__icon--teal { background: rgba(0, 171, 175, 0.1); color: var(--brand-turquoise); }
+-.kpi__icon--violet { background: rgba(133, 44, 208, 0.1); color: var(--brand-violet); }
+-.kpi__icon--green { background: rgba(28, 193, 130, 0.1); color: var(--brand-green); }
++/* لون مستقلّ لكل مؤشّر، بنفس ترتيب لوحة الفئات في «لوحتي».
++   المؤشّر الأول كان بلا لون أصلاً فيبدو معطّلاً بجانب إخوته. */
++.kpis > .kpi:nth-of-type(1) .kpi__icon { background: color-mix(in srgb, var(--cat-1) 12%, transparent); color: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) .kpi__icon { background: color-mix(in srgb, var(--cat-2) 12%, transparent); color: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) .kpi__icon { background: color-mix(in srgb, var(--cat-3) 12%, transparent); color: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) .kpi__icon { background: color-mix(in srgb, var(--cat-4) 12%, transparent); color: var(--cat-4); }
++.kpi { position: relative; overflow: hidden; }
++.kpi::before {
++  content: "";
++  position: absolute;
++  inset-block-start: 0;
++  inset-inline: 0;
++  block-size: 3px;
++  background: var(--kpi-accent, transparent);
++}
++.kpis > .kpi:nth-of-type(1) { --kpi-accent: var(--cat-1); }
++.kpis > .kpi:nth-of-type(2) { --kpi-accent: var(--cat-2); }
++.kpis > .kpi:nth-of-type(3) { --kpi-accent: var(--cat-3); }
++.kpis > .kpi:nth-of-type(4) { --kpi-accent: var(--cat-4); }
+ .kpi__label { font-size: var(--text-sm); color: var(--ink-3); font-weight: var(--w-medium); }
+ .kpi__num {
+   font-family: var(--font-mono);
+diff --git a/login/page.css b/login/page.css
+index 6a8ceac..01bc73f 100644
+--- a/login/page.css
++++ b/login/page.css
+@@ -83,6 +83,10 @@ html, body {
+   min-block-size: 100vh;
+   padding: var(--space-12) var(--space-6);
+   padding-block-start: calc(var(--space-12) + 24px);
++  /* شريط وضع التصميم ثابت أسفل الشاشة وكان يغطّي رابط «أنشئ حساباً
++     جديداً» — أقصر مسافة بين المستخدم الجديد وأول خطوة له.
++     الارتفاع يُقاس في shared.js لأنه يتغيّر بعرض الشاشة. */
++  padding-block-end: calc(var(--space-12) + var(--design-bar-h, 0px) + var(--space-6));
+   gap: var(--space-6);
+ }
+ 
+@@ -386,6 +390,10 @@ html, body {
+ 
+ @media (max-width: 480px) {
+   .auth__card { padding: var(--space-8) var(--space-5); }
+-  .auth { padding: var(--space-8) var(--space-4); }
++  /* الاختصار كان يمسح حجز مساحة شريط التصميم فيعود الرابط مدفوناً */
++  .auth {
++    padding: var(--space-8) var(--space-4);
++    padding-block-end: calc(var(--space-8) + var(--design-bar-h, 0px) + var(--space-6));
++  }
+   .design-bar { max-inline-size: calc(100vw - var(--space-6)); }
+ }
+\ No newline at end of file
+diff --git a/shared.js b/shared.js
+index 0e421f9..e5fb67d 100644
+--- a/shared.js
++++ b/shared.js
+@@ -361,13 +361,29 @@
+   function initDesignBar() {
+     const bar = document.querySelector('.design-bar');
+     if (!bar) return;
++
++    // الشريط ثابت أسفل الشاشة: تُنشر أبعاده كمتغيّر ليحجز المحتوى
++    // مساحته بدل أن يُدفن تحته. القياس أدقّ من رقم مكتوب يدوياً لأن
++    // ارتفاعه يتغيّر بعرض الشاشة والتفاف الرقاقات.
++    const publishHeight = () => {
++      const h = bar.hidden ? 0 : Math.ceil(bar.getBoundingClientRect().height);
++      document.documentElement.style.setProperty('--design-bar-h', h + 'px');
++    };
++    publishHeight();
++    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(publishHeight).observe(bar);
++    window.addEventListener('resize', publishHeight);
++
+     const close = bar.querySelector('.design-bar__head button');
+-    if (!close) return;
+-    close.addEventListener('click', () => {
+-      bar.hidden = true;
+-      try { sessionStorage.setItem('qd-designbar', 'hidden'); } catch (e) {}
+-    });
+-    try { if (sessionStorage.getItem('qd-designbar') === 'hidden') bar.hidden = true; } catch (e) {}
++    if (close) {
++      close.addEventListener('click', () => {
++        bar.hidden = true;
++        publishHeight();
++        try { sessionStorage.setItem('qd-designbar', 'hidden'); } catch (e) {}
++      });
++    }
++    try {
++      if (sessionStorage.getItem('qd-designbar') === 'hidden') { bar.hidden = true; publishHeight(); }
++    } catch (e) {}
+   }
+ 
+   /* ═══════════════════════════════════════════════════════════════
+-- 
+2.43.0
+
+
+From 22b8728e046c47735912bc3c2bcc0818103ef2bc Mon Sep 17 00:00:00 2001
+From: moalomary-ux <mo.alomary@gmail.com>
+Date: Fri, 4 Sep 2026 06:35:46 +0000
+Subject: [PATCH 4/4] Stop substituting a drawn mark for the missing logo files
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+كان الإصلاح السابق يرسم شعاراً بديلاً عند سقوط ملف الصورة. هذا خطأ:
+يضع علامة ليست علامة الهيئة ويُظهرها كأنها الأصل، والأيقونة المكسورة
+أهون من هوية مخترعة.
+
+الصورة التي لا تُحمَّل تُخفى فقط. الهوية يحملها النصّ «قدراتك —
+Digital Skills» الموجود في الصفحة أصلاً. إشارات الصور الخمس باقية
+كما كتبها المصمّم ولم تُمَسّ، فمتى أُودعت ملفات PNG ظهرت الشعارات
+وحدها بلا أي تعديل على هذا الكود.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019r8vsVxa6ZUBGq51h6Fr7h
+---
+ index.html | 11 ++++-------
+ shared.js  | 19 +++++++------------
+ 2 files changed, 11 insertions(+), 19 deletions(-)
+
+diff --git a/index.html b/index.html
+index 244c25a..aa6bdae 100644
+--- a/index.html
++++ b/index.html
+@@ -18,8 +18,7 @@
+     .loading {
+       text-align: center;
+     }
+-    .loading img,
+-    .loading svg {
++    .loading img {
+       width: 64px;
+       height: 64px;
+       margin-bottom: 16px;
+@@ -33,11 +32,9 @@
+ </head>
+ <body>
+   <div class="loading">
+-    <!-- شعار مضمّن: ملفات PNG غير موجودة في المستودع، وكانت الصفحة تعرض أيقونة مكسورة -->
+-    <svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="قدراتك">
+-      <rect width="64" height="64" rx="14" fill="#00ABAF"/>
+-      <path d="M32 15a17 17 0 1 0 10.5 30.4l4.6 4.6 4.2-4.2-4.6-4.6A17 17 0 0 0 32 15Zm0 6a11 11 0 1 1 0 22 11 11 0 0 1 0-22Z" fill="#fff"/>
+-    </svg>
++    <!-- ملف الشعار غير مُودَع في المستودع بعد. لا يُستبدل بشعار مخترع:
++         يُخفى فقط إن لم يُحمَّل، ويعود وحده متى أُودع الملف. -->
++    <img src="./logo-qudratok-icon.png" alt="قدراتك" onerror="this.style.display='none'">
+     <p>جارِ التحميل…</p>
+   </div>
+   <p style="position:fixed;bottom:20px;right:20px;font-size:12px;opacity:0.4;">
+diff --git a/shared.js b/shared.js
+index e5fb67d..e8f54cd 100644
+--- a/shared.js
++++ b/shared.js
+@@ -112,23 +112,18 @@
+   }
+ 
+   /* ═══════════════════════════════════════════════════════════════
+-     02b  Logo fallback — الشعارات غير موجودة في المستودع بعد
++     02b  صورة لا تُحمَّل — تُخفى، ولا تُستبدل بشعار مخترع
++     ملفات الشعار غير مُودَعة في المستودع بعد. الأيقونة المكسورة عيب
++     ظاهر، لكن رسم شعار بديل أسوأ منها: يضع علامة تجارية ليست علامة
++     الهيئة ويُظهرها كأنها الأصل. الهوية هنا يحملها النصّ «قدراتك —
++     Digital Skills» وهو موجود في الصفحة أصلاً. متى أُودعت الملفات
++     ظهرت الشعارات وحدها بلا أي تعديل على هذا الكود.
+      ═══════════════════════════════════════════════════════════════ */
+-  const LOGO_FALLBACK =
+-    'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="قدراتك">' +
+-      '<rect width="64" height="64" rx="14" fill="#00ABAF"/>' +
+-      '<path d="M32 15a17 17 0 1 0 10.5 30.4l4.6 4.6 4.2-4.2-4.6-4.6A17 17 0 0 0 32 15Zm0 6a11 11 0 1 1 0 22 11 11 0 0 1 0-22Z" fill="#fff"/>' +
+-      '</svg>'
+-    );
+-
+   function initLogoFallback() {
+     document.querySelectorAll('img').forEach(img => {
+       img.addEventListener('error', function onError() {
+         img.removeEventListener('error', onError);
+-        // امنع محاولة تبديل الشعار حسب الثيم بعد سقوط الملف
+-        delete img.dataset.logoTheme;
+-        img.src = LOGO_FALLBACK;
++        img.style.display = 'none';
+       });
+     });
+   }
+-- 
+2.43.0
+
