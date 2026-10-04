@@ -1,0 +1,4 @@
+node_modules/
+.icons_cache/
+__pycache__/
+*.pyc
