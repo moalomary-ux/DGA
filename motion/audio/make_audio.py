@@ -224,7 +224,9 @@ def transcribe(path):
     req = urllib.request.Request(API + "/v1/speech-to-text", data=b"".join(parts) + f"--{b}--\r\n".encode(), method="POST",
                                  headers={"xi-api-key": key(), "Content-Type": f"multipart/form-data; boundary={b}"})
     with urllib.request.urlopen(req, timeout=300) as r:
-        return json.loads(r.read().decode()).get("text", "")
+        d = json.loads(r.read().decode())
+    lp = [w["logprob"] for w in d.get("words", []) if w.get("type") == "word" and w.get("logprob") is not None]
+    return d.get("text", ""), (sum(lp) / len(lp) if lp else -9.0)
 
 
 def pitch_range(path):
@@ -249,6 +251,8 @@ def pitch_range(path):
 
 
 def auto_pick(lines, takes):
+    """Keep the takes whose transcript matches the script, then take the clearest one: the highest mean word
+    confidence from the recogniser, a fair proxy for how cleanly each letter is articulated."""
     import difflib
     pick = {}
     for l in lines:
@@ -257,15 +261,16 @@ def auto_pick(lines, takes):
             p = os.path.join(OUT, "vo", f"{l['id']}_t{t}.mp3")
             if not os.path.exists(p):
                 continue
-            heard = _norm_ar(transcribe(p))
+            heard, clarity = transcribe(p)
+            heard = _norm_ar(heard)
             acc = difflib.SequenceMatcher(None, ref, heard).ratio()
-            rows.append((t, acc, pitch_range(p), heard))
+            rows.append((t, acc, pitch_range(p), heard, clarity))
         best_acc = max(r[1] for r in rows)
         ok = [r for r in rows if r[1] >= best_acc - 0.005]  # one wrong letter can change the meaning
-        t = max(ok, key=lambda r: r[2])[0]
+        t = max(ok, key=lambda r: r[4])[0]
         pick[l["id"]] = t
         for r in rows:
-            print(f"  {l['id']} take {r[0]}: accuracy {r[1]:.2f}  pitch range {r[2]:4.1f} st{'  <- chosen' if r[0] == t else ''}  | {r[3]}")
+            print(f"  {l['id']} take {r[0]}: accuracy {r[1]:.2f}  clarity {r[4]:6.3f}  pitch range {r[2]:4.1f} st{'  <- chosen' if r[0] == t else ''}  | {r[3]}")
     json.dump(pick, open(os.path.join(OUT, "picks.json"), "w"))
     return pick
 
@@ -414,7 +419,7 @@ def mix(clips, music, sfx, duration):
               "acompressor=threshold=0.12:ratio=3:attack=8:release=140:makeup=2.2,asplit=2[voa][vosc]")
     inputs += ["-i", music]
     mi = n_vo
-    fl.append(f"[{mi}:a]aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:{duration:.2f},apad=whole_dur={duration:.2f},volume=0.9[m0]")
+    fl.append(f"[{mi}:a]aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:{duration:.2f},apad=whole_dur={duration:.2f},volume=0.7[m0]")
     fl.append("[m0][vosc]sidechaincompress=threshold=0.02:ratio=6:attack=15:release=520:makeup=1.3[md]")
     labels = ["[md]", "[voa]"]
     for j, (p, t, kind) in enumerate(sfx):
@@ -435,7 +440,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--voice-id"); ap.add_argument("--model"); ap.add_argument("--list-voices", action="store_true")
     ap.add_argument("--takes", type=int, default=1); ap.add_argument("--pick", default="")
-    ap.add_argument("--auto-pick", action="store_true", help="choose each line's take: transcribe every take (Scribe), keep the accurate ones, then the most expressive")
+    ap.add_argument("--auto-pick", action="store_true", help="choose each line's take: transcribe every take (Scribe), keep the accurate ones, then the clearest")
     ap.add_argument("--tags", action="store_true"); ap.add_argument("--plain", action="store_true")
     ap.add_argument("--no-closing", action="store_true"); ap.add_argument("--no-sfx", action="store_true")
     ap.add_argument("--only", choices=["vo", "music", "sfx", "mix"]); ap.add_argument("--force", action="store_true")
@@ -487,7 +492,7 @@ def main():
     print("Music:"); music = make_music(script, pairs, duration, args)
     if args.only == "music":
         return
-    sfx = [] if args.no_sfx else make_sfx(script, pairs, args)
+    sfx = [] if args.no_sfx or not script.get("sfx_enabled", True) else make_sfx(script, pairs, args)
     if args.only == "sfx":
         return
     print("Mix:"); out = mix(clips, music, sfx, duration)
