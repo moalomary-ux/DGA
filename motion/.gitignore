@@ -1,3 +1,4 @@
 audio/out/
 build/
 release/silent.mp4
+__pycache__/
