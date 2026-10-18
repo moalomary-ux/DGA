@@ -1,0 +1,382 @@
+{
+  "_comment": "Voice-over script, per-line direction, and the anchors that tie design time (the animation's own clock) to spoken words. d = design second, l = line index (0-based), w = word index in the line, ref = 'start' (default) or 'end' of that word, o = extra seconds. A line's word-0 anchor also fixes where that line starts; gap is the minimum pause before it.",
+  "tts": {
+    "model_preference": [
+      "eleven_multilingual_v2",
+      "eleven_v4"
+    ],
+    "language_code": "ar",
+    "voice_settings": {
+      "stability": 0.6,
+      "similarity_boost": 0.85,
+      "style": 0.1,
+      "speed": 0.95,
+      "use_speaker_boost": true
+    },
+    "voice_id": "MI88rOZjXbH22N8KHXUo",
+    "_voice": "Ali - calm & Deep Arabic Saudi Narrator (Voice Library) on eleven_multilingual_v2, chosen by ear from three full read-throughs (Hijazi, Darsho, Ali) that had all passed the transcript and vowel checks."
+  },
+  "lines": [
+    {
+      "id": "L1",
+      "gap": 1.0,
+      "text": "بالِغوا بالدِّفاعِ عن وطنِكم.",
+      "plain": "بالغوا بالدفاع عن وطنكم.",
+      "vowel_checks": [
+        [
+          "بالِغوا",
+          "ل",
+          "i"
+        ],
+        [
+          "بالدِّفاعِ",
+          "د",
+          "i"
+        ],
+        [
+          "وطنِكم",
+          "ن",
+          "i"
+        ]
+      ],
+      "lead_in": "أيها المواطنون الكرام،",
+      "_lead_in": "not spoken: previous_text context; without it the voices shortened the long alif of baalighu at the very start"
+    },
+    {
+      "id": "L2",
+      "gap": 0.8,
+      "text": "فالوطنُ عقيدة، وكرامة، وعِزّة، لا تُساوَم.",
+      "plain": "فالوطن عقيدة، وكرامة، وعزة، لا تُساوَم.",
+      "vowel_checks": [
+        [
+          "وعِزّة",
+          "ع",
+          "i"
+        ]
+      ]
+    },
+    {
+      "id": "L3",
+      "gap": 0.8,
+      "text": "لا تسمحوا لِحاقدٍ أو خائنٍ أن يَنالَ من أمنِكم، أو يُشكِّكَ في ولائِكم.",
+      "plain": "لا تسمحوا لحاقد أو خائن أن ينال من أمنكم، أو يُشكِّك في ولائكم.",
+      "vowel_checks": [
+        [
+          "أمنِكم",
+          "ن",
+          "i"
+        ]
+      ]
+    },
+    {
+      "id": "L4",
+      "gap": 0.8,
+      "text": "فالأوطانُ لا تحيا إلا بأبنائِها.",
+      "plain": "فالأوطان لا تحيا إلا بأبنائها.",
+      "vowel_checks": []
+    },
+    {
+      "id": "L5",
+      "gap": 0.8,
+      "text": "المادةُ الرابعةُ والثلاثون: الدِّفاعُ عن العقيدةِ الإسلاميةِ والمجتمعِ والوطنِ واجبٌ على كلِّ مواطن.",
+      "plain": "المادة الرابعة والثلاثون: الدفاع عن العقيدة الإسلامية، والمجتمع، والوطن، واجب على كل مواطن.",
+      "vowel_checks": [
+        [
+          "الدِّفاعُ",
+          "د",
+          "i"
+        ],
+        [
+          "والمجتمعِ",
+          "ع",
+          "i"
+        ],
+        [
+          "والوطنِ",
+          "ن",
+          "i"
+        ]
+      ]
+    },
+    {
+      "id": "L6",
+      "gap": 2.4,
+      "optional": true,
+      "text": "بالِغوا بالدِّفاعِ عن وطنِكم.",
+      "plain": "بالغوا بالدفاع عن وطنكم.",
+      "vowel_checks": [
+        [
+          "بالِغوا",
+          "ل",
+          "i"
+        ],
+        [
+          "بالدِّفاعِ",
+          "د",
+          "i"
+        ],
+        [
+          "وطنِكم",
+          "ن",
+          "i"
+        ]
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "d": 1.0,
+      "l": 0,
+      "w": 0
+    },
+    {
+      "d": 2.3,
+      "l": 0,
+      "w": 3
+    },
+    {
+      "d": 7.3,
+      "l": 1,
+      "w": 0
+    },
+    {
+      "d": 8.5,
+      "l": 1,
+      "w": 1
+    },
+    {
+      "d": 9.7,
+      "l": 1,
+      "w": 2
+    },
+    {
+      "d": 10.9,
+      "l": 1,
+      "w": 3
+    },
+    {
+      "d": 12.2,
+      "l": 1,
+      "w": 5
+    },
+    {
+      "d": 16.5,
+      "l": 2,
+      "w": 0
+    },
+    {
+      "d": 17.6,
+      "l": 2,
+      "w": 2
+    },
+    {
+      "d": 19.4,
+      "l": 2,
+      "w": 6
+    },
+    {
+      "d": 20.9,
+      "l": 2,
+      "w": 10
+    },
+    {
+      "d": 22.2,
+      "l": 2,
+      "w": 12,
+      "ref": "end"
+    },
+    {
+      "d": 25.7,
+      "l": 3,
+      "w": 0
+    },
+    {
+      "d": 27.9,
+      "l": 3,
+      "w": 3
+    },
+    {
+      "d": 28.5,
+      "l": 3,
+      "w": 4
+    },
+    {
+      "d": 30.0,
+      "l": 3,
+      "w": 4,
+      "ref": "end"
+    },
+    {
+      "d": 34.5,
+      "l": 4,
+      "w": 0
+    },
+    {
+      "d": 35.9,
+      "l": 4,
+      "w": 3
+    },
+    {
+      "d": 36.3,
+      "l": 4,
+      "w": 5
+    },
+    {
+      "d": 37.5,
+      "l": 4,
+      "w": 7
+    },
+    {
+      "d": 38.7,
+      "l": 4,
+      "w": 8
+    },
+    {
+      "d": 40.0,
+      "l": 4,
+      "w": 9
+    },
+    {
+      "d": 41.8,
+      "l": 4,
+      "w": 12,
+      "ref": "end"
+    },
+    {
+      "d": 44.6,
+      "l": 5,
+      "w": 0
+    },
+    {
+      "d": 45.7,
+      "l": 5,
+      "w": 3
+    }
+  ],
+  "scene_boundaries_design": [
+    5.6,
+    15.3,
+    25.1,
+    33.7,
+    43.1
+  ],
+  "design_end": 48.5,
+  "sfx_events": [
+    {
+      "d": 2.3,
+      "kind": "boom"
+    },
+    {
+      "d": 4.6,
+      "kind": "riser"
+    },
+    {
+      "d": 12.2,
+      "kind": "boom"
+    },
+    {
+      "d": 14.6,
+      "kind": "whoosh"
+    },
+    {
+      "d": 19.4,
+      "kind": "shield"
+    },
+    {
+      "d": 20.9,
+      "kind": "shield"
+    },
+    {
+      "d": 24.5,
+      "kind": "whoosh"
+    },
+    {
+      "d": 30.4,
+      "kind": "swell"
+    },
+    {
+      "d": 33.0,
+      "kind": "whoosh"
+    },
+    {
+      "d": 40.0,
+      "kind": "boom"
+    },
+    {
+      "d": 42.4,
+      "kind": "riser"
+    },
+    {
+      "d": 45.7,
+      "kind": "sting"
+    }
+  ],
+  "sfx_prompts": {
+    "boom": {
+      "text": "massive cinematic deep impact boom with long reverb tail, epic trailer hit, sub bass",
+      "dur": 3.0
+    },
+    "riser": {
+      "text": "cinematic tension riser building to a hit, strings and metallic shimmer, short",
+      "dur": 2.6
+    },
+    "whoosh": {
+      "text": "short cinematic whoosh transition, airy sweep with soft metallic shimmer",
+      "dur": 1.6
+    },
+    "shield": {
+      "text": "magical energy shield impact, crystalline shatter with a deep thud and shimmering tail",
+      "dur": 2.0
+    },
+    "swell": {
+      "text": "warm majestic orchestral swell with choir pad, hopeful, rising and blooming",
+      "dur": 3.5
+    },
+    "sting": {
+      "text": "triumphant final orchestral sting, big brass and timpani hit with long fading shimmer",
+      "dur": 4.0
+    }
+  },
+  "music": {
+    "instrumental": true,
+    "global": "dignified cinematic orchestral underscore with authentic Saudi character: oud, qanun, ney flute, warm strings, soft daf frame drum, restrained brass, Hijaz maqam colour, noble and warm, 80 BPM, instrumental, leaves space for a narrator",
+    "sections": [
+      {
+        "name": "Awe",
+        "boundary": 0,
+        "style": "quiet reverent opening, solo oud over a soft low string pad"
+      },
+      {
+        "name": "Resolve",
+        "boundary": 1,
+        "style": "warm strings enter with a steady soft daf pulse, proud and noble, gentle swell"
+      },
+      {
+        "name": "Defiance",
+        "boundary": 2,
+        "style": "lower strings, firm and vigilant but restrained, steady drum pulse, no risers"
+      },
+      {
+        "name": "Belonging",
+        "boundary": 3,
+        "style": "tender and hopeful, ney melody over warm strings"
+      },
+      {
+        "name": "Duty",
+        "boundary": 4,
+        "style": "solemn ceremonial brass chorale with soft timpani, dignified and steady"
+      },
+      {
+        "name": "Triumph",
+        "boundary": 5,
+        "style": "full noble resolution on a warm sustained chord, strings and oud held steady under the narrator's closing line, it does not fade out, rings to the very last second"
+      }
+    ],
+    "negative": "vocals, singing, choir, lyrics, risers, whooshes, sound effects, trailer hits, braams, impacts, electronic, pop, dubstep",
+    "prompt": "One continuous, cohesive cinematic underscore for a Saudi national public-service film, narrated. A single slow emotional arc from start to finish, no section changes, no sudden shifts. Warm sustained low strings and a soft felt piano motif, a solo oud phrase answering it, gentle build in the second half, ending on a warm held chord to the last second. 70 BPM, restrained, sincere, dignified, modern, spacious, lots of room for the voice. No drums hits, no risers, no whooshes, no choir, no vocals.",
+    "_prompt": "Chosen by ear from three single-piece directions (calm cinematic, Saudi ardah heritage, orchestral hymn). It replaced a six-section composition plan that changed mood every 8 seconds and sounded like a medley. When 'prompt' is set, 'sections' are not used."
+  },
+  "_delivery": "Presenter read: calm, warm, unhurried, every letter clear. No audio tags. Case endings written where the line runs on, pausal forms at commas and full stops. Without them the models read balaghu (past tense) for the command baalighu, so every take is checked: its transcript must match the script and each vowel in vowel_checks must measure as the written one (formants F1/F2).",
+  "sfx_enabled": false,
+  "_sfx": "Off by request: the score carries the scene changes. Set sfx_enabled true to bring the effects back."
+}

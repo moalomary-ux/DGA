@@ -1,0 +1,6 @@
+audio/out/
+build/
+release/silent.mp4
+__pycache__/
+audio/out_*/
+release/balighu-motion.mp4
