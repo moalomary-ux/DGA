@@ -163,3 +163,48 @@ function badgePlate(text,font,worldH){
   const nrm=RELIEF.heightToNormal(RELIEF.soft(hh,2.4),4);
   const mat=new THREE.MeshPhysicalMaterial({map:tex(col,true),normalMap:tex(nrm,false),alphaMap:tex(alpha,false),transparent:true,metalness:.8,roughness:.3,clearcoat:.3,envMapIntensity:1.1,side:THREE.DoubleSide,depthWrite:false});
   return new THREE.Mesh(new THREE.PlaneGeometry(pw*(worldH/ph),worldH),mat);}
+
+/* ===== v4: emblem traced from the official artwork (EM4) ===== */
+renderer.localClippingEnabled=true;
+let EM4TEX=null,EM4SHADOW=null;
+function loadEM4(){return new Promise(res=>{const L=new THREE.TextureLoader();let n=0;const done=()=>{if(++n===2)res();};
+  EM4TEX={};EM4TEX.normal=L.load(EM4.normal,t=>{t.colorSpace=THREE.NoColorSpace;t.anisotropy=8;done();},undefined,done);EM4TEX.mask=L.load(EM4.mask,()=>done(),undefined,done);});}
+function em4Shadow(){if(!EM4SHADOW){const im=EM4TEX.mask.image,c=cnv(im.width,im.height),x=c.getContext('2d');x.filter='blur(14px)';x.drawImage(im,0,0);EM4SHADOW=tex(c,false);}return EM4SHADOW;}
+function emblem4Instance(){
+  const g=new THREE.Group(),inner=new THREE.Group();g.add(inner);
+  const u=EM4.uv,uw=u.x1-u.x0,vh=u.y1-u.y0;
+  const uvGen={generateTopUV(geo,v,a,b,c){const f=i=>new THREE.Vector2((v[i*3]-u.x0)/uw,(v[i*3+1]-u.y0)/vh);return[f(a),f(b),f(c)];},generateSideWallUV(){const q=new THREE.Vector2(.001,.001);return[q,q,q,q];}};
+  const plane=new THREE.Plane(new THREE.Vector3(0,-1,0),1e5);
+  const mat=goldMat({normalMap:EM4TEX.normal,normalScale:new THREE.Vector2(1.7,1.7),clippingPlanes:[plane],transparent:true});
+  EM4.shapes.forEach(s=>{const sh=new THREE.Shape(s.outer.map(p=>new THREE.Vector2(p[0],p[1])));(s.holes||[]).forEach(h=>sh.holes.push(new THREE.Path(h.map(p=>new THREE.Vector2(p[0],p[1])))));
+    const geo=new THREE.ExtrudeGeometry(sh,{depth:16,bevelEnabled:true,bevelThickness:4,bevelSize:2.5,bevelSegments:3,curveSegments:1,UVGenerator:uvGen});
+    inner.add(new THREE.Mesh(geo,mat));});
+  const sm=new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.55,alphaMap:em4Shadow(),depthWrite:false,clippingPlanes:[plane]});
+  const shadow=new THREE.Mesh(new THREE.PlaneGeometry(uw,vh),sm);shadow.position.set(16,-24,-36);inner.add(shadow);
+  const edge=new THREE.Mesh(new THREE.PlaneGeometry(1250,9),new THREE.MeshBasicMaterial({color:0xfff2c8,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false}));edge.position.z=50;inner.add(edge);
+  const flare=new THREE.Mesh(new THREE.PlaneGeometry(1250,140),new THREE.MeshBasicMaterial({color:0xffd27a,transparent:true,opacity:0,blending:THREE.AdditiveBlending,depthWrite:false,alphaMap:(()=>{const c=cnv(4,128),x=c.getContext('2d'),gr=x.createLinearGradient(0,0,0,128);gr.addColorStop(0,'#000');gr.addColorStop(.5,'#fff');gr.addColorStop(1,'#000');x.fillStyle=gr;x.fillRect(0,0,4,128);return tex(c,false);})()}));flare.position.z=48;inner.add(flare);
+  return{group:g,inner,mat,plane,shadow,edge,flare};
+}
+const _v=new THREE.Vector3();
+/* rise: 0..1 reveals the emblem from the swords up to the crown; glow adds a hot emissive pulse */
+function emblem4Set(e,rise,opacity=1,glow=0){
+  e.group.visible=opacity>.003&&rise>0;if(!e.group.visible)return;
+  const lvl=lerp(-600,620,rise);_v.set(0,lvl,0);e.group.updateMatrixWorld(true);_v.applyMatrix4(e.inner.matrixWorld);
+  e.plane.normal.set(0,-1,0);e.plane.constant=rise>=1?1e5:_v.y;
+  e.mat.opacity=opacity;e.shadow.material.opacity=.5*opacity;
+  const live=rise>0&&rise<1;e.edge.position.y=lvl;e.flare.position.y=lvl;e.edge.material.opacity=live?.95*opacity:0;e.flare.material.opacity=live?.35*opacity:0;
+  e.mat.emissive.setRGB(glow,glow*.68,glow*.22);
+}
+/* sample points inside the official silhouette, in emblem units (y up) */
+function em4Samples(step=7,seed=11){
+  const im=EM4TEX.mask.image,c=cnv(im.width,im.height),x=c.getContext('2d');x.drawImage(im,0,0);const d=x.getImageData(0,0,c.width,c.height).data,u=EM4.uv,r=rng(seed),out=[];
+  for(let py=0;py<c.height;py+=step)for(let px=0;px<c.width;px+=step){const jx=Math.min(c.width-1,Math.round(px+r()*step)),jy=Math.min(c.height-1,Math.round(py+r()*step));
+    if(d[(jy*c.width+jx)*4]>128)out.push([u.x0+jx/c.width*(u.x1-u.x0),u.y1-jy/c.height*(u.y1-u.y0)]);}
+  return out;}
+function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+const lerp=(a,b,t)=>a+(b-a)*t;
+/* felt texture for the background */
+function feltDataURL(){const S=512,c=cnv(S,S),x=c.getContext('2d'),r=rng(91),img=x.createImageData(S,S);
+  for(let i=0;i<img.data.length;i+=4){const v=118+(r()-.5)*70;img.data[i]=img.data[i+1]=img.data[i+2]=v;img.data[i+3]=255;}x.putImageData(img,0,0);
+  x.globalAlpha=.10;x.lineWidth=1;for(let k=0;k<2600;k++){const a=r()*6.283,l=4+r()*14,px=r()*S,py=r()*S;x.strokeStyle=r()<.5?'#fff':'#000';x.beginPath();x.moveTo(px,py);x.lineTo(px+Math.cos(a)*l,py+Math.sin(a)*l);x.stroke();}
+  x.globalAlpha=1;const o=cnv(S,S),ox=o.getContext('2d');ox.filter='blur(.6px)';ox.drawImage(c,0,0);return o.toDataURL('image/jpeg',.9);}

@@ -15,8 +15,9 @@ if os.path.exists(anchors_path):
     audio_js += f"window.__ANCHORS={json.dumps(a['anchors'])};window.__DURATION={a['duration']};"
     print("anchors:", len(a["anchors"]), "duration:", a["duration"])
 core = open(os.path.join(ROOT, "src/core3d.js"), encoding="utf-8").read()
+em4 = open(os.path.join(ROOT, "src/emblem_official.js"), encoding="utf-8").read()
 three = open(os.path.join(ROOT, "src/vendor/three.min.js"), encoding="utf-8").read()
-page = src.replace("__HERO__", "data:image/jpeg;base64," + hero).replace("/*__EM2__*/", emblem).replace("/*__CORE3D__*/", core)
+page = src.replace("__HERO__", "data:image/jpeg;base64," + hero).replace("/*__EM2__*/", emblem).replace("/*__CORE3D__*/", core).replace("/*__EM4__*/", em4)
 os.makedirs(os.path.join(ROOT, "release"), exist_ok=True); os.makedirs(os.path.join(ROOT, "build"), exist_ok=True)
 embed = "--embed-audio" in sys.argv and os.path.exists(mix_path)
 art_js = audio_js
