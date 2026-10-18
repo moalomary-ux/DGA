@@ -2,11 +2,13 @@
 
 **الإعدادات المعتمدة:**
 
-- النموذج: **Eleven v4**.
-- الصوت: «Darsho - Royal Arabic Fusha» من Voice Library.
+- النموذج: **Eleven Multilingual v2**.
+- الصوت: «Ali - calm & Deep Arabic Saudi Narrator» من Voice Library.
 - Stability: 60%.
 - Similarity: 85%.
+- Style: 10%.
 - Speed: 0.95.
+- Speaker boost: مفعّل.
 
 **الإلقاء:** تقديمي هادئ رخيم، كل حرف واضح، بلا حماس مصطنع. لا تُضِف وسوم أداء مثل `[shouting]`. انسخ النص بتشكيله كما هو أدناه، فالتشكيل يمنع خطأ «بالَغوا» ويضبط الإعراب.
 

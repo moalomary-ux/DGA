@@ -2,8 +2,8 @@
   "_comment": "Voice-over script, per-line direction, and the anchors that tie design time (the animation's own clock) to spoken words. d = design second, l = line index (0-based), w = word index in the line, ref = 'start' (default) or 'end' of that word, o = extra seconds. A line's word-0 anchor also fixes where that line starts; gap is the minimum pause before it.",
   "tts": {
     "model_preference": [
-      "eleven_v4",
-      "eleven_multilingual_v2"
+      "eleven_multilingual_v2",
+      "eleven_v4"
     ],
     "language_code": "ar",
     "voice_settings": {
@@ -13,8 +13,8 @@
       "speed": 0.95,
       "use_speaker_boost": true
     },
-    "voice_id": "beZRlJoDAXQuY5EaPgHK",
-    "_voice": "Darsho - Royal Arabic Fusha (Voice Library) on eleven_v4, chosen by ear from three full read-throughs (Hijazi, Darsho, Ali) that had all passed the transcript and vowel checks."
+    "voice_id": "MI88rOZjXbH22N8KHXUo",
+    "_voice": "Ali - calm & Deep Arabic Saudi Narrator (Voice Library) on eleven_multilingual_v2, chosen by ear from three full read-throughs (Hijazi, Darsho, Ali) that had all passed the transcript and vowel checks."
   },
   "lines": [
     {

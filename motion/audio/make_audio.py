@@ -510,7 +510,7 @@ def mix(clips, music, sfx, duration):
               "acompressor=threshold=0.12:ratio=3:attack=8:release=140:makeup=2.2,asplit=2[voa][vosc]")
     inputs += ["-i", music]
     mi = n_vo
-    fl.append(f"[{mi}:a]aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:{duration:.2f},apad=whole_dur={duration:.2f},volume=0.7[m0]")
+    fl.append(f"[{mi}:a]aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:{duration:.2f},apad=whole_dur={duration:.2f},loudnorm=I=-30:LRA=6:TP=-8[m0]")  # an even bed, about 12 LU under the voice
     fl.append("[m0][vosc]sidechaincompress=threshold=0.02:ratio=6:attack=15:release=520:makeup=1.3[md]")
     labels = ["[md]", "[voa]"]
     for j, (p, t, kind) in enumerate(sfx):
