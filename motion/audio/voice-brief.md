@@ -25,14 +25,8 @@
 
 ## الموسيقى (Eleven Music)
 
-مدة نحو 51 ثانية، بلا غناء وبلا مؤثرات. الوصف:
+مدة نحو 52 ثانية، مقطوعة واحدة متصلة بلا أقسام، بلا غناء وبلا مؤثرات. الوصف:
 
-> Dignified cinematic orchestral underscore with authentic Saudi character: oud, qanun, ney flute, warm strings, soft daf frame drum, restrained brass, Hijaz maqam colour, noble and warm, 80 BPM, instrumental, leaves space for a narrator. No risers, whooshes, trailer hits or choir.
-> Opening: quiet and reverent, solo oud over a soft string pad.
-> Then: warm strings with a steady soft daf pulse, proud and noble.
-> Then: lower strings, firm and vigilant but restrained.
-> Then: tender and hopeful, ney melody over warm strings.
-> Then: a solemn ceremonial brass chorale with soft timpani.
-> Ending: a full noble resolution on a sustained chord that holds to the last second.
+> One continuous, cohesive cinematic underscore for a Saudi national public-service film, narrated. A single slow emotional arc from start to finish, no section changes, no sudden shifts. Warm sustained low strings and a soft felt piano motif, a solo oud phrase answering it, gentle build in the second half, ending on a warm held chord to the last second. 70 BPM, restrained, sincere, dignified, modern, spacious, lots of room for the voice. No drums hits, no risers, no whooshes, no choir, no vocals.
 
 سمِّ الملف `music.mp3` وضعه في `audio/out/`.

@@ -461,9 +461,13 @@ def make_music(script, pairs, duration, args):
             "-c:a", "libmp3lame", "-b:a", "128k", path])
         return path
     v2, v1, prompt, total = music_plan(script, pairs, duration)
-    attempts = [("music_v2_5", {"composition_plan": v2}), ("music_v2", {"composition_plan": v2}),
-                ("music_v1", {"composition_plan": v1}),
-                ("music_v1", {"prompt": prompt, "music_length_ms": min(600000, max(3000, total)), "force_instrumental": True})]
+    if script["music"].get("prompt"):  # one continuous piece: a single prompt, no sections
+        one = {"prompt": script["music"]["prompt"], "music_length_ms": int(round((duration + 0.3) * 1000)), "force_instrumental": True}
+        attempts = [(m, one) for m in ("music_v2_5", "music_v2", "music_v1")]
+    else:
+        attempts = [("music_v2_5", {"composition_plan": v2}), ("music_v2", {"composition_plan": v2}),
+                    ("music_v1", {"composition_plan": v1}),
+                    ("music_v1", {"prompt": prompt, "music_length_ms": min(600000, max(3000, total)), "force_instrumental": True})]
     last = None
     for model, extra in attempts:
         try:
