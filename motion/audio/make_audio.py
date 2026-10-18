@@ -1,0 +1,414 @@
+#!/usr/bin/env python3
+"""
+Voice-over + score + sound effects for the "بالغوا بالدفاع عن وطنكم" motion graphic, built with ElevenLabs.
+
+What it does
+  1. Picks the newest Arabic-capable TTS model on the account (eleven_v4 first) and an Arabic voice.
+  2. Speaks each line with character-level timestamps, so every spoken word has an exact time.
+  3. Places the lines on a timeline and writes out/anchors.json: pairs [audio second, design second]
+     that make the animation hit its beats on the spoken words (the page warps its own clock with them).
+  4. Composes the score section by section so its changes land on the scene changes, then adds sound effects.
+  5. Mixes voice (ducking the music under it), music and effects into out/mix.m4a.
+
+Usage (key stays in the environment, never in chat or files):
+  export ELEVENLABS_API_KEY=...            # from the environment's secrets
+  python3 make_audio.py --list-voices      # shows Arabic voices on the account
+  python3 make_audio.py --voice-id <id>    # generate everything
+  python3 make_audio.py --mock             # offline dry run with synthetic audio, to test the plumbing
+Useful flags: --takes 3, --pick L3=2, --tags (prefix audio tags, for models that support them),
+              --plain (no diacritics), --no-closing, --only vo|music|sfx|mix, --force
+"""
+import argparse, base64, json, math, os, shutil, subprocess, sys, urllib.error, urllib.parse, urllib.request
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+OUT = os.path.join(ROOT, "out")
+API = "https://api.elevenlabs.io"
+
+
+# ----------------------------------------------------------------------------- http
+def key():
+    k = os.environ.get("ELEVENLABS_API_KEY")
+    if not k:
+        sys.exit("ELEVENLABS_API_KEY is not set. Add it as an environment secret (see ../README.md).")
+    return k
+
+
+def http(method, path, body=None, query=None, binary=False, timeout=300):
+    url = API + path + ("?" + urllib.parse.urlencode(query, doseq=True) if query else "")
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method,
+                                 headers={"xi-api-key": key(), "Content-Type": "application/json", "Accept": "*/*"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            raw = r.read()
+            return raw if binary else json.loads(raw.decode() or "{}")
+    except urllib.error.HTTPError as e:
+        msg = e.read().decode(errors="replace")[:1200]
+        raise RuntimeError(f"{method} {path} -> HTTP {e.code}: {msg}")
+
+
+def sh(cmd, **kw):
+    r = subprocess.run(cmd, capture_output=True, text=True, **kw)
+    if r.returncode:
+        sys.exit("command failed: " + " ".join(cmd[:6]) + " ...\n" + r.stderr[-1500:])
+    return r.stdout
+
+
+def dur_of(path):
+    return float(sh(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1", path]).strip())
+
+
+# ----------------------------------------------------------------------------- models and voices
+def pick_model(pref, forced=None):
+    if forced:
+        return forced
+    models = http("GET", "/v1/models")
+    tts = [m for m in models if m.get("can_do_text_to_speech")]
+    ids = [m["model_id"] for m in tts]
+    print("TTS models on this account:", ", ".join(ids))
+    for p in pref:
+        if p in ids:
+            return p
+    arabic = [m["model_id"] for m in tts if any(l.get("language_id") == "ar" for l in m.get("languages", []))]
+    if not arabic:
+        sys.exit("No Arabic-capable TTS model found on this account.")
+    return arabic[0]
+
+
+def list_voices(limit=40):
+    out, token = [], None
+    for _ in range(5):
+        q = {"page_size": 100, "language": "ar", "include_total_count": "false"}
+        if token:
+            q["next_page_token"] = token
+        d = http("GET", "/v2/voices", query=q)
+        out += d.get("voices", [])
+        token = d.get("next_page_token")
+        if not d.get("has_more"):
+            break
+    if not out:  # fall back to a text search
+        d = http("GET", "/v2/voices", query={"search": "arabic", "page_size": 100})
+        out = d.get("voices", [])
+    return out[:limit]
+
+
+def show_voices(voices):
+    for v in voices:
+        lb = v.get("labels", {})
+        print(f"  {v['voice_id']}  {v.get('name','?'):<26} {lb.get('gender','')}/{lb.get('age','')}/{lb.get('accent','')}  {lb.get('descriptive','')}  {lb.get('use_case','')}")
+
+
+def choose_voice(voices):
+    def score(v):
+        lb = {k: str(x).lower() for k, x in v.get("labels", {}).items()}
+        s = 0
+        s += 3 if lb.get("gender") == "male" else 0
+        s += 2 if any(w in lb.get("descriptive", "") + lb.get("use_case", "") for w in ("deep", "narrat", "authorit", "calm", "documentary", "epic")) else 0
+        s += 2 if any(w in lb.get("accent", "") for w in ("saudi", "gulf", "arab", "standard")) else 0
+        return s
+    return max(voices, key=score) if voices else None
+
+
+# ----------------------------------------------------------------------------- speech
+def words_from_alignment(al):
+    ch, t0, t1 = al["characters"], al["character_start_times_seconds"], al["character_end_times_seconds"]
+    words, cur = [], None
+    for c, a, b in zip(ch, t0, t1):
+        if c.isspace():
+            if cur:
+                words.append(cur); cur = None
+            continue
+        if cur is None:
+            cur = {"text": c, "t0": a, "t1": b}
+        else:
+            cur["text"] += c; cur["t1"] = b
+    if cur:
+        words.append(cur)
+    return words
+
+
+def speak(line, prev_text, next_text, voice_id, model, settings, take, args):
+    base = os.path.join(OUT, "vo", f"{line['id']}_t{take}")
+    if os.path.exists(base + ".mp3") and os.path.exists(base + ".json") and not args.force:
+        return json.load(open(base + ".json")), base + ".mp3"
+    text = line["plain"] if args.plain else line["text"]
+    if args.tags:
+        text = line["tags"] + " " + text
+    body = {"text": text, "model_id": model, "voice_settings": settings, "seed": 1000 * take + int(line["id"][1:]),
+            "language_code": "ar", "apply_text_normalization": "auto"}
+    if prev_text: body["previous_text"] = prev_text
+    if next_text: body["next_text"] = next_text
+    last = None
+    for fmt in ("mp3_44100_192", "mp3_44100_128"):
+        try:
+            d = http("POST", f"/v1/text-to-speech/{voice_id}/with-timestamps", body=body, query={"output_format": fmt})
+            break
+        except RuntimeError as e:
+            last = e
+            if "language_code" in str(e):
+                body.pop("language_code", None)
+    else:
+        raise last
+    os.makedirs(os.path.dirname(base), exist_ok=True)
+    open(base + ".mp3", "wb").write(base64.b64decode(d["audio_base64"]))
+    al = d.get("alignment") or d.get("normalized_alignment")
+    meta = {"text": text, "words": words_from_alignment(al)}
+    json.dump(meta, open(base + ".json", "w"), ensure_ascii=False, indent=1)
+    return meta, base + ".mp3"
+
+
+def manual_speak(line, take):
+    """Use a voice-over file recorded in the ElevenLabs web app (out/vo/L1_t1.mp3 ...). Word times are estimated
+    from the speech span (silence trimmed) in proportion to each word's letters."""
+    import re
+    base = os.path.join(OUT, "vo", f"{line['id']}_t{take}")
+    path = base + ".mp3"
+    if not os.path.exists(path):
+        for ext in (".wav", ".m4a", ".ogg"):
+            if os.path.exists(base + ext):
+                path = base + ext; break
+        else:
+            sys.exit(f"--manual: put the recording for {line['id']} at {base}.mp3")
+    total = dur_of(path)
+    r = subprocess.run(["ffmpeg", "-i", path, "-af", "silencedetect=noise=-38dB:d=0.15", "-f", "null", "-"], capture_output=True, text=True).stderr
+    starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", r)]
+    ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", r)]
+    t0 = ends[0] if ends and starts and starts[0] < 0.05 else 0.0
+    t1 = starts[-1] if starts and (not ends or starts[-1] > (ends[-1] if ends else 0)) and starts[-1] > total * 0.5 else total
+    words = line["plain"].split()
+    weights = [max(1, len(re.sub(r"[^\u0621-\u064A]", "", w))) + (2 if re.search(r"[…،:.!]", w) else 0) for w in words]
+    cur, out = t0, []
+    for w, k in zip(words, weights):
+        span = (t1 - t0) * k / sum(weights)
+        out.append({"text": w, "t0": cur, "t1": cur + span * 0.92}); cur += span
+    meta = {"text": line["plain"], "words": out, "estimated": True}
+    json.dump(meta, open(base + ".json", "w"), ensure_ascii=False, indent=1)
+    return meta, path
+
+
+def mock_speak(line, take, args):
+    base = os.path.join(OUT, "vo", f"{line['id']}_t{take}")
+    n = len(line["plain"].split())
+    per = 0.5 + (0.04 * (n > 8))
+    words = [{"text": w, "t0": 0.15 + i * per, "t1": 0.15 + (i + 1) * per - 0.06} for i, w in enumerate(line["plain"].split())]
+    total = 0.15 + n * per + 0.25
+    os.makedirs(os.path.dirname(base), exist_ok=True)
+    expr = "0.25*sin(2*PI*(170+25*sin(2*PI*2.1*t))*t)*(0.6+0.4*sin(2*PI*3.1*t))"
+    sh(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"aevalsrc={expr}:s=44100:d={total:.3f}", "-c:a", "libmp3lame", "-b:a", "128k", base + ".mp3"])
+    meta = {"text": line["plain"], "words": words}
+    json.dump(meta, open(base + ".json", "w"), ensure_ascii=False, indent=1)
+    return meta, base + ".mp3"
+
+
+# ----------------------------------------------------------------------------- timeline
+def build_timeline(lines, takes_pick, args, voice_id, model, settings):
+    clips, cursor = [], 0.0
+    for i, l in enumerate(lines):
+        take = takes_pick.get(l["id"], 1)
+        prev_t = (lines[i - 1]["plain"] if args.plain else lines[i - 1]["text"]) if i else None
+        next_t = (lines[i + 1]["plain"] if args.plain else lines[i + 1]["text"]) if i + 1 < len(lines) else None
+        if args.mock:
+            meta, path = mock_speak(l, take, args)
+        elif args.manual:
+            meta, path = manual_speak(l, take)
+        else:
+            meta, path = speak(l, prev_t, next_t, voice_id, model, settings, take, args)
+        d = dur_of(path)
+        start = cursor + l["gap"]
+        clips.append({"id": l["id"], "path": path, "start": start, "dur": d, "words": meta["words"]})
+        cursor = start + d
+        print(f"  {l['id']}: start {start:5.2f}s  length {d:4.2f}s  words {len(meta['words'])}")
+    return clips
+
+
+def make_anchors(script, clips):
+    pairs = []
+    for a in script["anchors"]:
+        if a["l"] >= len(clips):
+            continue
+        ws = clips[a["l"]]["words"]
+        if a["w"] >= len(ws):
+            print(f"  ! anchor d={a['d']}: line {a['l']} has only {len(ws)} words, skipped"); continue
+        w = ws[a["w"]]
+        t = clips[a["l"]]["start"] + (w["t1"] if a.get("ref") == "end" else w["t0"]) + a.get("o", 0)
+        pairs.append([round(t, 3), a["d"]])
+    pairs.sort(key=lambda p: p[1])
+    clean = []
+    for p in pairs:  # both clocks must be strictly increasing
+        if not clean or (p[0] > clean[-1][0] + 0.08 and p[1] > clean[-1][1] + 0.08):
+            clean.append(p)
+        else:
+            print(f"  ! anchor design {p[1]} -> audio {p[0]} breaks ordering, dropped")
+    if clean and clean[0][0] > 0.3 and clean[0][1] > 0.3 and 0.6 < clean[0][1] / clean[0][0] < 1.7:
+        clean.insert(0, [0.0, 0.0])
+    for (a0, d0), (a1, d1) in zip(clean, clean[1:]):
+        r = (d1 - d0) / (a1 - a0)
+        flag = "  <-- stretches/squashes a lot" if r < 0.5 or r > 2.0 else ""
+        print(f"    design {d0:5.1f}->{d1:5.1f}  audio {a0:5.2f}->{a1:5.2f}  speed x{r:4.2f}{flag}")
+    last_a, last_d = clean[-1]
+    duration = round(last_a + (script["design_end"] - last_d), 2)
+    return clean, duration
+
+
+def d2a(pairs, d):
+    if d <= pairs[0][1]:
+        return pairs[0][0] + (d - pairs[0][1])
+    for (a0, d0), (a1, d1) in zip(pairs, pairs[1:]):
+        if d <= d1:
+            return a0 + (a1 - a0) * (d - d0) / (d1 - d0)
+    return pairs[-1][0] + (d - pairs[-1][1])
+
+
+# ----------------------------------------------------------------------------- music and effects
+def music_plan(script, pairs, duration):
+    m = script["music"]
+    bounds = [0.0] + [d2a(pairs, b) for b in script["scene_boundaries_design"]] + [duration]
+    secs = []
+    for i, s in enumerate(m["sections"]):
+        ms = max(3000, int(round((bounds[i + 1] - bounds[i]) * 1000)))
+        secs.append((s, ms))
+    neg = [x.strip() for x in m["negative"].split(",")]
+    glob = [x.strip() for x in m["global"].split(",")]
+    v2 = {"chunks": [{"text": f"[{s['name']}]\n{{{s['style']}}}", "duration_ms": ms,
+                      "positive_styles": ([m["global"]] if i == 0 else []) + [s["style"]],
+                      "negative_styles": neg} for i, (s, ms) in enumerate(secs)]}
+    v1 = {"positive_global_styles": glob, "negative_global_styles": neg,
+          "sections": [{"section_name": s["name"], "positive_local_styles": [x.strip() for x in s["style"].split(",")],
+                        "negative_local_styles": [], "duration_ms": ms, "lines": []} for s, ms in secs]}
+    prompt = m["global"] + ". Structure with exact timings: " + "; ".join(
+        f"{s['name']} for {ms/1000:.0f} seconds ({s['style']})" for s, ms in secs)
+    return v2, v1, prompt, sum(ms for _, ms in secs)
+
+
+def make_music(script, pairs, duration, args):
+    path = os.path.join(OUT, "music.mp3")
+    if os.path.exists(path) and not args.force:
+        return path
+    if args.mock:
+        sh(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+            f"aevalsrc=0.18*sin(2*PI*55*t)+0.1*sin(2*PI*82.4*t)+0.06*sin(2*PI*220*t)*(0.5+0.5*sin(2*PI*0.1*t)):s=44100:d={duration:.2f}",
+            "-c:a", "libmp3lame", "-b:a", "128k", path])
+        return path
+    v2, v1, prompt, total = music_plan(script, pairs, duration)
+    attempts = [("music_v2_5", {"composition_plan": v2}), ("music_v2", {"composition_plan": v2}),
+                ("music_v1", {"composition_plan": v1}),
+                ("music_v1", {"prompt": prompt, "music_length_ms": min(600000, max(3000, total)), "force_instrumental": True})]
+    last = None
+    for model, extra in attempts:
+        try:
+            audio = http("POST", "/v1/music", body={**extra, "model_id": model}, query={"output_format": "mp3_44100_192"}, binary=True, timeout=900)
+            open(path, "wb").write(audio)
+            print(f"  music: {model} ({'plan' if 'composition_plan' in extra else 'prompt'}) -> {dur_of(path):.1f}s")
+            return path
+        except RuntimeError as e:
+            last = e; print("  music attempt failed:", str(e)[:200])
+    raise last
+
+
+def make_sfx(script, pairs, args):
+    items, cache = [], {}
+    for ev in script["sfx_events"]:
+        kind = ev["kind"]
+        if kind not in cache:
+            p = os.path.join(OUT, "sfx", f"{kind}.mp3")
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            if args.mock:
+                sh(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "aevalsrc=0.5*sin(2*PI*90*t)*exp(-3*t):s=44100:d=1.2", "-c:a", "libmp3lame", p])
+            elif not os.path.exists(p) or args.force:
+                sp = script["sfx_prompts"][kind]
+                audio = http("POST", "/v1/sound-generation", body={"text": sp["text"], "duration_seconds": sp["dur"], "prompt_influence": 0.55}, binary=True)
+                open(p, "wb").write(audio)
+            cache[kind] = p
+        items.append((cache[kind], d2a(pairs, ev["d"]), kind))
+    return items
+
+
+GAIN = {"boom": 0.95, "riser": 0.6, "whoosh": 0.55, "shield": 0.8, "swell": 0.55, "sting": 0.95}
+
+
+def mix(clips, music, sfx, duration):
+    inputs, fl = [], []
+    for c in clips:
+        inputs += ["-i", c["path"]]
+    n_vo = len(clips)
+    for i, c in enumerate(clips):
+        ms = int(round(c["start"] * 1000))
+        fl.append(f"[{i}:a]aformat=sample_rates=44100:channel_layouts=stereo,adelay={ms}|{ms}[v{i}]")
+    fl.append("".join(f"[v{i}]" for i in range(n_vo)) + f"amix=inputs={n_vo}:normalize=0:dropout_transition=0,"
+              "highpass=f=80,equalizer=f=220:t=q:w=1:g=-1.5,equalizer=f=4200:t=q:w=1:g=2.5,"
+              "acompressor=threshold=0.12:ratio=3:attack=8:release=140:makeup=2.2,asplit=2[voa][vosc]")
+    inputs += ["-i", music]
+    mi = n_vo
+    fl.append(f"[{mi}:a]aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:{duration:.2f},apad=whole_dur={duration:.2f},volume=0.9[m0]")
+    fl.append("[m0][vosc]sidechaincompress=threshold=0.02:ratio=6:attack=15:release=520:makeup=1.3[md]")
+    labels = ["[md]", "[voa]"]
+    for j, (p, t, kind) in enumerate(sfx):
+        inputs += ["-i", p]
+        idx = mi + 1 + j
+        ms = max(0, int(round(t * 1000)))
+        fl.append(f"[{idx}:a]aformat=sample_rates=44100:channel_layouts=stereo,adelay={ms}|{ms},volume={GAIN.get(kind,0.7)}[s{j}]")
+        labels.append(f"[s{j}]")
+    fl.append("".join(labels) + f"amix=inputs={len(labels)}:normalize=0:dropout_transition=0,"
+              f"atrim=0:{duration:.2f},afade=t=out:st={duration-1.5:.2f}:d=1.5,alimiter=limit=0.95,loudnorm=I=-14:TP=-1.5:LRA=11[out]")
+    outp = os.path.join(OUT, "mix.m4a")
+    sh(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", ";".join(fl), "-map", "[out]", "-c:a", "aac", "-b:a", "256k", outp])
+    return outp
+
+
+# ----------------------------------------------------------------------------- main
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--voice-id"); ap.add_argument("--model"); ap.add_argument("--list-voices", action="store_true")
+    ap.add_argument("--takes", type=int, default=1); ap.add_argument("--pick", default="")
+    ap.add_argument("--tags", action="store_true"); ap.add_argument("--plain", action="store_true")
+    ap.add_argument("--no-closing", action="store_true"); ap.add_argument("--no-sfx", action="store_true")
+    ap.add_argument("--only", choices=["vo", "music", "sfx", "mix"]); ap.add_argument("--force", action="store_true")
+    ap.add_argument("--mock", action="store_true")
+    ap.add_argument("--manual", action="store_true", help="use recordings made in the ElevenLabs web app (no API key needed for the voice)")
+    args = ap.parse_args()
+    os.makedirs(OUT, exist_ok=True)
+    script = json.load(open(os.path.join(ROOT, "script.json"), encoding="utf-8"))
+    if args.list_voices:
+        show_voices(list_voices()); return
+    lines = [l for l in script["lines"] if not (l.get("optional") and args.no_closing)]
+    if args.no_closing:  # drop anchors that point past the last line
+        script["anchors"] = [a for a in script["anchors"] if a["l"] < len(lines)]
+    pick = {kv.split("=")[0]: int(kv.split("=")[1]) for kv in args.pick.split(",") if "=" in kv}
+
+    voice_id, model = args.voice_id or os.environ.get("ELEVENLABS_VOICE_ID"), None
+    if not args.mock and not args.manual:
+        model = pick_model(script["tts"]["model_preference"], args.model)
+        print("TTS model:", model)
+        if not voice_id:
+            vs = list_voices()
+            v = choose_voice(vs)
+            if not v:
+                sys.exit("No Arabic voices on the account. Add one from the Voice Library, then pass --voice-id.")
+            voice_id = v["voice_id"]
+            print("Voice (auto):", v.get("name"), voice_id, "- override with --voice-id; candidates:"); show_voices(vs[:12])
+    settings = script["tts"]["voice_settings"]
+
+    print("Voice-over:")
+    if args.takes > 1 and not args.mock and not args.manual:
+        for t in range(2, args.takes + 1):
+            for i, l in enumerate(lines):
+                speak(l, None, None, voice_id, model, settings, t, args)
+        print(f"  extra takes written to out/vo/ (listen, then re-run with --pick L1=2,L3=3)")
+    clips = build_timeline(lines, pick, args, voice_id, model, settings)
+    pairs, duration = make_anchors(script, clips)
+    json.dump({"anchors": pairs, "duration": duration}, open(os.path.join(OUT, "anchors.json"), "w"), indent=1)
+    print(f"anchors.json written, total duration {duration:.2f}s")
+    if args.only == "vo":
+        return
+    print("Music:"); music = make_music(script, pairs, duration, args)
+    if args.only == "music":
+        return
+    sfx = [] if args.no_sfx else make_sfx(script, pairs, args)
+    if args.only == "sfx":
+        return
+    print("Mix:"); out = mix(clips, music, sfx, duration)
+    print("done ->", out)
+
+
+if __name__ == "__main__":
+    main()
