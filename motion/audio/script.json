@@ -2,8 +2,8 @@
   "_comment": "Voice-over script, per-line direction, and the anchors that tie design time (the animation's own clock) to spoken words. d = design second, l = line index (0-based), w = word index in the line, ref = 'start' (default) or 'end' of that word, o = extra seconds. A line's word-0 anchor also fixes where that line starts; gap is the minimum pause before it.",
   "tts": {
     "model_preference": [
-      "eleven_multilingual_v2",
-      "eleven_v4"
+      "eleven_v4",
+      "eleven_multilingual_v2"
     ],
     "language_code": "ar",
     "voice_settings": {
@@ -13,46 +13,114 @@
       "speed": 0.95,
       "use_speaker_boost": true
     },
-    "voice_id": "fkqevZRU7Xj52dY1CTkq",
-    "_voice": "Hijazi - Professional and Expressive (Fusha, Voice Library) on eleven_multilingual_v2, chosen by ear from four presenter voices; it also had the clearest articulation of 18 auditions (highest recogniser confidence)."
+    "voice_id": "beZRlJoDAXQuY5EaPgHK",
+    "_voice": "Darsho - Royal Arabic Fusha (Voice Library) on eleven_v4, chosen by ear from three full read-throughs (Hijazi, Darsho, Ali) that had all passed the transcript and vowel checks."
   },
   "lines": [
     {
       "id": "L1",
       "gap": 1.0,
-      "text": "بالغوا بالدفاع عن وطنكم.",
-      "plain": "بالغوا بالدفاع عن وطنكم."
+      "text": "بالِغوا بالدِّفاعِ عن وطنِكم.",
+      "plain": "بالغوا بالدفاع عن وطنكم.",
+      "vowel_checks": [
+        [
+          "بالِغوا",
+          "ل",
+          "i"
+        ],
+        [
+          "بالدِّفاعِ",
+          "د",
+          "i"
+        ],
+        [
+          "وطنِكم",
+          "ن",
+          "i"
+        ]
+      ],
+      "lead_in": "أيها المواطنون الكرام،",
+      "_lead_in": "not spoken: previous_text context; without it the voices shortened the long alif of baalighu at the very start"
     },
     {
       "id": "L2",
       "gap": 0.8,
-      "text": "فالوطن عقيدة، وكرامة، وعزة، لا تُساوَم.",
-      "plain": "فالوطن عقيدة، وكرامة، وعزة، لا تُساوَم."
+      "text": "فالوطنُ عقيدة، وكرامة، وعِزّة، لا تُساوَم.",
+      "plain": "فالوطن عقيدة، وكرامة، وعزة، لا تُساوَم.",
+      "vowel_checks": [
+        [
+          "وعِزّة",
+          "ع",
+          "i"
+        ]
+      ]
     },
     {
       "id": "L3",
       "gap": 0.8,
-      "text": "لا تسمحوا لحاقد أو خائن أن ينال من أمنكم، أو يُشكِّك في ولائكم.",
-      "plain": "لا تسمحوا لحاقد أو خائن أن ينال من أمنكم، أو يُشكِّك في ولائكم."
+      "text": "لا تسمحوا لِحاقدٍ أو خائنٍ أن يَنالَ من أمنِكم، أو يُشكِّكَ في ولائِكم.",
+      "plain": "لا تسمحوا لحاقد أو خائن أن ينال من أمنكم، أو يُشكِّك في ولائكم.",
+      "vowel_checks": [
+        [
+          "أمنِكم",
+          "ن",
+          "i"
+        ]
+      ]
     },
     {
       "id": "L4",
       "gap": 0.8,
-      "text": "فالأوطان لا تحيا إلا بأبنائها.",
-      "plain": "فالأوطان لا تحيا إلا بأبنائها."
+      "text": "فالأوطانُ لا تحيا إلا بأبنائِها.",
+      "plain": "فالأوطان لا تحيا إلا بأبنائها.",
+      "vowel_checks": []
     },
     {
       "id": "L5",
       "gap": 0.8,
-      "text": "المادة الرابعة والثلاثون: الدفاع عن العقيدة الإسلامية، والمجتمع، والوطن، واجب على كل مواطن.",
-      "plain": "المادة الرابعة والثلاثون: الدفاع عن العقيدة الإسلامية، والمجتمع، والوطن، واجب على كل مواطن."
+      "text": "المادةُ الرابعةُ والثلاثون: الدِّفاعُ عن العقيدةِ الإسلاميةِ والمجتمعِ والوطنِ واجبٌ على كلِّ مواطن.",
+      "plain": "المادة الرابعة والثلاثون: الدفاع عن العقيدة الإسلامية، والمجتمع، والوطن، واجب على كل مواطن.",
+      "vowel_checks": [
+        [
+          "الدِّفاعُ",
+          "د",
+          "i"
+        ],
+        [
+          "والمجتمعِ",
+          "ع",
+          "i"
+        ],
+        [
+          "والوطنِ",
+          "ن",
+          "i"
+        ]
+      ]
     },
     {
       "id": "L6",
       "gap": 2.4,
       "optional": true,
-      "text": "بالغوا بالدفاع عن وطنكم.",
-      "plain": "بالغوا بالدفاع عن وطنكم."
+      "text": "بالِغوا بالدِّفاعِ عن وطنِكم.",
+      "plain": "بالغوا بالدفاع عن وطنكم.",
+      "vowel_checks": [
+        [
+          "بالِغوا",
+          "ل",
+          "i"
+        ],
+        [
+          "بالدِّفاعِ",
+          "د",
+          "i"
+        ],
+        [
+          "وطنِكم",
+          "ن",
+          "i"
+        ]
+      ]
     }
   ],
   "anchors": [
@@ -306,7 +374,7 @@
     ],
     "negative": "vocals, singing, choir, lyrics, risers, whooshes, sound effects, trailer hits, braams, impacts, electronic, pop, dubstep"
   },
-  "_delivery": "Presenter read: calm, warm, unhurried, every letter clear. No audio tags. Diacritics only where the meaning depends on them (tusawam is passive; yushakkik). Full diacritics plus emotion tags made eleven_v4 mispronounce words.",
+  "_delivery": "Presenter read: calm, warm, unhurried, every letter clear. No audio tags. Case endings written where the line runs on, pausal forms at commas and full stops. Without them the models read balaghu (past tense) for the command baalighu, so every take is checked: its transcript must match the script and each vowel in vowel_checks must measure as the written one (formants F1/F2).",
   "sfx_enabled": false,
   "_sfx": "Off by request: the score carries the scene changes. Set sfx_enabled true to bring the effects back."
 }

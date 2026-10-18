@@ -38,13 +38,16 @@ def http(method, path, body=None, query=None, binary=False, timeout=300):
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method,
                                  headers={"xi-api-key": key(), "Content-Type": "application/json", "Accept": "*/*"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            raw = r.read()
-            return raw if binary else json.loads(raw.decode() or "{}")
-    except urllib.error.HTTPError as e:
-        msg = e.read().decode(errors="replace")[:1200]
-        raise RuntimeError(f"{method} {path} -> HTTP {e.code}: {msg}")
+    for attempt in range(6):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                raw = r.read()
+                return raw if binary else json.loads(raw.decode() or "{}")
+        except urllib.error.HTTPError as e:
+            msg = e.read().decode(errors="replace")[:1200]
+            if e.code in (409, 429) and attempt < 5:  # busy: too many requests at once
+                import time; time.sleep(2 + 3 * attempt); continue
+            raise RuntimeError(f"{method} {path} -> HTTP {e.code}: {msg}")
 
 
 def sh(cmd, **kw):
@@ -141,6 +144,7 @@ def speak(line, prev_text, next_text, voice_id, model, settings, take, args):
         text = line["tags"] + " " + text
     body = {"text": text, "model_id": model, "voice_settings": settings, "seed": 1000 * take + int(line["id"][1:]),
             "language_code": "ar", "apply_text_normalization": "auto"}
+    prev_text = prev_text or line.get("lead_in")  # unspoken context, so the first line is not rushed
     if prev_text: body["previous_text"] = prev_text
     if next_text: body["next_text"] = next_text
     last = None
@@ -157,7 +161,7 @@ def speak(line, prev_text, next_text, voice_id, model, settings, take, args):
     os.makedirs(os.path.dirname(base), exist_ok=True)
     open(base + ".mp3", "wb").write(base64.b64decode(d["audio_base64"]))
     al = d.get("alignment") or d.get("normalized_alignment")
-    meta = {"text": text, "words": words_from_alignment(al)}
+    meta = {"text": text, "words": words_from_alignment(al), "alignment": al}
     json.dump(meta, open(base + ".json", "w"), ensure_ascii=False, indent=1)
     return meta, base + ".mp3"
 
@@ -250,28 +254,115 @@ def pitch_range(path):
     return float(np.percentile(st, 95) - np.percentile(st, 5))
 
 
-def auto_pick(lines, takes):
-    """Keep the takes whose transcript matches the script, then take the clearest one: the highest mean word
-    confidence from the recogniser, a fair proxy for how cleanly each letter is articulated."""
+VOWEL_MARKS = set(chr(c) for c in range(0x064B, 0x0653))
+
+
+def _lpc(x, order):
+    import numpy as np
+    r = np.correlate(x, x, "full")[len(x) - 1:len(x) + order]
+    a, e = np.zeros(order + 1), r[0]
+    a[0] = 1
+    for i in range(1, order + 1):
+        k = -(r[i] + np.dot(a[1:i], r[i - 1:0:-1])) / e
+        a[1:i + 1] = a[1:i + 1] + k * np.concatenate([a[i - 1:0:-1], [1]])
+        e *= 1 - k * k
+    return a
+
+
+def vowel_formants(path, t0, t1):
+    """Median F1/F2 (Hz) of the voiced frames between t0 and t1, by LPC."""
+    import numpy as np
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-ac", "1", "-ar", "16000", "-f", "s16le", "-"], capture_output=True).stdout
+    x = np.frombuffer(raw, np.int16).astype(np.float64) / 32768
+    sr, n, h = 16000, 400, 80
+    x = np.append(x[0], x[1:] - 0.63 * x[:-1])
+    F = []
+    for st in range(int(t0 * sr), max(int(t0 * sr) + 1, int(t1 * sr) - n), h):
+        f = x[st:st + n]
+        if len(f) < n or (f * f).mean() < 1e-6:
+            continue
+        roots = [z for z in np.roots(_lpc(f * np.hamming(n), 14)) if np.imag(z) >= 0.01]
+        fr = sorted((np.angle(z) * sr / (2 * np.pi), -sr / np.pi * np.log(abs(z))) for z in roots)
+        fr = [q for q, bw in fr if q > 180 and bw < 450]
+        if len(fr) >= 2 and fr[0] < 900 and 700 < fr[1] < 3000:
+            F.append(fr[:2])
+    if not F:
+        return None
+    F = np.array(F)
+    return float(np.median(F[:, 0])), float(np.median(F[:, 1]))
+
+
+def check_vowels(path, meta, checks):
+    """Each check is [word, consonant, vowel]: the vowel after that consonant in that word must measure as written.
+    i: F2 >= 1900 Hz; a: F2 1300-1800; u: F2 < 1300. A pausal reading with no vowel at all is not an error."""
+    al = meta.get("alignment")
+    if not al or not checks:
+        return []
+    ch, s0 = al["characters"], al["character_start_times_seconds"]
+    joined = "".join(ch)
+    out = []
+    for word, cons, want in checks:
+        wi = joined.find(word)
+        if wi < 0:
+            out.append((word, None, "?", False)); continue
+        ci = wi + word.index(cons)
+        # the vowel ends at the next consonant or at the end of the word, whichever comes first
+        nxt = next((k for k in range(ci + 1, len(ch)) if ch[k] not in VOWEL_MARKS), None)
+        t1 = s0[nxt] if nxt is not None else s0[ci] + 0.12
+        f = vowel_formants(path, s0[ci], max(t1, s0[ci] + 0.06))
+        # pharyngeal, uvular and emphatic neighbours pull F2 down, so a kasra there sits lower
+        dark = cons in "عحغخقصضطظ" or (nxt is not None and ch[nxt] in "عحغخقصضطظ")
+        ti = 1700 if dark else 1900
+        got = "?" if not f else ("i" if f[1] >= ti else "a" if 1300 <= f[1] < ti else "u")
+        # at the end of a word no vowel at all is the pausal form, which is correct; a wrong vowel is not
+        final = nxt is None or ch[nxt].isspace() or ch[nxt] in "،.:!؟"
+        out.append((word, f, got, got == want or (final and got == "?")))
+    return out
+
+
+def judge_line(l, take_ids):
+    """Keep the takes whose transcript matches the script exactly and whose checked vowels measure as written,
+    then take the clearest one: the highest mean word confidence from the recogniser."""
     import difflib
-    pick = {}
+    ref, rows = _norm_ar(l["plain"]), []
+    for t in take_ids:
+        p = os.path.join(OUT, "vo", f"{l['id']}_t{t}.mp3")
+        if not os.path.exists(p):
+            continue
+        heard, clarity = transcribe(p)
+        heard = _norm_ar(heard)
+        acc = difflib.SequenceMatcher(None, ref, heard).ratio()
+        meta = json.load(open(p[:-4] + ".json", encoding="utf-8"))
+        vc = check_vowels(p, meta, l.get("vowel_checks", []))
+        rows.append((t, acc, pitch_range(p), heard, clarity, vc))
+    exact = [r for r in rows if r[1] >= 0.995]
+    ok = [r for r in exact if all(v[3] for v in r[5])]
+    t = max(ok or exact or rows, key=lambda r: (r[1], r[4]))[0]
+    for r in rows:
+        vs = "  ".join(f"{w}:{g}{'' if f is None else f'({f[0]:.0f}/{f[1]:.0f})'}{'' if okv else '!'}" for w, f, g, okv in r[5])
+        print(f"  {l['id']} take {r[0]}: accuracy {r[1]:.2f}  clarity {r[4]:6.3f}  {vs}{'  <- chosen' if r[0] == t else ''}  | {r[3]}")
+    return t, bool(ok)
+
+
+def auto_pick(lines, takes, max_takes, speak_take):
+    """Judge every line; a line with no clean take gets new takes, one at a time, up to max_takes."""
+    pick, failed = {}, []
     for l in lines:
-        ref, rows = _norm_ar(l["plain"]), []
-        for t in range(1, takes + 1):
-            p = os.path.join(OUT, "vo", f"{l['id']}_t{t}.mp3")
-            if not os.path.exists(p):
-                continue
-            heard, clarity = transcribe(p)
-            heard = _norm_ar(heard)
-            acc = difflib.SequenceMatcher(None, ref, heard).ratio()
-            rows.append((t, acc, pitch_range(p), heard, clarity))
-        best_acc = max(r[1] for r in rows)
-        ok = [r for r in rows if r[1] >= best_acc - 0.005]  # one wrong letter can change the meaning
-        t = max(ok, key=lambda r: r[4])[0]
+        t, ok = judge_line(l, range(1, takes + 1))
+        n = takes
+        while not ok and n < max_takes:
+            n += 1
+            print(f"  {l['id']}: no clean take yet, recording take {n}")
+            speak_take(l, n)
+            tn, ok = judge_line(l, [n])
+            if ok:
+                t = tn
         pick[l["id"]] = t
-        for r in rows:
-            print(f"  {l['id']} take {r[0]}: accuracy {r[1]:.2f}  clarity {r[4]:6.3f}  pitch range {r[2]:4.1f} st{'  <- chosen' if r[0] == t else ''}  | {r[3]}")
+        if not ok:
+            failed.append(l["id"])
     json.dump(pick, open(os.path.join(OUT, "picks.json"), "w"))
+    if failed:
+        print("  !! no take passed every check for:", ", ".join(failed), "- best effort used; listen to these lines")
     return pick
 
 
@@ -444,9 +535,13 @@ def main():
     ap.add_argument("--tags", action="store_true"); ap.add_argument("--plain", action="store_true")
     ap.add_argument("--no-closing", action="store_true"); ap.add_argument("--no-sfx", action="store_true")
     ap.add_argument("--only", choices=["vo", "music", "sfx", "mix"]); ap.add_argument("--force", action="store_true")
-    ap.add_argument("--mock", action="store_true")
+    ap.add_argument("--mock", action="store_true"); ap.add_argument("--out", help="output folder (default audio/out)")
+    ap.add_argument("--max-takes", type=int, default=8, help="with --auto-pick: record more takes for a line until one passes every check")
     ap.add_argument("--manual", action="store_true", help="use recordings made in the ElevenLabs web app (no API key needed for the voice)")
     args = ap.parse_args()
+    if args.out:
+        global OUT
+        OUT = os.path.abspath(args.out)
     os.makedirs(OUT, exist_ok=True)
     script = json.load(open(os.path.join(ROOT, "script.json"), encoding="utf-8"))
     if args.list_voices:
@@ -480,7 +575,11 @@ def main():
                 speak(l, prev_t, next_t, voice_id, model, settings, t, args)
         if args.auto_pick:
             build_timeline(lines, {}, args, voice_id, model, settings, script["anchors"])  # make sure take 1 exists
-            pick = {**auto_pick(lines, args.takes), **pick}
+            def speak_take(l, n):
+                i = lines.index(l)
+                speak(l, lines[i - 1]["text"] if i else None, lines[i + 1]["text"] if i + 1 < len(lines) else None,
+                      voice_id, model, settings, n, args)
+            pick = {**auto_pick(lines, args.takes, max(args.max_takes, args.takes), speak_take), **pick}
         else:
             print(f"  extra takes written to out/vo/ (listen, then re-run with --pick L1=2,L3=3, or use --auto-pick)")
     clips = build_timeline(lines, pick, args, voice_id, model, settings, script["anchors"])
