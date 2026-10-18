@@ -4,7 +4,7 @@ const path = require('path'), fs = require('fs');
 const FPS = 30, root = path.resolve(__dirname, '..');
 const [w, nw] = [+process.argv[2], +process.argv[3]];
 (async () => {
-  const br = await pw.chromium.launch();
+  const br = await pw.chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await br.newPage({ viewport: { width: 1080, height: 1920 } });
   await p.goto('file://' + path.join(root, 'build/render.html') + '?render=1');
   await p.waitForFunction(() => window.__ready === true, null, { timeout: 30000 });
