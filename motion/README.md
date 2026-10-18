@@ -27,7 +27,7 @@
    ```bash
    bash motion/tools/run_all.sh
    ```
-   يخرج `motion/out/balighu-motion.mp4` بالصوت، ويُبنى معه `motion/out/page.html` (المشغّل التفاعلي بالصوت المضمّن عند `python3 tools/build.py --embed-audio`).
+   يخرج `motion/release/balighu-motion.mp4` بالصوت، ويُبنى معه `motion/release/page.html` (المشغّل التفاعلي بالصوت المضمّن عند `python3 tools/build.py --embed-audio`).
 
 ## بديل بلا مفتاح: التسجيل من واجهة ElevenLabs
 
