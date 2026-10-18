@@ -15,7 +15,7 @@ Usage (key stays in the environment, never in chat or files):
   python3 make_audio.py --list-voices      # shows Arabic voices on the account
   python3 make_audio.py --voice-id <id>    # generate everything
   python3 make_audio.py --mock             # offline dry run with synthetic audio, to test the plumbing
-Useful flags: --takes 3, --pick L3=2, --tags (prefix audio tags, for models that support them),
+Useful flags: --takes 3 --auto-pick, --pick L3=2, --tags (prefix audio tags, for models that support them),
               --plain (no diacritics), --no-closing, --only vo|music|sfx|mix, --force
 """
 import argparse, base64, json, math, os, shutil, subprocess, sys, urllib.error, urllib.parse, urllib.request
@@ -112,8 +112,13 @@ def choose_voice(voices):
 # ----------------------------------------------------------------------------- speech
 def words_from_alignment(al):
     ch, t0, t1 = al["characters"], al["character_start_times_seconds"], al["character_end_times_seconds"]
-    words, cur = [], None
+    words, cur, tag = [], None, False
     for c, a, b in zip(ch, t0, t1):
+        if c == "[":  # audio tags such as [proud] direct the delivery and are not spoken
+            tag = True
+        if tag:
+            tag = c != "]"
+            continue
         if c.isspace():
             if cur:
                 words.append(cur); cur = None
@@ -131,7 +136,7 @@ def speak(line, prev_text, next_text, voice_id, model, settings, take, args):
     base = os.path.join(OUT, "vo", f"{line['id']}_t{take}")
     if os.path.exists(base + ".mp3") and os.path.exists(base + ".json") and not args.force:
         return json.load(open(base + ".json")), base + ".mp3"
-    text = line["plain"] if args.plain else line["text"]
+    text = line["plain"] if args.plain or line.get("use_plain") else line["text"]
     if args.tags:
         text = line["tags"] + " " + text
     body = {"text": text, "model_id": model, "voice_settings": settings, "seed": 1000 * take + int(line["id"][1:]),
@@ -200,8 +205,76 @@ def mock_speak(line, take, args):
     return meta, base + ".mp3"
 
 
+# ----------------------------------------------------------------------------- choosing takes
+def _norm_ar(s):
+    import re
+    s = re.sub(r"\[[^\]]*\]", "", s)
+    s = re.sub(r"[\u064B-\u0652\u0670]", "", s)
+    s = re.sub("[إأآا]", "ا", s).replace("ة", "ه").replace("ى", "ي")
+    return " ".join(re.sub(r"[^\u0621-\u064A ]", " ", s).split())
+
+
+def transcribe(path):
+    import uuid
+    b = "----el" + uuid.uuid4().hex
+    parts = [f'--{b}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode() for k, v in
+             (("model_id", "scribe_v2"), ("language_code", "ara"))]
+    parts.append(f'--{b}\r\nContent-Disposition: form-data; name="file"; filename="a.mp3"\r\nContent-Type: audio/mpeg\r\n\r\n'.encode()
+                 + open(path, "rb").read() + b"\r\n")
+    req = urllib.request.Request(API + "/v1/speech-to-text", data=b"".join(parts) + f"--{b}--\r\n".encode(), method="POST",
+                                 headers={"xi-api-key": key(), "Content-Type": f"multipart/form-data; boundary={b}"})
+    with urllib.request.urlopen(req, timeout=300) as r:
+        return json.loads(r.read().decode()).get("text", "")
+
+
+def pitch_range(path):
+    """Spread of the voice's pitch in semitones (5th to 95th percentile of voiced frames), a proxy for expressiveness."""
+    import numpy as np
+    raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-ac", "1", "-ar", "16000", "-f", "s16le", "-"], capture_output=True).stdout
+    x, sr = np.frombuffer(raw, np.int16).astype(np.float32) / 32768, 16000
+    n, h, lo, hi, f0 = 640, 160, 16000 // 320, 16000 // 60, []
+    for i in range(0, len(x) - n, h):
+        f = x[i:i + n] - x[i:i + n].mean()
+        if (f * f).mean() < 1e-4:
+            continue
+        d = np.array([np.sum((f[:n - hi] - f[t:t + n - hi]) ** 2) for t in range(hi + 1)])
+        cm = np.concatenate([[1], d[1:] * np.arange(1, hi + 1) / np.maximum(np.cumsum(d[1:]), 1e-12)])
+        c = np.where(cm[lo:hi] < 0.15)[0]
+        if len(c):
+            f0.append(sr / (c[0] + lo))
+    if len(f0) < 10:
+        return 0.0
+    st = 12 * np.log2(np.array(f0) / np.median(f0))
+    return float(np.percentile(st, 95) - np.percentile(st, 5))
+
+
+def auto_pick(lines, takes):
+    import difflib
+    pick = {}
+    for l in lines:
+        ref, rows = _norm_ar(l["plain"]), []
+        for t in range(1, takes + 1):
+            p = os.path.join(OUT, "vo", f"{l['id']}_t{t}.mp3")
+            if not os.path.exists(p):
+                continue
+            heard = _norm_ar(transcribe(p))
+            acc = difflib.SequenceMatcher(None, ref, heard).ratio()
+            rows.append((t, acc, pitch_range(p), heard))
+        best_acc = max(r[1] for r in rows)
+        ok = [r for r in rows if r[1] >= best_acc - 0.005]  # one wrong letter can change the meaning
+        t = max(ok, key=lambda r: r[2])[0]
+        pick[l["id"]] = t
+        for r in rows:
+            print(f"  {l['id']} take {r[0]}: accuracy {r[1]:.2f}  pitch range {r[2]:4.1f} st{'  <- chosen' if r[0] == t else ''}  | {r[3]}")
+    json.dump(pick, open(os.path.join(OUT, "picks.json"), "w"))
+    return pick
+
+
 # ----------------------------------------------------------------------------- timeline
-def build_timeline(lines, takes_pick, args, voice_id, model, settings):
+def build_timeline(lines, takes_pick, args, voice_id, model, settings, anchors=()):
+    """Lay the lines end to end. A line whose first word has an anchor starts where its scene starts (design time),
+    so the music carries the pauses and the animation keeps its own pace; `gap` is the minimum pause before it."""
+    starts = {a["l"]: a["d"] for a in anchors if a["w"] == 0 and not a.get("ref") and not a.get("o")}
     clips, cursor = [], 0.0
     for i, l in enumerate(lines):
         take = takes_pick.get(l["id"], 1)
@@ -215,6 +288,8 @@ def build_timeline(lines, takes_pick, args, voice_id, model, settings):
             meta, path = speak(l, prev_t, next_t, voice_id, model, settings, take, args)
         d = dur_of(path)
         start = cursor + l["gap"]
+        if i in starts and meta["words"]:
+            start = max(start, starts[i] - meta["words"][0]["t0"])
         clips.append({"id": l["id"], "path": path, "start": start, "dur": d, "words": meta["words"]})
         cursor = start + d
         print(f"  {l['id']}: start {start:5.2f}s  length {d:4.2f}s  words {len(meta['words'])}")
@@ -360,6 +435,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--voice-id"); ap.add_argument("--model"); ap.add_argument("--list-voices", action="store_true")
     ap.add_argument("--takes", type=int, default=1); ap.add_argument("--pick", default="")
+    ap.add_argument("--auto-pick", action="store_true", help="choose each line's take: transcribe every take (Scribe), keep the accurate ones, then the most expressive")
     ap.add_argument("--tags", action="store_true"); ap.add_argument("--plain", action="store_true")
     ap.add_argument("--no-closing", action="store_true"); ap.add_argument("--no-sfx", action="store_true")
     ap.add_argument("--only", choices=["vo", "music", "sfx", "mix"]); ap.add_argument("--force", action="store_true")
@@ -375,7 +451,7 @@ def main():
         script["anchors"] = [a for a in script["anchors"] if a["l"] < len(lines)]
     pick = {kv.split("=")[0]: int(kv.split("=")[1]) for kv in args.pick.split(",") if "=" in kv}
 
-    voice_id, model = args.voice_id or os.environ.get("ELEVENLABS_VOICE_ID"), None
+    voice_id, model = args.voice_id or os.environ.get("ELEVENLABS_VOICE_ID") or script["tts"].get("voice_id"), None
     if not args.mock and not args.manual:
         model = pick_model(script["tts"]["model_preference"], args.model)
         print("TTS model:", model)
@@ -386,15 +462,23 @@ def main():
                 sys.exit("No Arabic voices on the account. Add one from the Voice Library, then pass --voice-id.")
             voice_id = v["voice_id"]
             print("Voice (auto):", v.get("name"), voice_id, "- override with --voice-id; candidates:"); show_voices(vs[:12])
-    settings = script["tts"]["voice_settings"]
+    settings = dict(script["tts"]["voice_settings"])
+    if model and model.startswith(("eleven_v3", "eleven_v4")):  # these models ignore style and speaker boost
+        settings = {k: v for k, v in settings.items() if k in ("stability", "similarity_boost", "speed")}
 
     print("Voice-over:")
     if args.takes > 1 and not args.mock and not args.manual:
         for t in range(2, args.takes + 1):
             for i, l in enumerate(lines):
-                speak(l, None, None, voice_id, model, settings, t, args)
-        print(f"  extra takes written to out/vo/ (listen, then re-run with --pick L1=2,L3=3)")
-    clips = build_timeline(lines, pick, args, voice_id, model, settings)
+                prev_t = lines[i - 1]["text"] if i else None
+                next_t = lines[i + 1]["text"] if i + 1 < len(lines) else None
+                speak(l, prev_t, next_t, voice_id, model, settings, t, args)
+        if args.auto_pick:
+            build_timeline(lines, {}, args, voice_id, model, settings, script["anchors"])  # make sure take 1 exists
+            pick = {**auto_pick(lines, args.takes), **pick}
+        else:
+            print(f"  extra takes written to out/vo/ (listen, then re-run with --pick L1=2,L3=3, or use --auto-pick)")
+    clips = build_timeline(lines, pick, args, voice_id, model, settings, script["anchors"])
     pairs, duration = make_anchors(script, clips)
     json.dump({"anchors": pairs, "duration": duration}, open(os.path.join(OUT, "anchors.json"), "w"), indent=1)
     print(f"anchors.json written, total duration {duration:.2f}s")
