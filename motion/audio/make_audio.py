@@ -511,10 +511,17 @@ def mix(clips, music, sfx, duration):
         fl.append(f"[{i}:a]aformat=sample_rates=44100:channel_layouts=stereo,adelay={ms}|{ms}[v{i}]")
     fl.append("".join(f"[v{i}]" for i in range(n_vo)) + f"amix=inputs={n_vo}:normalize=0:dropout_transition=0,"
               "highpass=f=80,equalizer=f=220:t=q:w=1:g=-1.5,equalizer=f=4200:t=q:w=1:g=2.5,"
-              "acompressor=threshold=0.12:ratio=3:attack=8:release=140:makeup=2.2,asplit=2[voa][vosc]")
-    inputs += ["-i", music]
+              "acompressor=threshold=0.12:ratio=3:attack=8:release=140:makeup=2.2,"
+              f"apad=whole_dur={duration:.2f},asplit=2[voa][vosc]")  # full length, or the ducked music stops with the last word
+    # level the score into an even bed first, in its own pass: inside the graph, loudnorm's 3 s look-ahead
+    # was never flushed into sidechaincompress, which cut the last 3 s of music
+    bed = os.path.join(OUT, "music_bed.wav")
+    sh(["ffmpeg", "-y", "-loglevel", "error", "-i", music, "-af",
+        f"aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:{duration:.2f},apad=whole_dur={duration:.2f},"
+        "loudnorm=I=-30:LRA=6:TP=-8,aresample=44100", bed])  # an even bed, about 12 LU under the voice
+    inputs += ["-i", bed]
     mi = n_vo
-    fl.append(f"[{mi}:a]aformat=sample_rates=44100:channel_layouts=stereo,atrim=0:{duration:.2f},apad=whole_dur={duration:.2f},loudnorm=I=-30:LRA=6:TP=-8[m0]")  # an even bed, about 12 LU under the voice
+    fl.append(f"[{mi}:a]aformat=sample_rates=44100:channel_layouts=stereo[m0]")
     fl.append("[m0][vosc]sidechaincompress=threshold=0.02:ratio=6:attack=15:release=520:makeup=1.3[md]")
     labels = ["[md]", "[voa]"]
     for j, (p, t, kind) in enumerate(sfx):
